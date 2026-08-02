@@ -1,0 +1,50 @@
+@import "./fonts.css";
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-bg: #09090b;
+  --color-bg-1: #111114;
+  --color-bg-2: #17171b;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.14);
+  --color-text: #f5f5f7;
+  --color-text-2: #a1a1aa;
+  --color-text-3: #6c6c72;
+  --color-accent: #8b7cf6;
+  --color-accent-2: #5eead4;
+
+  /* Typography */
+  --font-display: "Space Grotesk", ui-sans-serif, sans-serif;
+  --font-body: "Inter", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Radius */
+  --radius-card: 16px;
+  --radius-pill: 9999px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #0a0a0c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

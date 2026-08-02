@@ -1,0 +1,5 @@
+/**
+ * Loaded via @import for now. When self-hosting via next/font instead,
+ * delete this file and expose the font vars from app/layout.tsx.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
