@@ -376,7 +376,50 @@
   --text-paragraph-lg--letter-spacing: -0.015em;
   --text-paragraph-lg--font-weight: 400;
   
+/* Colors — Chiromo Tech Club Theme (Vibrant Tech) */
+  --color-cream: #F8FAFC;       /* Soft cool porcelain base */
+  --color-cream-2: #F1F5F9;     /* Soft slate card background */
+  --color-white: #FFFFFF;
   
+  --color-ink: #0F172A;         /* Deep Slate for high-contrast primary text */
+  --color-ink-2: #334155;       /* Slate grey for body/secondary text */
+  --color-muted: #64748B;       /* Muted cool grey */
+
+  /* Primary Action Colors (Rich Deep Midnight Navy) */
+  --color-navy: #1B2A4A;        /* Smooth, refined Tech Navy */
+  --color-navy-dark: #121E36;   /* Darker Navy for hover states */
+  --color-navy-deep: #0B1324;   /* Deepest Navy for active states */
+
+  /* Secondary Action Colors (Cool Electric Sky Blue) */
+  --color-sky: #2563EB;         /* Sleek, non-harsh Sky/Royal Blue (WCAG compliant) */
+  --color-sky-dark: #1D4ED8;    /* Deeper Sky Blue for hover states */
+  --color-sky-deep: #1E40AF;    /* Deepest Sky Blue for active states */
+
+  /* -------------------------------------------------------------------------- */
+  /* Legacy Variable Mapping                                                    */
+  /* Keep these if your existing Tailwind/CSS code still references --color-pink */
+  /* -------------------------------------------------------------------------- */
+  --color-green: var(--color-navy);
+  --color-green-dark: var(--color-navy-dark);
+  --color-green-deep: var(--color-navy-deep);
+
+  --color-pink: var(--color-sky);
+  --color-pink-dark: var(--color-sky-dark);
+
+  /* Lines and Borders */
+  --color-line: rgba(15, 23, 42, 0.08);
+  --color-line-strong: rgba(15, 23, 42, 0.16);
+
+  /* Typography — Plus Jakarta Sans & JetBrains Mono */
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  --font-body: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Radius */
+  --radius-card: 28px;
+  --radius-card-sm: 20px;
+  --radius-pill: 9999px;
+
   --text-paragraph-md: 1rem;
   --text-paragraph-md--line-height: 1.5rem;
   --text-paragraph-md--letter-spacing: -0.011em;
@@ -1024,6 +1067,31 @@
   }
 }
 
+/* Meet the Team — playful motion */
+@keyframes marquee-loop {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes card-bob {
+  0%, 100% { transform: translateY(0) rotate(-1.1deg); }
+  50% { transform: translateY(-10px) rotate(1.1deg); }
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.6); }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(36px) scale(0.86) rotate(-3deg); }
+  to { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+
 /* Custom styles */
 .remixicon path {
   transform: scale(0.8996);
@@ -1032,9 +1100,92 @@
 
 /* AlignUI Body Styles */
 body {
-  background: var(--color-bg-white-0);
-  color: var(--color-text-strong-950);
-  font-family: Inter, Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-body);
   margin: 0;
   padding: 0;
+}
+::selection {
+  background: var(--color-green);
+  color: #fff;
+}
+ 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+/* Custom Animated Checkbox Styles */
+.check {
+  cursor: pointer;
+  position: relative;
+  margin: auto;
+  width: 18px;
+  height: 18px;
+  -webkit-tap-highlight-color: transparent;
+  transform: translate3d(0, 0, 0);
+}
+
+.check:before {
+  content: "";
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(34, 50, 84, 0.03);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.check svg {
+  position: relative;
+  z-index: 1;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke: #c8ccd4;
+  stroke-width: 1.5;
+  transform: translate3d(0, 0, 0);
+  transition: all 0.2s ease;
+}
+
+.check svg path {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 0;
+}
+
+.check svg polyline {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 66;
+}
+
+.check:hover:before {
+  opacity: 1;
+}
+
+.check:hover svg {
+  stroke: #4285f4;
+}
+
+/* Updated selector for dynamic map loops */
+.custom-cbx-input:checked + .check svg {
+  stroke: #4285f4;
+}
+
+.custom-cbx-input:checked + .check svg path {
+  stroke-dashoffset: 60;
+  transition: all 0.3s linear;
+}
+
+.custom-cbx-input:checked + .check svg polyline {
+  stroke-dashoffset: 42;
+  transition: all 0.2s linear;
+  transition-delay: 0.15s;
 }

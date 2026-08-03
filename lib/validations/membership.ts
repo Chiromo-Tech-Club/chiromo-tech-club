@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { LIMITS } from "@/constants/limits";
-import { isKnownCommunitySlug } from "@/utils/get-community-slug";
+import { LIMITS } from ".././../constants/limits";
+import { isKnownCommunitySlug } from ".././../utils/get-community-slug";
 
 export const memberDraftSchema = z.object({
   fullName: z

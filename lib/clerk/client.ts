@@ -1,6 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { isRole, roleAtLeast, type Role } from "@/types/roles";
-import { DEFAULT_ROLE } from "@/constants/roles";
+import { isRole, roleAtLeast, type Role } from ".././../types/roles";
+import { DEFAULT_ROLE } from ".././../constants/roles";
 
 /**
  * Thin wrapper around Clerk's server helpers so the rest of the app never

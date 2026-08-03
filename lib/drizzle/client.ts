@@ -1,6 +1,6 @@
 import postgres from "postgres";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "@/lib/drizzle/schema";
+import * as schema from "./schema";
 
 /**
  * Lazily-constructed singleton. Importing this module never touches the

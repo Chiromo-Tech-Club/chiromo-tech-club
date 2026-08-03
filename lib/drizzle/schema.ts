@@ -1,6 +1,6 @@
 import { pgTable, pgEnum, uuid, text, timestamp, integer, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { ROLES } from "@/constants/roles";
+import { ROLES } from ".././../constants/roles";
 
 /**
  * Schema conventions (per the project's architecture rules):

@@ -1,26 +1,34 @@
 @import "./fonts.css";
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 
 @theme {
-  /* Colors */
-  --color-bg: #09090b;
-  --color-bg-1: #111114;
-  --color-bg-2: #17171b;
-  --color-line: rgba(255, 255, 255, 0.08);
-  --color-line-strong: rgba(255, 255, 255, 0.14);
-  --color-text: #f5f5f7;
-  --color-text-2: #a1a1aa;
-  --color-text-3: #6c6c72;
-  --color-accent: #8b7cf6;
-  --color-accent-2: #5eead4;
+  /* Colors — cream/green/pink language, matching the KindLink reference */
+  --color-cream: #f5f1e6;
+  --color-cream-2: #ede6d6;
+  --color-white: #ffffff;
+  --color-ink: #17140f;
+  --color-ink-2: #4a443c;
+  --color-muted: #8b8177;
+
+  --color-green: #34a15a;
+  --color-green-dark: #1f6b34;
+  --color-green-deep: #143f20;
+
+  --color-pink: #e6178c;
+  --color-pink-dark: #a8106a;
+
+  --color-line: rgba(23, 20, 15, 0.08);
+  --color-line-strong: rgba(23, 20, 15, 0.14);
 
   /* Typography */
-  --font-display: "Space Grotesk", ui-sans-serif, sans-serif;
-  --font-body: "Inter", ui-sans-serif, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
+  --font-body: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* Radius */
-  --radius-card: 16px;
+  /* Radius — large, friendly, matching the reference's rounded cards/pills */
+  --radius-card: 28px;
+  --radius-card-sm: 20px;
   --radius-pill: 9999px;
 }
 
@@ -29,14 +37,14 @@ html {
 }
 
 body {
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--color-cream);
+  color: var(--color-ink);
   font-family: var(--font-body);
 }
 
 ::selection {
-  background: var(--color-accent);
-  color: #0a0a0c;
+  background: var(--color-green);
+  color: #fff;
 }
 
 @media (prefers-reduced-motion: reduce) {

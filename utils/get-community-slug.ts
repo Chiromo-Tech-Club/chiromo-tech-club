@@ -1,5 +1,5 @@
-import { COMMUNITIES } from "@/data/communities";
-import type { Community } from "@/types/community";
+import { COMMUNITIES } from "../data/communities";
+import type { Community } from "../types/community";
 
 /** Look up a community by slug, or null if it doesn't exist. Domain-aware, hence not in lib/utils. */
 export function getCommunityBySlug(slug: string): Community | null {

@@ -1,7 +1,7 @@
-import { getDb } from "@/lib/drizzle/client";
-import { events } from "@/lib/drizzle/schema";
-import { EVENTS_SEED } from "@/data/events-seed";
-import { slugify } from "@/lib/utils/slugify";
+import { getDb } from "./client";
+import { events } from "./schema";
+import { EVENTS_SEED } from ".././../data/events-seed";
+import { slugify } from "../utils/slugify";
 
 async function main() {
   const db = getDb();
