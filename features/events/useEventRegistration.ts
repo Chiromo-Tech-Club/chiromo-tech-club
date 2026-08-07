@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { registerForEvent } from ".././../actions/events";
+import { registerForEvent } from "@/actions/events";
 
 export function useEventRegistration(eventSlug: string) {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");

@@ -3,16 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx lib/drizzle/seed.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.6.4",
     "@hookform/resolvers": "^5.7.1",
     "@remixicon/react": "^4.9.0",
-    "@studio-freight/lenis": "^1.0.42",
+    "lenis": "^1.1.18",
     "@supabase/supabase-js": "^2.111.0",
     "@tsparticles/engine": "^4.3.2",
     "@tsparticles/react": "^4.3.2",
@@ -41,6 +46,8 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "dotenv": "^16.4.7",
+    "tsx": "^4.20.6",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20",
     "@types/react": "^19",

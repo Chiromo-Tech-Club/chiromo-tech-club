@@ -1,4 +1,5 @@
 import type { Role } from "@/types/roles";
+import type { ExecTitle } from "@/types/exec-title";
 
 export interface Member {
   id: string;
@@ -6,6 +7,7 @@ export interface Member {
   fullName: string;
   email: string;
   role: Role;
+  execTitle: ExecTitle | null;
   communitySlugs: string[];
   avatarUrl: string | null;
   bio: string | null;

@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { memberDraftSchema, type MemberDraftInput } from "../../lib/validations/membership";
-import { joinClub } from "../../actions/membership";
-import { COMMUNITIES } from "../../data/communities";
-import { Input } from "../../components/alignui/input";
-import { Button } from "../../components/alignui/button";
+import { memberDraftSchema, type MemberDraftInput } from "@/lib/validations/membership";
+import { joinClub } from "@/actions/membership";
+import { COMMUNITIES } from "@/data/communities";
+import { Input } from "@/components/alignui/input";
+import { Button } from "@/components/alignui/button";
 
 export function JoinForm() {
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");

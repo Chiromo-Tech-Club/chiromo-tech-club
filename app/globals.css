@@ -1189,3 +1189,19 @@ body {
   transition: all 0.2s linear;
   transition-delay: 0.15s;
 }
+/* Force Clerk components to strip out unwanted circular shapes and shadows */
+.cl-rootBox,
+.cl-cardBox,
+.cl-card {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  clip-path: none !important;
+  mask: none !important;
+}
+
+/* Prevent global img/svg rules from scaling internal Clerk circular badges */
+.cl-rootBox img,
+.cl-rootBox svg {
+  max-width: initial;
+}

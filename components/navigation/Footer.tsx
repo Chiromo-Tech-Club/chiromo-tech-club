@@ -34,7 +34,7 @@ const EXPLORE_LINKS = [
   { label: "Communities", href: ROUTES.communities },
   { label: "Our Impact", href: `${ROUTES.home}#impact` },
   { label: "Get Involved", href: ROUTES.join },
-  { label: "Contact", href: "mailto:hello.././..chiromotechclub.org" },
+  { label: "Contact", href: "mailto:ctc.uonbi@gmail.com" },
 ];
 
 const LEGAL_LINKS = [
@@ -75,8 +75,8 @@ export function Footer() {
                 {link.label}
               </Link>
             ))}
-            <a href="mailto:hello.././..chiromotechclub.org" className="mt-1 block text-sm text-green">
-              hello.././..chiromotechclub.org
+            <a href="mailto:ctc.uonbi@gmail.com" className="mt-1 block text-sm text-green">
+              ctc.uonbi@gmail.com
             </a>
           </div>
         </div>

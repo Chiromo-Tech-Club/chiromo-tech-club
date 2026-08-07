@@ -2,31 +2,27 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
+import { useAuth, UserButton } from "@clerk/nextjs";
 import { NAV_ITEMS } from "@/config/nav";
 import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/alignui/button";
+import { HamburgerToggle } from "@/components/animations/HambugerToggle";
 import { cn } from "@/lib/utils/cn";
 
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
+  const { isSignedIn } = useAuth();
 
   return (
     <div className="md:hidden">
-      {/* Toggle Button */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close menu" : "Open menu"}
-        aria-expanded={open}
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-line text-ink"
-      >
-        {open ? <X size={18} /> : <Menu size={18} />}
-      </button>
+      {/* Toggle Button — same animated hamburger used on the dashboard */}
+      <HamburgerToggle open={open} onToggle={() => setOpen((v) => !v)} />
 
-      {/* Mobile Menu Dropdown Panel */}
+      {/* Mobile Menu Overlay Dropdown */}
       <div
         className={cn(
-          "absolute left-0 right-0 top-full z-50 flex min-h-[calc(100dvh-100%)] w-full flex-col justify-between overflow-y-auto bg-cream px-6 py-8 shadow-2xl transition-all duration-300 ease-in-out",
+          "fixed inset-x-0 top-[65px] z-50 flex h-[calc(100vh-65px)] w-full flex-col justify-between overflow-y-auto bg-cream px-6 py-8 shadow-2xl transition-all duration-300 ease-in-out sm:top-[73px] sm:h-[calc(100vh-73px)]",
           open
             ? "opacity-100 pointer-events-auto translate-y-0"
             : "opacity-0 pointer-events-none -translate-y-2"
@@ -39,38 +35,65 @@ export function MobileMenu() {
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
-              className="border-b border-line py-4 font-display text-2xl font-bold text-ink"
+              className="border-b border-line py-4 font-display text-2xl font-bold text-ink transition-colors hover:text-ink-2"
             >
               {item.label}
             </Link>
           ))}
         </div>
 
-        {/* Action Buttons: Login, Register & Join */}
-        <div className="mt-8 flex flex-col gap-3 border-t border-line pt-6">
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              href="/sign-in"
-              onClick={() => setOpen(false)}
-              className="flex items-center justify-center rounded-xl border border-line bg-white/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-white"
-            >
-              Login
-            </Link>
-            <Link
-              href="/sign-up"
-              onClick={() => setOpen(false)}
-              className="flex items-center justify-center rounded-xl border border-line bg-white/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-white"
-            >
-              Register
-            </Link>
-          </div>
+        {/* Action Buttons: Login, Register & Join — signed-out visitors only */}
+        {!isSignedIn && (
+          <div className="mt-8 flex flex-col gap-3 border-t border-line pt-6">
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href="/sign-in"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-center rounded-xl border border-line bg-white/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-white"
+              >
+                Login
+              </Link>
+              <Link
+                href="/sign-up"
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-center rounded-xl border border-line bg-white/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-white"
+              >
+                Register
+              </Link>
+            </div>
 
-          <Button asChild variant="primary" className="justify-center">
-            <Link href={ROUTES.join} onClick={() => setOpen(false)}>
-              Join Us
+            <Button asChild variant="primary" className="justify-center">
+              <Link href={ROUTES.join} onClick={() => setOpen(false)}>
+                Join Us
+              </Link>
+            </Button>
+          </div>
+        )}
+
+        {/* Signed-in state — Dashboard shortcut + Clerk's account menu */}
+        {isSignedIn && (
+          <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-6 pb-6">
+            <Link
+              href={ROUTES.dashboard}
+              onClick={() => setOpen(false)}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line bg-white/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-white"
+            >
+              <LayoutDashboard size={16} strokeWidth={2.4} />
+              Dashboard
             </Link>
-          </Button>
-        </div>
+
+            {/* Clerk UserButton with forced styling overrides */}
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: "h-10 w-10 border border-line/50",
+                  userButtonPopoverCard: "bg-white rounded-2xl border border-line/40 shadow-xl !clip-path-none !mask-none",
+                  userButtonPopoverFooter: "hidden", // Hides the orange dev badge
+                },
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

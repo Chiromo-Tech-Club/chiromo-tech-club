@@ -1,6 +1,6 @@
 import { auth } from "@/lib/clerk/client";
 import { getDb } from "@/lib/drizzle/client";
-import { members } from "@/lib/drizzle/schema";
+import { members, memberCommunities } from "@/lib/drizzle/schema";
 import { eq, isNull, and } from "drizzle-orm";
 import type { Member } from "@/types/member";
 
@@ -22,13 +22,19 @@ export async function getCurrentMember(): Promise<Member | null> {
 
   if (!row) return null;
 
+  const communityRows = await db
+    .select({ communitySlug: memberCommunities.communitySlug })
+    .from(memberCommunities)
+    .where(eq(memberCommunities.memberId, row.id));
+
   return {
     id: row.id,
     clerkUserId: row.clerkUserId,
     fullName: row.fullName,
     email: row.email,
     role: row.role,
-    communitySlugs: [], // populated separately via lib/drizzle relational query when needed
+    execTitle: row.execTitle,
+    communitySlugs: communityRows.map((c) => c.communitySlug),
     avatarUrl: row.avatarUrl,
     bio: row.bio,
     githubHandle: row.githubHandle,

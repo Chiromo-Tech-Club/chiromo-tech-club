@@ -21,7 +21,7 @@ const PIONEER_VOICES: VisionVoice[] = [
     author: "Core Team",
     role: "Founding Lead",
     trackBadge: "Club Vision",
-    image: "/images/1000199413.jpg",
+    image: "/images/1000201224.jpg",
   },
   {
     id: "ai",

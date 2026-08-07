@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { COMMUNITIES } from ".././../../data/communities";
-import { PROJECTS } from ".././../../data/projects";
-import { getCommunityBySlug } from ".././../../utils/get-community-slug";
-import { ROUTES } from ".././../../constants/routes";
-import { Button } from ".././../../components/alignui/button";
-import { TiltCard } from ".././../../components/animations/TiltCard";
-import { RevealOnScroll } from ".././../../components/animations/RevealOnScroll";
+import { COMMUNITIES } from "@/data/communities";
+import { PROJECTS } from "@/data/projects";
+import { getCommunityBySlug } from "@/utils/get-community-slug";
+import { ROUTES } from "@/constants/routes";
+import { Button } from "@/components/alignui/button";
+import { TiltCard } from "@/components/animations/TiltCard";
+import { RevealOnScroll } from "@/components/animations/RevealOnScroll";
 
 interface CommunityPageProps {
   params: Promise<{ slug: string }>;

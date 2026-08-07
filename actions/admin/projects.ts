@@ -3,12 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { getDb } from "../lib/drizzle/client";
-import { projects } from "../lib/drizzle/schema";
-import { requireRole } from "../lib/clerk/client";
-import { slugify } from "../lib/utils/slugify";
-import { ROUTES } from "../constants/routes";
-import type { ActionResult } from "../actions/membership";
+import { getDb } from "@/lib/drizzle/client";
+import { projects } from "@/lib/drizzle/schema";
+import { requireRole } from "@/lib/clerk/client";
+import { slugify } from "@/lib/utils/slugify";
+import { ROUTES } from "@/constants/routes";
+import type { ActionResult } from "@/actions/membership";
 
 const projectInputSchema = z.object({
   title: z.string().trim().min(2).max(120),

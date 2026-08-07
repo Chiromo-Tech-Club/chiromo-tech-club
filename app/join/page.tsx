@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { JoinForm } from "../../features/membership/JoinForm";
-import { ROUTES } from "../../constants/routes";
+import { JoinForm } from "@/features/membership/JoinForm";
+import { ROUTES } from "@/constants/routes";
 
 export const metadata = { title: "Join the Club | Chiromo Tech Club" };
 

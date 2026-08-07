@@ -1,5 +1,5 @@
-import { formatEventDate } from ".././../lib/utils/format-date";
-import type { ClubEvent } from ".././../types/event";
+import { formatEventDate } from "@/lib/utils/format-date";
+import type { ClubEvent } from "@/types/event";
 
 interface EventCardProps {
   event: Pick<ClubEvent, "title" | "description" | "startsAt" | "location">;

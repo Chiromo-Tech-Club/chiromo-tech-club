@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from ".././../components/alignui/button";
-import { useEventRegistration } from ".././../features/events/useEventRegistration";
+import { Button } from "@/components/alignui/button";
+import { useEventRegistration } from "@/features/events/useEventRegistration";
 
 export function EventRegistrationForm({ eventSlug }: { eventSlug: string }) {
   const { status, error, register } = useEventRegistration(eventSlug);

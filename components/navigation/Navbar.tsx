@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search, LayoutDashboard } from "lucide-react";
+import { useAuth, UserButton } from "@clerk/nextjs";
 import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/alignui/button";
 import { MagneticButton } from "@/components/animations/MagneticButton";
@@ -13,6 +14,7 @@ import { useCommandPaletteStore } from "@/store/command-palette-store";
 
 export function Navbar() {
   const openPalette = useCommandPaletteStore((s) => s.open);
+  const { isSignedIn } = useAuth();
 
   // Global Keyboard Listener: Cmd+K / Ctrl+K opens the modal
   useEffect(() => {
@@ -86,44 +88,70 @@ export function Navbar() {
           </kbd>
         </button>
         
-        {/* Get Started Dropdown & Join Button Container */}
-        <div className="hidden items-center gap-2 sm:flex">
-          
-          {/* Hover Dropdown for Get Started */}
-          <div className="group relative">
-            <button className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-ink/80 transition-all hover:bg-line/20 hover:text-ink">
-              Get Started
-              <ChevronDown size={14} strokeWidth={3} className="transition-transform duration-300 group-hover:rotate-180" />
-            </button>
-            
-            {/* Invisible hover bridge */}
-            <div className="absolute right-0 top-full h-4 w-full" />
-            
-            {/* Dropdown Panel */}
-            <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-40 pointer-events-none translate-y-2 opacity-0 transition-all duration-300 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
-              <div className="flex flex-col gap-1 rounded-2xl border border-line/40 bg-white/95 p-1.5 shadow-xl backdrop-blur-xl">
-                <Link 
-                  href="/sign-in" 
-                  className="rounded-xl px-4 py-2.5 text-sm font-bold text-ink/80 transition-all hover:bg-cream hover:text-ink hover:translate-x-1"
-                >
-                  Login
-                </Link>
-                <Link 
-                  href="/sign-up" 
-                  className="rounded-xl px-4 py-2.5 text-sm font-bold text-ink/80 transition-all hover:bg-cream hover:text-ink hover:translate-x-1"
-                >
-                  Register
-                </Link>
+        {/* Get Started Dropdown & Join Button Container — signed-out visitors only */}
+        {!isSignedIn && (
+          <div className="hidden items-center gap-2 sm:flex">
+
+            {/* Hover Dropdown for Get Started */}
+            <div className="group relative">
+              <button className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-ink/80 transition-all hover:bg-line/20 hover:text-ink">
+                Get Started
+                <ChevronDown size={14} strokeWidth={3} className="transition-transform duration-300 group-hover:rotate-180" />
+              </button>
+
+              {/* Invisible hover bridge */}
+              <div className="absolute right-0 top-full h-4 w-full" />
+
+              {/* Dropdown Panel */}
+              <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-40 pointer-events-none translate-y-2 opacity-0 transition-all duration-300 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+                <div className="flex flex-col gap-1 rounded-2xl border border-line/40 bg-white/95 p-1.5 shadow-xl backdrop-blur-xl">
+                  <Link
+                    href="/sign-in"
+                    className="rounded-xl px-4 py-2.5 text-sm font-bold text-ink/80 transition-all hover:bg-cream hover:text-ink hover:translate-x-1"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/sign-up"
+                    className="rounded-xl px-4 py-2.5 text-sm font-bold text-ink/80 transition-all hover:bg-cream hover:text-ink hover:translate-x-1"
+                  >
+                    Register
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
 
-          <MagneticButton>
-            <Button asChild variant="primary" className="rounded-full px-6 shadow-md transition-transform hover:-translate-y-0.5">
-              <Link href={ROUTES.join}>Join Us</Link>
-            </Button>
-          </MagneticButton>
-        </div>
+            <MagneticButton>
+              <Button asChild variant="primary" className="rounded-full px-6 shadow-md transition-transform hover:-translate-y-0.5">
+                <Link href={ROUTES.join}>Join Us</Link>
+              </Button>
+            </MagneticButton>
+          </div>
+        )}
+
+        {/* Signed-in state — Dashboard shortcut + Clerk's account menu */}
+        {isSignedIn && (
+          <div className="hidden items-center gap-3 sm:flex">
+            <Link
+              href={ROUTES.dashboard}
+              className="flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-ink/80 transition-all hover:bg-line/20 hover:text-ink"
+            >
+              <LayoutDashboard size={15} strokeWidth={2.4} />
+              Dashboard
+            </Link>
+            
+            {/* Clerk UserButton with forced styling overrides */}
+            <UserButton 
+              appearance={{
+                elements: {
+                  avatarBox: "h-9 w-9 border border-line/50",
+                  userButtonPopoverCard: "bg-white rounded-2xl border border-line/40 shadow-xl !clip-path-none !mask-none",
+                  userButtonPopoverFooter: "hidden", // Hides the orange dev badge
+                }
+              }}
+            />
+          </div>
+        )}
         
         <MobileMenu />
       </div>

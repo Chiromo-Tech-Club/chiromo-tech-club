@@ -1,7 +1,12 @@
+import { config } from "dotenv";
 import { getDb } from "./client";
 import { events } from "./schema";
 import { EVENTS_SEED } from ".././../data/events-seed";
 import { slugify } from "../utils/slugify";
+
+// tsx doesn't auto-load .env.local (that's Next.js-specific behavior) —
+// load it explicitly so `npm run db:seed` picks up DATABASE_URL.
+config({ path: ".env.local" });
 
 async function main() {
   const db = getDb();

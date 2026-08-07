@@ -1,8 +1,8 @@
 import { isNull } from "drizzle-orm";
-import { getDb } from ".././../../lib/drizzle/client";
-import { projects } from ".././../../lib/drizzle/schema";
-import { requireRole } from ".././../../lib/clerk/client";
-import { ProjectsTable } from ".././../../features/admin/ProjectsTable";
+import { getDb } from "@/lib/drizzle/client";
+import { projects } from "@/lib/drizzle/schema";
+import { requireRole } from "@/lib/clerk/client";
+import { ProjectsTable } from "@/features/admin/ProjectsTable";
 
 export const metadata = { title: "Admin — Projects" };
 
@@ -24,11 +24,16 @@ export default async function AdminProjectsPage() {
     .from(projects)
     .where(isNull(projects.deletedAt));
 
+  const tableRows = rows.map((row) => ({
+    ...row,
+    deletedAt: row.deletedAt ? row.deletedAt.toISOString() : null,
+  }));
+
   return (
     <main className="mx-auto max-w-[1280px] px-8 pb-24 pt-40">
       <h1 className="font-display text-3xl">Projects</h1>
       <div className="mt-8">
-        <ProjectsTable projects={rows} />
+        <ProjectsTable projects={tableRows} />
       </div>
     </main>
   );

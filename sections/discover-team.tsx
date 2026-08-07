@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Sparkles, Quote, Users } from "lucide-react";
 import { TEAM_MEMBERS } from "../data/team";
 import { ROUTES } from "../constants/routes";
 import { Button } from "../components/alignui/button";
@@ -15,130 +15,174 @@ import { cn } from "../lib/utils/cn";
 /** Doubled so the CSS marquee can loop seamlessly. */
 const MARQUEE_MEMBERS = [...TEAM_MEMBERS, ...TEAM_MEMBERS];
 
+const TICKER_WORDS = ["BUILDERS", "DESIGNERS", "ENGINEERS", "INNOVATORS", "SHIPPERS", "TINKERERS"];
+const MARQUEE_TICKER = [...TICKER_WORDS, ...TICKER_WORDS];
+
+/**
+ * ID-panel color rotates per card. Note: no per-theme "accent" text color
+ * anymore — green text read fine on white but nearly vanished on the ink
+ * panel, so every accent element below now uses its own solid green chip
+ * with white text instead, which stays legible regardless of panel color.
+ */
+const PANEL_THEMES = [
+  { panel: "bg-ink", name: "text-white", role: "text-white/60" },
+  { panel: "bg-green", name: "text-ink", role: "text-ink/60" },
+  { panel: "bg-white border border-line", name: "text-ink", role: "text-muted" },
+] as const;
+
 export function DiscoverTeam() {
   const reduced = useReducedMotion();
 
   return (
     <section id="team" className="overflow-hidden py-24">
-      <div className="mx-auto max-w-[1280px] px-8">
-        <RevealOnScroll className="mx-auto max-w-[560px] text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-line bg-white px-4 py-1.5 text-xs font-medium text-ink-2">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inset-0 rounded-full bg-green [animation:pulse-live_1.8s_ease-in-out_infinite]" />
+      <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
+        <RevealOnScroll className="mx-auto max-w-[580px] text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-line/60 bg-white/80 px-4 py-1.5 text-xs font-semibold text-ink-2 shadow-sm backdrop-blur-md">
+            <Users size={14} className="text-green" />
+            <span>Meet the Core Team</span>
+            <span className="relative ml-0.5 flex h-2 w-2">
+              <span className="absolute inset-0 animate-ping rounded-full bg-green opacity-75" />
               <span className="relative h-2 w-2 rounded-full bg-green" />
             </span>
-            Meet the humans behind the code
           </div>
-          <h2 className="font-display text-[clamp(26px,3.6vw,36px)] font-extrabold leading-[1.2] tracking-[-0.01em] text-ink">
-            Discover the team behind the builds
+
+          <h2 className="font-display text-[clamp(28px,3.8vw,42px)] font-extrabold leading-[1.15] tracking-tight text-ink">
+            Discover the builders behind the code
           </h2>
-          <p className="mt-3 text-sm text-ink-2">
-            Real people, real fun facts — hover a card to reveal their details.
+          <p className="mt-3 text-sm leading-relaxed text-ink-2">
+            The roster. Hover a card to see what makes each of them tick.
           </p>
         </RevealOnScroll>
       </div>
 
-      {/* 
-        Marquee Container:
-        - mx-[30px] ensures it starts 30px from left edge and ends 30px from right edge
-        - overflow-hidden clips cards as soon as they reach those 30px boundaries
-      */}
-      <RevealOnScroll className="group/marquee relative mt-14 mx-[30px] overflow-hidden rounded-3xl py-4">
-        {/* Subtle Edge Gradients starting at 30px bounds */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-[#F5F3ED] via-[#F5F3ED]/80 to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-[#F5F3ED] via-[#F5F3ED]/80 to-transparent" />
+      {/* Scrolling brand ticker */}
+      <div className="relative mt-10 overflow-hidden border-y border-line/60 bg-ink py-2.5">
+        <div
+          className={cn(
+            "flex w-max items-center gap-8 px-4",
+            !reduced && "[animation:marquee-loop_28s_linear_infinite]"
+          )}
+        >
+          {MARQUEE_TICKER.map((word, i) => (
+            <span
+              key={`${word}-${i}`}
+              className="flex items-center gap-8 font-display text-xs font-bold uppercase tracking-[0.25em] text-white/70"
+            >
+              {word}
+              {/* was text-green — too close in luminance to the navy bg to read; white/40 always shows */}
+              <span className="text-white/40">✦</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Roster marquee */}
+      <RevealOnScroll className="group/marquee relative mx-4 mt-10 overflow-hidden py-4 sm:mx-[30px]">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-[#F5F3ED] via-[#F5F3ED]/80 to-transparent sm:w-24" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-[#F5F3ED] via-[#F5F3ED]/80 to-transparent sm:w-24" />
 
         <div
           className={cn(
-            "flex w-max gap-5 py-8 px-4",
+            "flex w-max gap-6 px-4 py-6",
             !reduced &&
-              "[animation:marquee-loop_42s_linear_infinite] group-hover/marquee:[animation-play-state:paused]"
+              "[animation:marquee-loop_50s_linear_infinite] group-hover/marquee:[animation-play-state:paused]"
           )}
         >
-          {MARQUEE_MEMBERS.map((m, i) => (
-            <TiltCard
-              key={`${m.slug}-${i}`}
-              maxTilt={6}
-              className="group/card relative flex-none cursor-pointer"
-            >
-              <div
-                className={cn(
-                  /* Card outer wrapper: hover:scale-115 broadens card size and elevates it over neighbors */
-                  "relative flex flex-col items-center w-[180px] sm:w-[200px] transition-all duration-500 ease-out hover:scale-115 hover:z-30",
-                  !reduced && "[animation:card-bob_7s_ease-in-out_infinite]"
-                )}
-                style={
-                  !reduced
-                    ? { animationDelay: `${(i % TEAM_MEMBERS.length) * 0.35}s` }
-                    : undefined
-                }
+          {MARQUEE_MEMBERS.map((m, i) => {
+            const theme = PANEL_THEMES[i % PANEL_THEMES.length];
+            const index = String((i % TEAM_MEMBERS.length) + 1).padStart(2, "0");
+
+            return (
+              <TiltCard
+                key={`${m.slug}-${i}`}
+                maxTilt={3}
+                className="group/card relative flex-none cursor-pointer"
               >
-                {/* Main Card Shell */}
-                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[24px] bg-white shadow-md transition-shadow duration-500 group-hover/card:shadow-2xl">
-                  {/* Card Image */}
-                  <Image
-                    src={m.image}
-                    alt={`${m.name}, ${m.role}`}
-                    fill
-                    className="object-cover object-top grayscale contrast-105 transition-all duration-500 ease-out group-hover/card:grayscale-0 group-hover/card:scale-105"
-                    sizes="220px"
-                  />
+                <div className="relative flex w-[210px] flex-col transition-transform duration-500 ease-out hover:-translate-y-1.5 sm:w-[230px]">
+                  {/* ---- Photo: clean, no text on it ---- */}
+                  <div className="relative aspect-[4/5] w-full overflow-hidden rounded-t-[20px] border border-line/40 border-b-0 bg-white">
+                    <Image
+                      src={m.image}
+                      alt={`${m.name}, ${m.role}`}
+                      fill
+                      className="object-cover object-top grayscale contrast-105 transition-all duration-700 ease-out group-hover/card:scale-[1.06] group-hover/card:grayscale-0"
+                      sizes="230px"
+                    />
 
-                  {/* Dark gradient overlay for text readability on hover */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/40 opacity-0 transition-opacity duration-300 group-hover/card:opacity-100" />
+                    {/* Nickname pull-quote — always on a dark chip, so the icon is white, not green-on-dark */}
+                    {m.nickname && (
+                      <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full border border-white/25 bg-ink/70 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-md">
+                        <Quote size={10} className="text-white/70" />
+                        {m.nickname}
+                      </span>
+                    )}
 
-                  {/* Top Pill Tag (Pink Badge) */}
-                  <div className="absolute top-2.5 left-2.5 z-10 opacity-0 transition-all duration-300 -translate-y-2 group-hover/card:opacity-100 group-hover/card:translate-y-0">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-pink-500 px-2.5 py-0.5 text-[9px] font-extrabold text-white shadow-sm">
-                      <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
-                      {m.nickname ? `"${m.nickname}"` : "Team"}
+                    {/* Giant ghost index number — decorative, unaffected by the contrast issue since it's white/blend, not solid green */}
+                    <span
+                      className="pointer-events-none absolute -right-2 -top-6 select-none font-display text-[110px] font-black leading-none tracking-tighter text-white opacity-0 mix-blend-overlay transition-opacity duration-500 group-hover/card:opacity-25"
+                      aria-hidden="true"
+                    >
+                      {index}
                     </span>
+
+                    {/* Hover wash + view-profile action */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-ink/0 transition-colors duration-500 group-hover/card:bg-ink/35">
+                      <Link
+                        href={ROUTES.join}
+                        aria-label={`View ${m.name}'s profile`}
+                        className="flex h-11 w-11 translate-y-2 items-center justify-center rounded-full bg-white text-ink opacity-0 shadow-lg transition-all duration-300 hover:bg-green hover:text-white group-hover/card:translate-y-0 group-hover/card:opacity-100"
+                      >
+                        <ArrowUpRight size={18} />
+                      </Link>
+                    </div>
                   </div>
 
-                  {/* Header Info (Name & Role inside image top) */}
-                  <div className="absolute top-9 left-2.5 right-2.5 z-10 opacity-0 transition-all duration-300 -translate-y-1 group-hover/card:opacity-100 group-hover/card:translate-y-0">
-                    <h3 className="text-xs font-bold text-white truncate drop-shadow-md">
-                      {m.name}
-                    </h3>
-                    <p className="text-[10px] font-medium text-white/80 truncate">
-                      {m.role}
-                    </p>
-                  </div>
-
-                  {/* Bottom Embedded Card (Fun Fact Box) */}
-                  <div className="absolute bottom-2.5 left-2.5 right-2.5 z-10 opacity-0 transition-all duration-300 translate-y-2 group-hover/card:opacity-100 group-hover/card:translate-y-0">
-                    <div className="rounded-[16px] bg-white/95 backdrop-blur-md p-2.5 shadow-lg border border-white/60">
-                      <div className="text-[8px] font-extrabold uppercase tracking-wider text-green mb-0.5">
-                        Fun Fact
+                  {/* ---- ID panel: identity lives here, always visible ---- */}
+                  <div
+                    className={cn(
+                      "relative overflow-hidden rounded-b-[20px] px-4 pb-4 pt-3.5 transition-colors duration-500",
+                      theme.panel
+                    )}
+                  >
+                    {/* Default state: name + role + index badge */}
+                    <div className="transition-all duration-300 group-hover/card:-translate-y-1 group-hover/card:opacity-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className={cn("truncate font-display text-[15px] font-extrabold leading-tight", theme.name)}>
+                          {m.name}
+                        </h3>
+                        {/* Solid green chip + white text — reads the same on every panel color */}
+                        <span className="shrink-0 rounded-full bg-green px-2 py-0.5 font-mono text-[9px] font-bold tracking-widest text-white">
+                          N°{index}
+                        </span>
                       </div>
-                      <p className="text-[9.5px] leading-tight text-ink font-medium line-clamp-3">
-                        {m.funFact || m.quote || m.bio || "Passionate about building cool products with code."}
+                      <p className={cn("mt-0.5 truncate text-[11px] font-semibold uppercase tracking-wide", theme.role)}>
+                        {m.role}
+                      </p>
+                    </div>
+
+                    {/* Hover state: fun fact, crossfades in over the same panel */}
+                    <div className="pointer-events-none absolute inset-0 flex flex-col justify-center px-4 opacity-0 transition-all duration-300 group-hover/card:pointer-events-auto group-hover/card:opacity-100">
+                      <span className="mb-1.5 inline-flex w-fit items-center gap-1 rounded-full bg-green px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white">
+                        <Sparkles size={10} />
+                        Fun Fact
+                      </span>
+                      <p className={cn("line-clamp-3 text-[11px] font-medium leading-snug", theme.name)}>
+                        {m.funFact || "Passionate about building scalable technology and mentoring fellow builders."}
                       </p>
                     </div>
                   </div>
                 </div>
-
-                {/* Floating "View Profile" Button below card */}
-                <div className="mt-2.5 opacity-0 transition-all duration-300 translate-y-1 group-hover/card:opacity-100 group-hover/card:translate-y-0">
-                  <Link
-                    href={ROUTES.join}
-                    className="inline-flex items-center gap-1 rounded-full bg-green px-3 py-1 text-[10px] font-bold text-white shadow-md transition-transform hover:scale-105 active:scale-95"
-                  >
-                    View Profile
-                    <ArrowUpRight size={12} />
-                  </Link>
-                </div>
-              </div>
-            </TiltCard>
-          ))}
+              </TiltCard>
+            );
+          })}
         </div>
       </RevealOnScroll>
 
-      <div className="mt-10 flex justify-center px-8">
+      <div className="mt-8 flex justify-center px-8">
         <MagneticButton>
           <Button asChild variant="primary">
-            <Link href={ROUTES.join}>
-              Meet the Team
+            <Link href={ROUTES.join} className="gap-2">
+              Join the Team
               <ArrowUpRight size={16} />
             </Link>
           </Button>

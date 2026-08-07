@@ -18,11 +18,11 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <ClerkProvider
       appearance={{
         variables: {
-          colorPrimary: "#8b7cf6",
-          colorBackground: "#111114",
-          colorForeground: "#f5f5f7",
-          colorMutedForeground: "#a1a1aa",
-          borderRadius: "10px",
+          colorPrimary: "#1B2A4A",
+          colorBackground: "#FFFFFF",
+          colorForeground: "#0F172A",
+          colorMutedForeground: "#64748B",
+          borderRadius: "9999px",
         },
       }}
     >

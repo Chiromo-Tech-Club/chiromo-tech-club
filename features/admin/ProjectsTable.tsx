@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { archiveProject } from ".././../actions/admin/projects";
-import { Button } from ".././../components/alignui/button";
-import type { Project } from ".././../types/project";
+import { archiveProject } from "@/actions/admin/projects";
+import { Button } from "@/components/alignui/button";
+import type { Project } from "@/types/project";
 
 interface ProjectsTableProps {
   projects: Array<Pick<Project, "id" | "title" | "communitySlug" | "stars" | "deletedAt">>;

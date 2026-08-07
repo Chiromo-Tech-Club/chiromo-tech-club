@@ -16,7 +16,7 @@ export default function SignInPage() {
     <div className="grid min-h-screen grid-cols-1 bg-white lg:grid-cols-12">
       
       {/* LEFT COLUMN: AUTH FORM SECTION */}
-      <div className="flex flex-col justify-between px-6 py-8 sm:px-12 lg:col-span-6 xl:col-span-5 lg:px-16">
+      <div className="flex min-h-screen flex-col justify-between px-6 py-8 sm:px-12 lg:col-span-6 xl:col-span-5 lg:px-16 overflow-y-auto">
         
         {/* Top Header: Logo & Back Link */}
         <div className="flex items-center justify-between">
@@ -39,7 +39,7 @@ export default function SignInPage() {
         </div>
 
         {/* Center Auth Form */}
-        <div className="my-auto py-10">
+        <div className="my-auto py-8">
           <div className="mb-6">
             <h1 className="font-display text-2xl font-extrabold text-ink sm:text-3xl">
               Welcome back
@@ -49,16 +49,18 @@ export default function SignInPage() {
             </p>
           </div>
 
-          <div className="flex justify-center sm:justify-start">
+          <div className="w-full max-w-md">
             <SignIn 
               appearance={{
                 elements: {
                   rootBox: "w-full max-w-md",
-                  card: "shadow-none border-0 p-0 bg-transparent",
+                  cardBox: "w-full shadow-none border-0 bg-transparent rounded-none",
+                  card: "w-full shadow-none border-0 p-0 bg-transparent rounded-none",
                   headerTitle: "hidden",
                   headerSubtitle: "hidden",
                   footer: "bg-transparent",
-                  formButtonPrimary: "bg-navy hover:bg-navy/90 text-sm font-semibold rounded-xl transition-colors",
+                  formButtonPrimary: "bg-navy hover:bg-navy/90 text-sm font-semibold rounded-xl transition-colors py-2.5",
+                  formFieldInput: "rounded-xl border-line focus:border-navy focus:ring-navy",
                 }
               }}
             />
@@ -66,12 +68,12 @@ export default function SignInPage() {
         </div>
 
         {/* Footer info */}
-        <div className="text-xs text-muted">
+        <div className="text-xs text-muted pt-4">
           <p>© {new Date().getFullYear()} Chiromo Tech Club. Secure Access Portal.</p>
         </div>
       </div>
 
-      {/* RIGHT COLUMN: DARK PORTAL BANNER (Full Bleed Image Side) */}
+      {/* RIGHT COLUMN: DARK PORTAL BANNER */}
       <div className="relative hidden bg-[#0B1324] lg:col-span-6 xl:col-span-7 lg:flex lg:flex-col lg:justify-between lg:p-16">
         
         {/* Shadow Image Layer */}
@@ -85,7 +87,6 @@ export default function SignInPage() {
           />
           {/* Subtle Ambient Gradients */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#0B1324] via-[#0B1324]/60 to-transparent" />
-          <div className="absolute inset-0 bg-radial-gradient from-blue-500/10 via-transparent to-transparent" />
         </div>
 
         {/* Top Floating Badge */}
@@ -100,7 +101,7 @@ export default function SignInPage() {
         <div className="relative z-10 mt-auto max-w-xl">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
             <div className="inline-block rounded-lg bg-blue-500/20 px-3 py-1 font-mono text-xs text-blue-300">
-               MEMBER_SYSTEM
+                MEMBER_SYSTEM
             </div>
             <h2 className="mt-4 font-display text-2xl font-bold text-white sm:text-3xl">
               &quot;Code is read much more often than it is written.&quot;
