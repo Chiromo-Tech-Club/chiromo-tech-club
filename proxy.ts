@@ -14,32 +14,25 @@ import { DEFAULT_ROLE } from "./constants/roles";
 const isProtectedRoute = createRouteMatcher(PROTECTED_PREFIXES.map((p) => `${p}(.*)`));
 const isAdminRoute = createRouteMatcher(ADMIN_ONLY_PREFIXES.map((p) => `${p}(.*)`));
 
-// Pass options as the second argument to clerkMiddleware
-export default clerkMiddleware(
-  async (auth, req) => {
-    if (!isProtectedRoute(req)) return NextResponse.next();
+export default clerkMiddleware(async (auth, req) => {
+  if (!isProtectedRoute(req)) return NextResponse.next();
 
-    const { userId, sessionClaims, redirectToSignIn } = await auth();
+  const { userId, sessionClaims, redirectToSignIn } = await auth();
 
-    if (!userId) {
-      return redirectToSignIn({ returnBackUrl: req.url });
-    }
-
-    if (isAdminRoute(req)) {
-      const role = sessionClaims?.metadata as { role?: unknown } | undefined;
-      const currentRole = isRole(role?.role) ? role.role : DEFAULT_ROLE;
-      if (currentRole !== "admin") {
-        return NextResponse.redirect(new URL(ROUTES.dashboard, req.url));
-      }
-    }
-
-    return NextResponse.next();
-  },
-  {
-    // Tells Clerk to resolve its script via your proxy
-    proxyUrl: "https://chiromo-tech-club.vercel.app/__clerk",
+  if (!userId) {
+    return redirectToSignIn({ returnBackUrl: req.url });
   }
-);
+
+  if (isAdminRoute(req)) {
+    const role = sessionClaims?.metadata as { role?: unknown } | undefined;
+    const currentRole = isRole(role?.role) ? role.role : DEFAULT_ROLE;
+    if (currentRole !== "admin") {
+      return NextResponse.redirect(new URL(ROUTES.dashboard, req.url));
+    }
+  }
+
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: [

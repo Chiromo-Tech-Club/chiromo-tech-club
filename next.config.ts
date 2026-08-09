@@ -10,16 +10,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  
-  // Intercept requests to /__clerk and securely proxy them to the Clerk Frontend API
-  async rewrites() {
-    return [
-      {
-        source: "/__clerk/:path*",
-        destination: "https://clerk.chiromo-tech-club.vercel.app/:path*", 
-      },
-    ];
-  },
 };
 
 export default nextConfig;
