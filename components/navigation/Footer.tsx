@@ -92,8 +92,8 @@ export function Footer() {
       </div>
 
       <div className="select-none px-4 pb-[-40px] leading-[0.75]" aria-hidden>
-        <div className="-mx-4 -mb-10 text-center font-display text-[22vw] font-extrabold tracking-tighter text-ink">
-          chiromo.
+        <div className="-mx-4 mb-5 text-center font-display text-[22vw] font-extrabold tracking-tighter text-ink">
+          ctc_uon.
         </div>
       </div>
     </footer>

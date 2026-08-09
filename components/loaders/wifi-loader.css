@@ -1,0 +1,136 @@
+/* Adapted from Uiverse.io by mobinkakei — id swapped for a class (multi-instance
+   safe) and colors mapped to this app's design tokens instead of hardcoded hex. */
+
+.wifi-loader {
+  --loader-front: var(--color-sky);
+  --loader-back: var(--color-bg-soft-200);
+  --loader-text: var(--color-ink-2);
+  width: 64px;
+  height: 64px;
+  border-radius: 50px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.wifi-loader--sm { transform: scale(0.7); }
+.wifi-loader--lg { transform: scale(1.4); }
+
+.wifi-loader svg {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.wifi-loader svg circle {
+  position: absolute;
+  fill: none;
+  stroke-width: 6px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: rotate(-100deg);
+  transform-origin: center;
+}
+.wifi-loader svg circle.back {
+  stroke: var(--loader-back);
+}
+.wifi-loader svg circle.front {
+  stroke: var(--loader-front);
+}
+
+.wifi-loader svg.circle-outer {
+  height: 86px;
+  width: 86px;
+}
+.wifi-loader svg.circle-outer circle {
+  stroke-dasharray: 62.75 188.25;
+}
+.wifi-loader svg.circle-outer circle.back {
+  animation: wifi-circle-outer 1.8s ease infinite 0.3s;
+}
+.wifi-loader svg.circle-outer circle.front {
+  animation: wifi-circle-outer 1.8s ease infinite 0.15s;
+}
+
+.wifi-loader svg.circle-middle {
+  height: 60px;
+  width: 60px;
+}
+.wifi-loader svg.circle-middle circle {
+  stroke-dasharray: 42.5 127.5;
+}
+.wifi-loader svg.circle-middle circle.back {
+  animation: wifi-circle-middle 1.8s ease infinite 0.25s;
+}
+.wifi-loader svg.circle-middle circle.front {
+  animation: wifi-circle-middle 1.8s ease infinite 0.1s;
+}
+
+.wifi-loader svg.circle-inner {
+  height: 34px;
+  width: 34px;
+}
+.wifi-loader svg.circle-inner circle {
+  stroke-dasharray: 22 66;
+}
+.wifi-loader svg.circle-inner circle.back {
+  animation: wifi-circle-inner 1.8s ease infinite 0.2s;
+}
+.wifi-loader svg.circle-inner circle.front {
+  animation: wifi-circle-inner 1.8s ease infinite 0.05s;
+}
+
+.wifi-loader .wifi-loader-text {
+  position: absolute;
+  bottom: -40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-transform: lowercase;
+  font-weight: 500;
+  font-size: 14px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.wifi-loader .wifi-loader-text::before,
+.wifi-loader .wifi-loader-text::after {
+  content: attr(data-text);
+}
+.wifi-loader .wifi-loader-text::before {
+  color: var(--loader-text);
+}
+.wifi-loader .wifi-loader-text::after {
+  color: var(--loader-front);
+  animation: wifi-text-sweep 3.6s ease infinite;
+  position: absolute;
+  left: 0;
+}
+
+@keyframes wifi-circle-outer {
+  0% { stroke-dashoffset: 25; }
+  25% { stroke-dashoffset: 0; }
+  65% { stroke-dashoffset: 301; }
+  80% { stroke-dashoffset: 276; }
+  100% { stroke-dashoffset: 276; }
+}
+@keyframes wifi-circle-middle {
+  0% { stroke-dashoffset: 17; }
+  25% { stroke-dashoffset: 0; }
+  65% { stroke-dashoffset: 204; }
+  80% { stroke-dashoffset: 187; }
+  100% { stroke-dashoffset: 187; }
+}
+@keyframes wifi-circle-inner {
+  0% { stroke-dashoffset: 9; }
+  25% { stroke-dashoffset: 0; }
+  65% { stroke-dashoffset: 106; }
+  80% { stroke-dashoffset: 97; }
+  100% { stroke-dashoffset: 97; }
+}
+@keyframes wifi-text-sweep {
+  0% { clip-path: inset(0 100% 0 0); }
+  50% { clip-path: inset(0); }
+  100% { clip-path: inset(0 0 0 100%); }
+}

@@ -20,6 +20,9 @@ export const transactionTypeEnum = pgEnum("transaction_type", ["income", "expens
 export const decisionStatusEnum = pgEnum("decision_status", ["proposed", "approved", "rejected"]);
 export const sponsorStatusEnum = pgEnum("sponsor_status", ["prospect", "active", "past"]);
 export const initiativeStatusEnum = pgEnum("initiative_status", ["planned", "in_progress", "done"]);
+export const taskStatusEnum = pgEnum("task_status", ["todo", "in_progress", "done"]);
+export const invoiceStatusEnum = pgEnum("invoice_status", ["unpaid", "paid", "overdue"]);
+export const grantStatusEnum = pgEnum("grant_status", ["draft", "submitted", "awarded", "rejected"]);
 
 export const members = pgTable(
   "members",
@@ -217,6 +220,85 @@ export const initiatives = pgTable("initiatives", {
   status: initiativeStatusEnum("status").notNull().default("planned"),
   ownerId: uuid("owner_id").references(() => members.id, { onDelete: "set null" }),
   dueDate: timestamp("due_date", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+/* ---------- Shared tools (visible to every exec/admin, not role-scoped) ---------- */
+
+/** Shared exec task list — any exec can create/assign a task. */
+export const tasks = pgTable("tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: taskStatusEnum("status").notNull().default("todo"),
+  assigneeId: uuid("assignee_id").references(() => members.id, { onDelete: "set null" }),
+  createdById: uuid("created_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+/** Recent Documents — links to external files (Drive/Docs) rather than uploads; no file storage is wired up yet. */
+export const documents = pgTable("documents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  url: text("url").notNull(),
+  category: text("category").notNull().default("General"),
+  uploadedById: uuid("uploaded_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+/**
+ * Executive Chat — a shared message log, refreshed via revalidatePath on
+ * each post (not a live websocket feed yet). Good enough for an exec
+ * committee's async back-and-forth; can be upgraded to Supabase Realtime
+ * later without changing this table.
+ */
+export const execMessages = pgTable("exec_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  authorId: uuid("author_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Treasurer — invoices owed to or by the club. */
+export const invoices = pgTable("invoices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  clientName: text("client_name").notNull(),
+  description: text("description").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  status: invoiceStatusEnum("status").notNull().default("unpaid"),
+  recordedById: uuid("recorded_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+/** Treasurer — grant/funding applications pipeline. */
+export const grantApplications = pgTable("grant_applications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  funderName: text("funder_name").notNull(),
+  amountCents: integer("amount_cents"),
+  deadline: timestamp("deadline", { withTimezone: true }),
+  status: grantStatusEnum("status").notNull().default("draft"),
+  notes: text("notes"),
+  recordedById: uuid("recorded_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
