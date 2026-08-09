@@ -4,41 +4,43 @@ import { PROTECTED_PREFIXES, ADMIN_ONLY_PREFIXES, ROUTES } from "./constants/rou
 import { isRole } from "./types/roles";
 import { DEFAULT_ROLE } from "./constants/roles";
 
-/**
- * Kept intentionally thin per the architecture doc: this file only wires
- * route matching to Clerk's session, and delegates the actual role logic
- * to lib/clerk. Auth/role rules should never be duplicated here later.
- *
- * Named proxy.ts, not middleware.ts — Next.js 16 renamed the convention.
- */
 const isProtectedRoute = createRouteMatcher(PROTECTED_PREFIXES.map((p) => `${p}(.*)`));
 const isAdminRoute = createRouteMatcher(ADMIN_ONLY_PREFIXES.map((p) => `${p}(.*)`));
 
-export default clerkMiddleware(async (auth, req) => {
-  if (!isProtectedRoute(req)) return NextResponse.next();
+export default clerkMiddleware(
+  async (auth, req) => {
+    if (!isProtectedRoute(req)) return NextResponse.next();
 
-  const { userId, sessionClaims, redirectToSignIn } = await auth();
+    const { userId, sessionClaims, redirectToSignIn } = await auth();
 
-  if (!userId) {
-    return redirectToSignIn({ returnBackUrl: req.url });
-  }
-
-  if (isAdminRoute(req)) {
-    const role = sessionClaims?.metadata as { role?: unknown } | undefined;
-    const currentRole = isRole(role?.role) ? role.role : DEFAULT_ROLE;
-    if (currentRole !== "admin") {
-      return NextResponse.redirect(new URL(ROUTES.dashboard, req.url));
+    if (!userId) {
+      return redirectToSignIn({ returnBackUrl: req.url });
     }
-  }
 
-  return NextResponse.next();
-});
+    if (isAdminRoute(req)) {
+      const role = sessionClaims?.metadata as { role?: unknown } | undefined;
+      const currentRole = isRole(role?.role) ? role.role : DEFAULT_ROLE;
+      if (currentRole !== "admin") {
+        return NextResponse.redirect(new URL(ROUTES.dashboard, req.url));
+      }
+    }
+
+    return NextResponse.next();
+  },
+  {
+    // Tells Clerk's middleware to act as the native proxy for production
+    frontendApiProxy: {
+      enabled: true,
+      path: '/__clerk',
+    },
+  }
+);
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
     "/(api|trpc)(.*)",
+    // Required so the middleware intercepts the proxy chunk requests
+    "/__clerk/(.*)",
   ],
 };
