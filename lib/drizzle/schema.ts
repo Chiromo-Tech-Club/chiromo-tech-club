@@ -23,6 +23,9 @@ export const initiativeStatusEnum = pgEnum("initiative_status", ["planned", "in_
 export const taskStatusEnum = pgEnum("task_status", ["todo", "in_progress", "done"]);
 export const invoiceStatusEnum = pgEnum("invoice_status", ["unpaid", "paid", "overdue"]);
 export const grantStatusEnum = pgEnum("grant_status", ["draft", "submitted", "awarded", "rejected"]);
+export const speakerStatusEnum = pgEnum("speaker_status", ["invited", "confirmed", "declined"]);
+export const campaignStatusEnum = pgEnum("campaign_status", ["planned", "active", "completed"]);
+export const mentorshipStatusEnum = pgEnum("mentorship_status", ["active", "completed"]);
 
 export const members = pgTable(
   "members",
@@ -301,6 +304,109 @@ export const grantApplications = pgTable("grant_applications", {
     .references(() => members.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+/** Corporate Affairs — guest speaker pipeline. */
+export const guestSpeakers = pgTable("guest_speakers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  topic: text("topic").notNull(),
+  contactEmail: text("contact_email"),
+  status: speakerStatusEnum("status").notNull().default("invited"),
+  notes: text("notes"),
+  addedById: uuid("added_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+/** Corporate Affairs — marketing campaign pipeline. */
+export const campaigns = pgTable("campaigns", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  channel: text("channel").notNull(),
+  status: campaignStatusEnum("status").notNull().default("planned"),
+  startDate: timestamp("start_date", { withTimezone: true }),
+  notes: text("notes"),
+  addedById: uuid("added_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+/** Training Coordinator — mentor/mentee pairings. Mentor may be an external industry professional, so it's a free-text name rather than a member FK. */
+export const mentorships = pgTable("mentorships", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  mentorName: text("mentor_name").notNull(),
+  menteeId: uuid("mentee_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  topic: text("topic").notNull(),
+  status: mentorshipStatusEnum("status").notNull().default("active"),
+  notes: text("notes"),
+  addedById: uuid("added_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+/** Training Coordinator — lightweight assignment tracking (not a grading/quiz system). */
+export const trainingAssignments = pgTable("training_assignments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  description: text("description"),
+  topic: text("topic").notNull(),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  createdById: uuid("created_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+/** Membership Officer — sub-teams within the club. */
+export const teams = pgTable("teams", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  description: text("description"),
+  leadId: uuid("lead_id").references(() => members.id, { onDelete: "set null" }),
+  createdById: uuid("created_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+export const teamMembers = pgTable("team_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teamId: uuid("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  memberId: uuid("member_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Membership Officer — volunteer hours log. */
+export const volunteerLogs = pgTable("volunteer_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  memberId: uuid("member_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  activity: text("activity").notNull(),
+  hours: integer("hours").notNull(),
+  loggedDate: timestamp("logged_date", { withTimezone: true }).notNull().defaultNow(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 

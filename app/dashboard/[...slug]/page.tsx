@@ -21,7 +21,16 @@ import {
   eventRegistrations,
   invoices,
   grantApplications,
+  guestSpeakers,
+  campaigns,
+  mentorships,
+  trainingAssignments,
+  teams,
+  teamMembers,
+  volunteerLogs,
+  projects,
 } from "@/lib/drizzle/schema";
+import { COMMUNITIES } from "@/data/communities";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
 import { AccessDenied } from "@/components/dashboard/AccessDenied";
 import { DecisionsBoard, type DecisionItem } from "@/features/dashboard/DecisionsBoard";
@@ -45,6 +54,15 @@ import { EventManager, type EventManagerItem } from "@/features/dashboard/EventM
 import { InvoiceTracker, type InvoiceItem } from "@/features/dashboard/InvoiceTracker";
 import { GrantApplications, type GrantItem } from "@/features/dashboard/GrantApplications";
 import { AttendanceRegister, type AttendanceRow } from "@/features/dashboard/AttendanceRegister";
+import { GuestSpeakers, type SpeakerItem } from "@/features/dashboard/GuestSpeakers";
+import { MarketingCampaigns, type CampaignItem } from "@/features/dashboard/MarketingCampaigns";
+import { Mentorship, type MentorshipItem } from "@/features/dashboard/Mentorship";
+import { Assignments, type AssignmentItem } from "@/features/dashboard/Assignments";
+import { Teams, type TeamItem } from "@/features/dashboard/Teams";
+import { Volunteers, type VolunteerLogItem } from "@/features/dashboard/Volunteers";
+import { OrgHealthMetrics, type OrgHealthData } from "@/features/dashboard/OrgHealthMetrics";
+import { EngagementAnalytics, type EngagementData } from "@/features/dashboard/EngagementAnalytics";
+import { FinancialCharts, type MonthlyBar } from "@/features/dashboard/FinancialCharts";
 
 interface DashboardCatchAllProps {
   params: Promise<{ slug: string[] }>;
@@ -563,6 +581,161 @@ async function SecretaryGeneralAttendanceRegister() {
   return <AttendanceRegister rows={attendanceRows} totalMeetings={rows.length} />;
 }
 
+async function getMemberOptions(): Promise<MemberOption[]> {
+  const db = getDb();
+  const rows = await db.select({ id: members.id, fullName: members.fullName }).from(members).where(isNull(members.deletedAt)).orderBy(members.fullName);
+  return rows;
+}
+
+async function ChairpersonOrgHealth() {
+  const db = getDb();
+  const [memberCount, eventCount, projectCount, txRows, pendingDecisions, activeInitiatives] = await Promise.all([
+    db.select({ id: members.id }).from(members).where(isNull(members.deletedAt)).then((r) => r.length),
+    db.select({ id: events.id }).from(events).where(isNull(events.deletedAt)).then((r) => r.length),
+    db.select({ id: projects.id }).from(projects).where(isNull(projects.deletedAt)).then((r) => r.length),
+    db.select({ type: transactions.type, amountCents: transactions.amountCents }).from(transactions).where(isNull(transactions.deletedAt)),
+    db.select({ id: decisions.id }).from(decisions).where(and(isNull(decisions.deletedAt), eq(decisions.status, "proposed"))).then((r) => r.length),
+    db.select({ id: initiatives.id }).from(initiatives).where(and(isNull(initiatives.deletedAt), eq(initiatives.status, "in_progress"))).then((r) => r.length),
+  ]);
+
+  const balanceCents = txRows.reduce((sum, t) => sum + (t.type === "income" ? t.amountCents : -t.amountCents), 0);
+
+  const data: OrgHealthData = { memberCount, eventCount, projectCount, balanceCents, pendingDecisions, activeInitiatives };
+  return <OrgHealthMetrics data={data} />;
+}
+
+async function TreasurerFinancialCharts() {
+  const db = getDb();
+  const rows = await db
+    .select({ type: transactions.type, amountCents: transactions.amountCents, occurredAt: transactions.occurredAt })
+    .from(transactions)
+    .where(isNull(transactions.deletedAt));
+
+  const byMonth = new Map<string, { incomeCents: number; expenseCents: number }>();
+  for (const r of rows) {
+    const month = r.occurredAt.toISOString().slice(0, 7);
+    const entry = byMonth.get(month) ?? { incomeCents: 0, expenseCents: 0 };
+    if (r.type === "income") entry.incomeCents += r.amountCents;
+    else entry.expenseCents += r.amountCents;
+    byMonth.set(month, entry);
+  }
+
+  const bars: MonthlyBar[] = Array.from(byMonth.entries()).map(([month, totals]) => ({ month, ...totals }));
+  return <FinancialCharts bars={bars} />;
+}
+
+async function CorporateAffairsGuestSpeakers() {
+  const db = getDb();
+  const rows = await db
+    .select({ id: guestSpeakers.id, name: guestSpeakers.name, topic: guestSpeakers.topic, contactEmail: guestSpeakers.contactEmail, status: guestSpeakers.status, notes: guestSpeakers.notes })
+    .from(guestSpeakers)
+    .where(isNull(guestSpeakers.deletedAt))
+    .orderBy(desc(guestSpeakers.createdAt));
+
+  return <GuestSpeakers speakers={rows as SpeakerItem[]} />;
+}
+
+async function CorporateAffairsCampaigns() {
+  const db = getDb();
+  const rows = await db
+    .select({ id: campaigns.id, title: campaigns.title, channel: campaigns.channel, status: campaigns.status, startDate: campaigns.startDate, notes: campaigns.notes })
+    .from(campaigns)
+    .where(isNull(campaigns.deletedAt))
+    .orderBy(desc(campaigns.createdAt));
+
+  const items: CampaignItem[] = rows.map((r) => ({ ...r, startDate: r.startDate ? r.startDate.toISOString() : null }));
+  return <MarketingCampaigns campaigns={items} />;
+}
+
+async function TrainingCoordinatorMentorship() {
+  const db = getDb();
+  const rows = await db
+    .select({ id: mentorships.id, mentorName: mentorships.mentorName, topic: mentorships.topic, status: mentorships.status, notes: mentorships.notes, menteeName: members.fullName })
+    .from(mentorships)
+    .innerJoin(members, eq(mentorships.menteeId, members.id))
+    .where(isNull(mentorships.deletedAt))
+    .orderBy(desc(mentorships.createdAt));
+
+  const memberOptions = await getMemberOptions();
+  return <Mentorship mentorships={rows as MentorshipItem[]} memberOptions={memberOptions} />;
+}
+
+async function TrainingCoordinatorAssignments() {
+  const db = getDb();
+  const rows = await db
+    .select({ id: trainingAssignments.id, title: trainingAssignments.title, description: trainingAssignments.description, topic: trainingAssignments.topic, dueDate: trainingAssignments.dueDate })
+    .from(trainingAssignments)
+    .where(isNull(trainingAssignments.deletedAt))
+    .orderBy(desc(trainingAssignments.createdAt));
+
+  const items: AssignmentItem[] = rows.map((r) => ({ ...r, dueDate: r.dueDate ? r.dueDate.toISOString() : null }));
+  return <Assignments assignments={items} />;
+}
+
+async function MembershipOfficerTeams() {
+  const db = getDb();
+  const teamRows = await db
+    .select({ id: teams.id, name: teams.name, description: teams.description, leadName: members.fullName })
+    .from(teams)
+    .leftJoin(members, eq(teams.leadId, members.id))
+    .where(isNull(teams.deletedAt));
+
+  const memberRows = await db
+    .select({ teamId: teamMembers.teamId, memberName: members.fullName })
+    .from(teamMembers)
+    .innerJoin(members, eq(teamMembers.memberId, members.id));
+
+  const namesByTeam = new Map<string, string[]>();
+  for (const r of memberRows) {
+    const list = namesByTeam.get(r.teamId) ?? [];
+    list.push(r.memberName);
+    namesByTeam.set(r.teamId, list);
+  }
+
+  const items: TeamItem[] = teamRows.map((t) => ({ ...t, memberNames: namesByTeam.get(t.id) ?? [] }));
+  const memberOptions = await getMemberOptions();
+  return <Teams teams={items} memberOptions={memberOptions} />;
+}
+
+async function MembershipOfficerVolunteers() {
+  const db = getDb();
+  const rows = await db
+    .select({ id: volunteerLogs.id, activity: volunteerLogs.activity, hours: volunteerLogs.hours, loggedDate: volunteerLogs.loggedDate, memberName: members.fullName })
+    .from(volunteerLogs)
+    .innerJoin(members, eq(volunteerLogs.memberId, members.id))
+    .where(isNull(volunteerLogs.deletedAt))
+    .orderBy(desc(volunteerLogs.loggedDate));
+
+  const items: VolunteerLogItem[] = rows.map((r) => ({ ...r, loggedDate: r.loggedDate.toISOString() }));
+  const memberOptions = await getMemberOptions();
+  return <Volunteers logs={items} memberOptions={memberOptions} />;
+}
+
+async function MembershipOfficerEngagementAnalytics() {
+  const db = getDb();
+  const [totalMembers, communityRows, totalRegs, allTasks] = await Promise.all([
+    db.select({ id: members.id }).from(members).where(isNull(members.deletedAt)).then((r) => r.length),
+    db.select({ communitySlug: memberCommunities.communitySlug }).from(memberCommunities),
+    db.select({ id: eventRegistrations.id }).from(eventRegistrations).then((r) => r.length),
+    db.select({ status: tasks.status }).from(tasks).where(isNull(tasks.deletedAt)),
+  ]);
+
+  const counts = new Map<string, number>();
+  for (const c of communityRows) counts.set(c.communitySlug, (counts.get(c.communitySlug) ?? 0) + 1);
+  const communityBreakdown = Array.from(counts.entries())
+    .map(([slug, memberCount]) => ({ name: COMMUNITIES.find((c) => c.slug === slug)?.name ?? slug, memberCount }))
+    .sort((a, b) => b.memberCount - a.memberCount);
+
+  const data: EngagementData = {
+    totalMembers,
+    communityBreakdown,
+    totalEventRegistrations: totalRegs,
+    totalTasksCompleted: allTasks.filter((t) => t.status === "done").length,
+    totalTasks: allTasks.length,
+  };
+  return <EngagementAnalytics data={data} />;
+}
+
 export default async function DashboardCatchAllPage({ params }: DashboardCatchAllProps) {
   const { slug } = await params;
 
@@ -716,6 +889,47 @@ export default async function DashboardCatchAllPage({ params }: DashboardCatchAl
     }
     if (execTitleParam === "corporate_affairs" && (sectionSlug === "event-manager" || sectionSlug === "social-calendar")) {
       return sectionSlug === "event-manager" ? <CorporateAffairsEventManager /> : <SharedCalendar />;
+    }
+
+    // --- This batch ---
+    if (execTitleParam === "chairperson" && sectionSlug === "committee-reports") {
+      return <SharedCommitteeActivity />;
+    }
+    if (execTitleParam === "chairperson" && sectionSlug === "meeting-approvals") {
+      return <ChairpersonDecisions />;
+    }
+    if (execTitleParam === "chairperson" && sectionSlug === "signature-queue") {
+      return <SharedDocuments category="Needs Signature" title="Signature Queue" showForm />;
+    }
+    if (execTitleParam === "chairperson" && sectionSlug === "org-health") {
+      return <ChairpersonOrgHealth />;
+    }
+    if (execTitleParam === "treasurer" && sectionSlug === "approval-workflow") {
+      return <SecretaryGeneralDecisionLog statusFilter="proposed" />;
+    }
+    if (execTitleParam === "treasurer" && sectionSlug === "financial-charts") {
+      return <TreasurerFinancialCharts />;
+    }
+    if (execTitleParam === "corporate_affairs" && sectionSlug === "guest-speakers") {
+      return <CorporateAffairsGuestSpeakers />;
+    }
+    if (execTitleParam === "corporate_affairs" && sectionSlug === "marketing-campaigns") {
+      return <CorporateAffairsCampaigns />;
+    }
+    if (execTitleParam === "training_coordinator" && sectionSlug === "mentorship") {
+      return <TrainingCoordinatorMentorship />;
+    }
+    if (execTitleParam === "training_coordinator" && sectionSlug === "assignments") {
+      return <TrainingCoordinatorAssignments />;
+    }
+    if (execTitleParam === "membership_officer" && sectionSlug === "teams") {
+      return <MembershipOfficerTeams />;
+    }
+    if (execTitleParam === "membership_officer" && sectionSlug === "volunteers") {
+      return <MembershipOfficerVolunteers />;
+    }
+    if (execTitleParam === "membership_officer" && sectionSlug === "engagement-analytics") {
+      return <MembershipOfficerEngagementAnalytics />;
     }
 
     const item = EXEC_NAV[execTitleParam].find((i) => i.slug === sectionSlug);
