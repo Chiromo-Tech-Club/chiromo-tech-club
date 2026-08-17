@@ -44,7 +44,8 @@ import { ResourceLibrary, type ResourceItem } from "@/features/dashboard/Resourc
 import { AnnouncementsBoard, type AnnouncementFullItem } from "@/features/dashboard/AnnouncementsBoard";
 import { TaskBoard, type TaskItem, type MemberOption } from "@/features/dashboard/TaskBoard";
 import { DocumentRepository, type DocumentItem } from "@/features/dashboard/DocumentRepository";
-import { ExecChat, type ChatMessageItem } from "@/features/dashboard/ExecChat";
+import { ExecChat } from "@/features/dashboard/ExecChat";
+import type { ChatMessageItem } from "@/actions/dashboard/chat";
 import { Calendar, type CalendarEntry } from "@/features/dashboard/Calendar";
 import { CommitteeActivityFeed, type ActivityEntry } from "@/features/dashboard/CommitteeActivityFeed";
 import { TransactionTypeTracker, type TransactionRow } from "@/features/dashboard/TransactionTypeTracker";
@@ -65,6 +66,7 @@ import { OrgHealthMetrics, type OrgHealthData } from "@/features/dashboard/OrgHe
 import { EngagementAnalytics, type EngagementData } from "@/features/dashboard/EngagementAnalytics";
 import { FinancialCharts, type MonthlyBar } from "@/features/dashboard/FinancialCharts";
 import { RiskTracker, type RiskItem } from "@/features/dashboard/RiskTracker";
+import { getCurrentMember } from "@/lib/supabase/get-current-member";
 
 interface DashboardCatchAllProps {
   params: Promise<{ slug: string[] }>;
@@ -305,15 +307,31 @@ async function SharedDocuments({
 
 async function SharedChat() {
   const db = getDb();
+  const currentMember = await getCurrentMember();
+
   const rows = await db
-    .select({ id: execMessages.id, body: execMessages.body, createdAt: execMessages.createdAt, authorName: members.fullName })
+    .select({
+      id: execMessages.id,
+      body: execMessages.body,
+      authorId: execMessages.authorId,
+      authorName: members.fullName,
+      authorTitle: members.execTitle,
+      authorAvatarUrl: members.avatarUrl,
+      createdAt: execMessages.createdAt,
+      editedAt: execMessages.editedAt,
+    })
     .from(execMessages)
     .innerJoin(members, eq(execMessages.authorId, members.id))
     .orderBy(execMessages.createdAt)
     .limit(200);
 
-  const items: ChatMessageItem[] = rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
-  return <ExecChat messages={items} />;
+  const items: ChatMessageItem[] = rows.map((r) => ({
+    ...r,
+    createdAt: r.createdAt.toISOString(),
+    editedAt: r.editedAt ? r.editedAt.toISOString() : null,
+  }));
+
+  return <ExecChat messages={items} currentUserId={currentMember?.id ?? ""} />;
 }
 
 async function SharedCalendar() {

@@ -297,6 +297,24 @@ export const execMessages = pgTable("exec_messages", {
     .references(() => members.id, { onDelete: "cascade" }),
   body: text("body").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  editedAt: timestamp("edited_at", { withTimezone: true }),
+});
+
+export const execMessagesRelations = relations(execMessages, ({ one }) => ({
+  author: one(members, { fields: [execMessages.authorId], references: [members.id] }),
+}));
+
+/**
+ * Executive Chat typing indicator — one row per member, upserted on every
+ * keystroke-debounce tick. A row is "stale" (ignore it) once updatedAt is
+ * older than a few seconds; no TTL/cron needed since getChatUpdates filters
+ * by time on read.
+ */
+export const execTyping = pgTable("exec_typing", {
+  memberId: uuid("member_id")
+    .primaryKey()
+    .references(() => members.id, { onDelete: "cascade" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 /** Treasurer — invoices owed to or by the club. */
