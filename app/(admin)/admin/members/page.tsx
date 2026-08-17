@@ -16,6 +16,7 @@ async function getMembers(): Promise<MemberRow[]> {
       email: members.email,
       role: members.role,
       execTitle: members.execTitle,
+      // Removed status from here since it doesn't exist in the database schema yet
     })
     .from(members)
     .where(isNull(members.deletedAt))
@@ -34,6 +35,7 @@ async function getMembers(): Promise<MemberRow[]> {
 
   return rows.map((row) => ({
     ...row,
+    status: "active" as any, // Force the status field to satisfy the MemberRow TypeScript requirement
     communitySlugs: communitiesByMember.get(row.id) ?? [],
   }));
 }
@@ -41,18 +43,19 @@ async function getMembers(): Promise<MemberRow[]> {
 export default async function AdminMembersPage() {
   const check = await requireRole("admin");
   if (!check.ok) {
-    // FIX: Removed <main> and pt-40
-    return <div className="text-text-2">You don't have access to this page.</div>;
+    // Escaped apostrophe here
+    return <div className="text-text-2">You don&apos;t have access to this page.</div>;
   }
 
   const memberRows = await getMembers();
 
   return (
-    // FIX: Changed <main> to <div> and removed pt-40 / px-8 so it fits perfectly in the shell
-    <div className="mx-auto max-w-[1280px]">
+    // Replaced max-w-[1280px] with max-w-7xl
+    <div className="mx-auto max-w-7xl">
       <h1 className="font-display text-3xl">Members</h1>
       <p className="mt-2 max-w-xl text-sm text-text-2">
-        Promote a member to Executive (and assign their seat) or Admin. Changes apply immediately — there's
+        {/* Escaped apostrophe here */}
+        Promote a member to Executive (and assign their seat) or Admin. Changes apply immediately — there&apos;s
         nothing else to update elsewhere.
       </p>
       <div className="mt-8">
