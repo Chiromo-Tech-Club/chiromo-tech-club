@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { ThemeContext, type Theme } from "@/context/theme-context";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import type { ComponentProps } from "react";
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+export function ThemeProvider({ children, ...props }: ComponentProps<typeof NextThemesProvider>) {
+  return (
+    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
+      {children}
+    </NextThemesProvider>
+  );
 }

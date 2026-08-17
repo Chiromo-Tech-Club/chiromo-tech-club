@@ -10,6 +10,7 @@ import { Button } from "@/components/alignui/button";
 import { HamburgerToggle } from "@/components/animations/HambugerToggle";
 import { cn } from "@/lib/utils/cn";
 import {UserMenu} from "@/components/dashboard/UserMenu";
+import { ThemeToggle } from "../theme-toggle";
 
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
@@ -31,6 +32,9 @@ export function MobileMenu() {
       >
         {/* Navigation Links */}
         <div className="flex flex-col gap-1">
+          <div className="flex justify-end pb-2">
+           <ThemeToggle />
+          </div>
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}

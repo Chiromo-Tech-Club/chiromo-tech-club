@@ -5,6 +5,7 @@ import { DashboardSidebar } from "./DashboardSidebar";
 import { HamburgerToggle } from "../animations/HambugerToggle";
 import type { ExecTitle } from "@/types/exec-title";
 import { UserMenu } from "./UserMenu";
+import { ThemeToggle } from "../theme-toggle";
 
 export interface ExecDashboardShellProps {
   execTitle: ExecTitle | null;
@@ -38,10 +39,13 @@ export function ExecDashboardShell({ execTitle, isAdmin, user, children }: ExecD
             <HamburgerToggle open={mobileOpen} onToggle={() => setMobileOpen((v) => !v)} className="-ml-2 md:hidden" />
             <span className="truncate font-display text-sm font-semibold text-ink">Executive Portal</span>
           </div>
-          <UserMenu
-            avatarUrl={user?.user_metadata?.avatar_url ?? null}
-            fullName={user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email ?? "Member"}
-          />
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <UserMenu
+              avatarUrl={user?.user_metadata?.avatar_url ?? null}
+              fullName={user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email ?? "Member"}
+            />
+          </div>
         </header>
 
         {/* This main tag is why pages shouldn't have their own <main> or pt-40 */}

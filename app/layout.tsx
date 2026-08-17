@@ -7,6 +7,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { Caveat } from "next/font/google";
 import {CommandPalette} from "@/components/navigation/CommandPalette";
 import {GlobalLoaderProvider} from "@/context/LoadingContext";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-cursive",
@@ -49,12 +50,14 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${plusJakartaSans.variable} ${caveat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <ThemeProvider>
         <GlobalLoaderProvider>
           {/* <ClerkProvider> */}
             {children}
             <CommandPalette />
           {/* </ClerkProvider> */}
         </GlobalLoaderProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

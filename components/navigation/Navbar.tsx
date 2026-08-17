@@ -13,6 +13,7 @@ import { MagneticButton } from "@/components/animations/MagneticButton";
 import { NavDropdown } from "@/components/navigation/NavDropdown";
 import { MobileMenu } from "@/components/navigation/MobileMenu";
 import { useCommandPaletteStore } from "@/store/command-palette-store";
+import { ThemeToggle } from "../theme-toggle";
 
 export function Navbar() {
   const openPalette = useCommandPaletteStore((s) => s.open);
@@ -74,7 +75,7 @@ export function Navbar() {
 
       {/* Actions (Far Right) */}
       <div className="flex items-center gap-3 sm:gap-4">
-        
+        <ThemeToggle/>
         {/* Command Palette Launcher Button */}
         <button
           type="button"

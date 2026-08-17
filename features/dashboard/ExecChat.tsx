@@ -147,7 +147,10 @@ export function ExecChat({
       </div>
       <p className="mb-4 text-xs text-muted">Shared with every exec and admin.</p>
 
-      <div ref={scrollRef} className="mb-2 flex max-h-[420px] flex-col gap-4 overflow-y-auto pr-1">
+      <div
+        ref={scrollRef}
+        className="chat-scroll mb-2 flex max-h-[420px] flex-col gap-4 overflow-y-auto pr-1"
+      >
         {groups.length === 0 ? (
           <p className="text-sm text-muted">No messages yet — say hello.</p>
         ) : (
@@ -158,22 +161,24 @@ export function ExecChat({
 
             return (
               <div key={gi} className={`flex gap-2.5 ${isOwn ? "flex-row-reverse" : "flex-row"}`}>
-                {/* Avatar — shown on BOTH sides now; flex-row-reverse above mirrors it to the right for your own messages */}
-                <div className="mt-5 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-green/10 text-xs font-semibold text-green">
-                  {first.authorAvatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={first.authorAvatarUrl} alt={first.authorName} className="h-full w-full object-cover" />
-                  ) : (
-                    initials(first.authorName)
-                  )}
-                </div>
+                {/* Avatar — only for other people; your own side stays clean */}
+                {!isOwn && (
+                  <div className="mt-5 flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-green/10 text-xs font-semibold text-green">
+                    {first.authorAvatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={first.authorAvatarUrl} alt={first.authorName} className="h-full w-full object-cover" />
+                    ) : (
+                      initials(first.authorName)
+                    )}
+                  </div>
+                )}
 
                 <div className={`flex max-w-[75%] flex-col gap-1 ${isOwn ? "items-end" : "items-start"}`}>
                   <div className={`flex items-baseline gap-2 px-1 ${isOwn ? "flex-row-reverse" : ""}`}>
                     <span className="text-xs font-semibold text-ink">
                       {isOwn ? "You" : first.authorName}
                     </span>
-                    {title && (
+                    {!isOwn && title && (
                       <span className="text-[10px] font-medium uppercase tracking-wide text-green">
                         {title}
                       </span>
