@@ -17,7 +17,7 @@ export async function subscribeToNewsletter(formData: FormData): Promise<ActionR
   try {
     // TODO: persist to a `newsletter_subscribers` table once that's added
     // to lib/drizzle/schema.ts — for now this only sends the confirmation.
-    await sendNewsletterConfirmation(parsed.data.email);
+    await sendNewsletterConfirmation(parsed.data.email, "Subscriber"); // <-- Added "Subscriber" as 2nd argument
     return { success: true };
   } catch (err) {
     console.error("subscribeToNewsletter failed:", err);
