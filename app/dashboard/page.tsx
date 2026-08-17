@@ -2,7 +2,8 @@ import { Users, CalendarCheck, FolderKanban, Megaphone as MegaphoneIcon } from "
 import { desc, gte, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/drizzle/client";
 import { members, events, projects, announcements } from "@/lib/drizzle/schema";
-import { getCurrentMember } from "@/lib/clerk/get-current-user";
+// import { getCurrentMember } from "@/lib/clerk/get-current-user"; // CLERK — kept for reference/rollback
+import { getCurrentMember } from "@/lib/supabase/get-current-member";
 import { WelcomeCard } from "@/features/dashboard/WelcomeCard";
 import { StatCard } from "@/features/dashboard/StatCard";
 import { UpcomingEventsWidget, type UpcomingEventItem } from "@/features/dashboard/UpcomingEventsWidget";

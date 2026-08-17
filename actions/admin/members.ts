@@ -1,11 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { getDb } from "@/lib/drizzle/client";
-import { members } from "@/lib/drizzle/schema";
-import { requireRole, setUserRole } from "@/lib/clerk/client";
+import { requireRole, setUserRole } from "@/lib/supabase/auth-helpers";
 import { ROLES } from "@/constants/roles";
 import { EXEC_TITLES } from "@/types/exec-title";
 import { ROUTES } from "@/constants/routes";
@@ -23,11 +20,10 @@ const updateRoleSchema = z
   });
 
 /**
- * Promotes/demotes a member. Updates the `members` row (the DB-side
- * source of truth used for display/queries) and Clerk's publicMetadata
- * (the source of truth `getCurrentRole()`/route protection actually read)
- * in the same action, so an admin never has to touch two dashboards or
- * risk the two falling out of sync.
+ * Promotes/demotes a member. `setUserRole()` writes role + execTitle
+ * straight to the `members` row — that table is the only source of
+ * truth now (Clerk's publicMetadata mirror is gone), so there's nothing
+ * left to keep in sync.
  */
 export async function updateMemberRole(input: z.infer<typeof updateRoleSchema>): Promise<ActionResult> {
   const check = await requireRole("admin");
@@ -41,13 +37,12 @@ export async function updateMemberRole(input: z.infer<typeof updateRoleSchema>):
   const { memberId, role, execTitle } = parsed.data;
   const resolvedExecTitle = role === "exec" ? execTitle : null;
 
-  const db = getDb();
   try {
-    const [row] = await db.select({ clerkUserId: members.clerkUserId }).from(members).where(eq(members.id, memberId)).limit(1);
-    if (!row) return { success: false, error: "Member not found." };
-
-    await db.update(members).set({ role, execTitle: resolvedExecTitle, updatedAt: new Date() }).where(eq(members.id, memberId));
-    await setUserRole(row.clerkUserId, role, resolvedExecTitle);
+    // setUserRole() (Supabase version) writes role + execTitle to the
+    // members row directly — no separate Clerk publicMetadata write and
+    // no clerkUserId lookup needed anymore, since members.id IS the auth
+    // user id already.
+    await setUserRole(memberId, role, resolvedExecTitle);
 
     revalidatePath(ROUTES.adminMembers);
     revalidatePath(ROUTES.dashboard);

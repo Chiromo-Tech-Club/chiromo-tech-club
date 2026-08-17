@@ -4,7 +4,9 @@ import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ChevronDown, Search, LayoutDashboard } from "lucide-react";
-import { useAuth, UserButton } from "@clerk/nextjs";
+// import { useAuth, UserButton } from "@clerk/nextjs"; // CLERK — kept for reference/rollback
+import { useSupabaseAuth } from "@/lib/supabase/use-auth";
+import { UserMenu } from "@/components/dashboard/UserMenu";
 import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/alignui/button";
 import { MagneticButton } from "@/components/animations/MagneticButton";
@@ -14,7 +16,8 @@ import { useCommandPaletteStore } from "@/store/command-palette-store";
 
 export function Navbar() {
   const openPalette = useCommandPaletteStore((s) => s.open);
-  const { isSignedIn } = useAuth();
+  // const { isSignedIn } = useAuth(); // CLERK — kept for reference/rollback
+  const { user, isSignedIn } = useSupabaseAuth();
 
   // Global Keyboard Listener: Cmd+K / Ctrl+K opens the modal
   useEffect(() => {
@@ -129,7 +132,7 @@ export function Navbar() {
           </div>
         )}
 
-        {/* Signed-in state — Dashboard shortcut + Clerk's account menu */}
+        {/* Signed-in state — Dashboard shortcut + account menu */}
         {isSignedIn && (
           <div className="hidden items-center gap-3 sm:flex">
             <Link
@@ -139,16 +142,28 @@ export function Navbar() {
               <LayoutDashboard size={15} strokeWidth={2.4} />
               Dashboard
             </Link>
-            
-            {/* Clerk UserButton with forced styling overrides */}
+
+            {/* ─────────────────────────────────────────────────────────
+                CLERK (commented out — kept for reference / rollback)
+               ───────────────────────────────────────────────────────── */}
+            {/*
             <UserButton 
               appearance={{
                 elements: {
                   avatarBox: "h-9 w-9 border border-line/50",
                   userButtonPopoverCard: "bg-white rounded-2xl border border-line/40 shadow-xl !clip-path-none !mask-none",
-                  userButtonPopoverFooter: "hidden", // Hides the orange dev badge
+                  userButtonPopoverFooter: "hidden",
                 }
               }}
+            />
+            */}
+            {/* ───────────────────────────────────────────────────────── */}
+
+            {/* Uses Google's profile data straight off the auth session —
+                no DB round trip needed just to show an avatar in the navbar. */}
+            <UserMenu
+              avatarUrl={user?.user_metadata?.avatar_url ?? null}
+              fullName={user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email ?? "Member"}
             />
           </div>
         )}

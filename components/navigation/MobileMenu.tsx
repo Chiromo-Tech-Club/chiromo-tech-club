@@ -3,16 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { LayoutDashboard } from "lucide-react";
-import { useAuth, UserButton } from "@clerk/nextjs";
+import {useSupabaseAuth} from "@/lib/supabase/use-auth";
 import { NAV_ITEMS } from "@/config/nav";
 import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/alignui/button";
 import { HamburgerToggle } from "@/components/animations/HambugerToggle";
 import { cn } from "@/lib/utils/cn";
+import {UserMenu} from "@/components/dashboard/UserMenu";
 
 export function MobileMenu() {
   const [open, setOpen] = useState(false);
-  const { isSignedIn } = useAuth();
+  const { user, isSignedIn } =useSupabaseAuth();
 
   return (
     <div className="md:hidden">
@@ -83,14 +84,10 @@ export function MobileMenu() {
             </Link>
 
             {/* Clerk UserButton with forced styling overrides */}
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: "h-10 w-10 border border-line/50",
-                  userButtonPopoverCard: "bg-white rounded-2xl border border-line/40 shadow-xl !clip-path-none !mask-none",
-                  userButtonPopoverFooter: "hidden", // Hides the orange dev badge
-                },
-              }}
+
+<UserMenu
+              avatarUrl={user?.user_metadata?.avatar_url ?? null}
+              fullName={user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email ?? "Member"}
             />
           </div>
         )}

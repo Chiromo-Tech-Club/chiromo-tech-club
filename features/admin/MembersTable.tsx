@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2 } from "lucide-react";
-import { updateMemberRole } from "@/actions/admin/members";
-import { ROLE_LABELS, ROLES } from "@/constants/roles";
-import { EXEC_TITLE_LABELS, EXEC_TITLES, type ExecTitle } from "@/types/exec-title";
+import { assignMemberRole } from "@/actions/admin/members";
+import { ROLES } from "@/constants/roles";
+import { EXEC_TITLES, EXEC_TITLE_LABELS, isExecTitle, type ExecTitle } from "@/types/exec-title";
+import { MEMBER_STATUS_LABELS } from "@/types/member-status";
 import type { Role } from "@/types/roles";
+import type { MemberStatus } from "@/types/member-status";
+import { Button } from "@/components/alignui/button";
 import { cn } from "@/lib/utils/cn";
 
 export interface MemberRow {
@@ -14,121 +16,109 @@ export interface MemberRow {
   email: string;
   role: Role;
   execTitle: ExecTitle | null;
-  communitySlugs: string[];
+  status: MemberStatus;
 }
 
-function MemberRowEditor({ member }: { member: MemberRow }) {
+function RoleRow({ member }: { member: MemberRow }) {
   const [role, setRole] = useState<Role>(member.role);
   const [execTitle, setExecTitle] = useState<ExecTitle | null>(member.execTitle);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const dirty = role !== member.role || execTitle !== member.execTitle;
 
-  function handleSave() {
-    setError(null);
-    setSaved(false);
+  function save() {
     startTransition(async () => {
-      const result = await updateMemberRole({
-        memberId: member.id,
-        role,
-        execTitle: role === "exec" ? execTitle : null,
-      });
+      const result = await assignMemberRole({ memberId: member.id, role, execTitle: role === "exec" ? execTitle : null });
       if (result.success) {
         setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
-      } else {
-        setError(result.error ?? "Something went wrong.");
+        setTimeout(() => setSaved(false), 1500);
       }
     });
   }
 
   return (
-    <tr className="border-b border-line last:border-0">
-      <td className="py-3.5 pr-4">
+    <tr className="border-b border-line">
+      <td className="py-3 pr-4">
         <div className="text-sm font-medium text-ink">{member.fullName}</div>
         <div className="text-xs text-muted">{member.email}</div>
       </td>
-      <td className="py-3.5 pr-4">
-        {member.communitySlugs.length === 0 ? (
-          <span className="text-xs text-muted">—</span>
-        ) : (
-          <span className="text-xs text-ink-2">{member.communitySlugs.length} joined</span>
-        )}
+      <td className="py-3 pr-4">
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+            member.status === "approved" && "bg-green/10 text-green",
+            member.status === "pending" && "bg-cream-2 text-ink-2",
+            member.status === "rejected" && "bg-pink/10 text-pink",
+          )}
+        >
+          {MEMBER_STATUS_LABELS[member.status]}
+        </span>
       </td>
-      <td className="py-3.5 pr-4">
+      <td className="py-3 pr-4">
         <select
           value={role}
-          onChange={(e) => {
-            const next = e.target.value as Role;
-            setRole(next);
-            if (next !== "exec") setExecTitle(null);
-          }}
+          onChange={(e) => setRole(e.target.value as Role)}
           className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm text-ink"
         >
           {ROLES.map((r) => (
             <option key={r} value={r}>
-              {ROLE_LABELS[r]}
+              {r}
             </option>
           ))}
         </select>
       </td>
-      <td className="py-3.5 pr-4">
-        <select
-          value={execTitle ?? ""}
-          disabled={role !== "exec"}
-          onChange={(e) => setExecTitle((e.target.value || null) as ExecTitle | null)}
-          className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm text-ink disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <option value="">Select seat…</option>
-          {EXEC_TITLES.map((t) => (
-            <option key={t} value={t}>
-              {EXEC_TITLE_LABELS[t]}
+      <td className="py-3 pr-4">
+        {role === "exec" ? (
+          <select
+            value={execTitle ?? ""}
+            onChange={(e) => setExecTitle(isExecTitle(e.target.value) ? e.target.value : null)}
+            className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm text-ink"
+          >
+            <option value="" disabled>
+              Select a title…
             </option>
-          ))}
-        </select>
+            {EXEC_TITLES.map((t) => (
+              <option key={t} value={t}>
+                {EXEC_TITLE_LABELS[t]}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-xs text-muted">—</span>
+        )}
       </td>
-      <td className="py-3.5 text-right">
-        <button
-          onClick={handleSave}
+      <td className="py-3 text-right">
+        <Button
+          variant="primary"
+          size="sm"
           disabled={!dirty || isPending || (role === "exec" && !execTitle)}
-          className={cn(
-            "rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-colors",
-            dirty && !isPending ? "bg-green text-white hover:bg-green/90" : "bg-cream-2 text-muted",
-          )}
+          onClick={save}
         >
-          {isPending ? "Saving…" : saved ? <CheckCircle2 size={14} className="inline" /> : "Save"}
-        </button>
-        {error && <div className="mt-1 text-[11px] text-red-600">{error}</div>}
+          {isPending ? "Saving…" : saved ? "Saved" : "Save"}
+        </Button>
       </td>
     </tr>
   );
 }
 
 export function MembersTable({ members }: { members: MemberRow[] }) {
-  if (members.length === 0) {
-    return <p className="text-sm text-text-2">No members have joined yet.</p>;
-  }
-
   return (
-    <div className="overflow-x-auto rounded-[var(--radius-card-sm)] border border-line bg-white">
-      <table className="w-full min-w-[720px] px-2 text-left">
-        <thead>
-          <tr className="border-b border-line text-xs font-semibold uppercase tracking-wide text-muted">
-            <th className="px-4 py-3 font-semibold">Member</th>
-            <th className="px-0 py-3 font-semibold">Communities</th>
-            <th className="px-0 py-3 font-semibold">Role</th>
-            <th className="px-0 py-3 font-semibold">Exec Seat</th>
-            <th className="px-4 py-3" />
-          </tr>
-        </thead>
-        <tbody className="px-4">
-          {members.map((m) => (
-            <MemberRowEditor key={m.id} member={m} />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <table className="w-full border-collapse text-left text-sm">
+      <thead>
+        <tr className="border-b border-line text-xs uppercase tracking-wide text-muted">
+          <th className="py-3 pr-4 font-medium">Member</th>
+          <th className="py-3 pr-4 font-medium">Status</th>
+          <th className="py-3 pr-4 font-medium">Role</th>
+          <th className="py-3 pr-4 font-medium">Exec Title</th>
+          <th className="py-3" />
+        </tr>
+      </thead>
+      <tbody>
+        {members.map((m) => (
+          <RoleRow key={m.id} member={m} />
+        ))}
+      </tbody>
+    </table>
   );
 }

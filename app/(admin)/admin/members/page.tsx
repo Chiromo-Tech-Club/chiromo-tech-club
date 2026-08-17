@@ -1,7 +1,7 @@
 import { isNull } from "drizzle-orm";
 import { getDb } from "@/lib/drizzle/client";
 import { members, memberCommunities } from "@/lib/drizzle/schema";
-import { requireRole } from "@/lib/clerk/client";
+import { requireRole } from "@/lib/supabase/auth-helpers";
 import { MembersTable, type MemberRow } from "@/features/admin/MembersTable";
 
 export const metadata = { title: "Admin — Members" };
@@ -41,21 +41,23 @@ async function getMembers(): Promise<MemberRow[]> {
 export default async function AdminMembersPage() {
   const check = await requireRole("admin");
   if (!check.ok) {
-    return <main className="px-8 pt-40 text-text-2">You don&apos;t have access to this page.</main>;
+    // FIX: Removed <main> and pt-40
+    return <div className="text-text-2">You don't have access to this page.</div>;
   }
 
   const memberRows = await getMembers();
 
   return (
-    <main className="mx-auto max-w-[1280px] px-8 pb-24 pt-40">
+    // FIX: Changed <main> to <div> and removed pt-40 / px-8 so it fits perfectly in the shell
+    <div className="mx-auto max-w-[1280px]">
       <h1 className="font-display text-3xl">Members</h1>
       <p className="mt-2 max-w-xl text-sm text-text-2">
-        Promote a member to Executive (and assign their seat) or Admin. Changes apply immediately — both here and
-        to their Clerk account, so there&apos;s nothing else to update elsewhere.
+        Promote a member to Executive (and assign their seat) or Admin. Changes apply immediately — there's
+        nothing else to update elsewhere.
       </p>
       <div className="mt-8">
         <MembersTable members={memberRows} />
       </div>
-    </main>
+    </div>
   );
 }

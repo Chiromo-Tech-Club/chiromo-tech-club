@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { getDb } from "../lib/drizzle/client";
 import { members, memberCommunities } from "../lib/drizzle/schema";
-import { auth } from "../lib/clerk/client";
+// ─────────────────────────────────────────────────────────────────────────
+// CLERK (commented out — kept for reference / rollback)
+// ─────────────────────────────────────────────────────────────────────────
+// import { auth } from "../lib/clerk/client";
+// ─────────────────────────────────────────────────────────────────────────
+import { getAuthUserId } from "../lib/supabase/auth-helpers";
 import { memberDraftSchema, type MemberDraftInput } from "../lib/validations/membership";
 import { sendNewsletterConfirmation } from "../services/email";
 import { ROUTES } from "../constants/routes";
@@ -22,7 +27,7 @@ export async function joinClub(input: MemberDraftInput): Promise<ActionResult> {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { userId } = await auth();
+  const userId = await getAuthUserId();
   if (!userId) {
     return { success: false, error: "You must be signed in to join." };
   }
@@ -31,17 +36,21 @@ export async function joinClub(input: MemberDraftInput): Promise<ActionResult> {
   const { fullName, email, communitySlugs, bio, githubHandle } = parsed.data;
 
   try {
+    // `members.id` IS the Supabase auth user id now (not an auto-generated
+    // uuid) — getCurrentMember()/getCurrentRole() look up by
+    // eq(members.id, authUserId), so this has to be set explicitly on
+    // insert or every later lookup for this user silently finds nothing.
     const [member] = await db
       .insert(members)
       .values({
-        clerkUserId: userId,
+        id: userId,
         fullName,
         email,
         bio: bio || null,
         githubHandle: githubHandle || null,
       })
       .onConflictDoUpdate({
-        target: members.clerkUserId,
+        target: members.id,
         set: { fullName, email, bio: bio || null, githubHandle: githubHandle || null, updatedAt: new Date() },
       })
       .returning();
@@ -51,7 +60,7 @@ export async function joinClub(input: MemberDraftInput): Promise<ActionResult> {
       .values(communitySlugs.map((slug) => ({ memberId: member.id, communitySlug: slug })))
       .onConflictDoNothing();
 
-    await sendNewsletterConfirmation(email).catch((err) => console.error("Newsletter confirmation failed:", err));
+    await sendNewsletterConfirmation(email, fullName).catch((err) => console.error("Newsletter confirmation failed:", err));
 
     revalidatePath(ROUTES.dashboard);
     return { success: true };
@@ -66,7 +75,7 @@ export async function updateMemberProfile(
   memberId: string,
   updates: Partial<Pick<MemberDraftInput, "fullName" | "bio" | "githubHandle">>,
 ): Promise<ActionResult> {
-  const { userId } = await auth();
+  const userId = await getAuthUserId();
   if (!userId) {
     return { success: false, error: "You must be signed in." };
   }
@@ -76,7 +85,7 @@ export async function updateMemberProfile(
     await db
       .update(members)
       .set({ ...updates, updatedAt: new Date() })
-      .where(eq(members.clerkUserId, userId));
+      .where(eq(members.id, userId));
 
     revalidatePath(ROUTES.dashboard);
     return { success: true };

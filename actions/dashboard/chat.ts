@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/lib/drizzle/client";
 import { execMessages } from "@/lib/drizzle/schema";
-import { requireRole } from "@/lib/clerk/client";
-import { getCurrentMember } from "@/lib/clerk/get-current-user";
+import { requireRole } from "@/lib/supabase/auth-helpers";
+import { getCurrentMember } from "@/lib/supabase/get-current-member";
 import type { ActionResult } from "@/actions/membership";
 
 const createSchema = z.object({ body: z.string().min(1).max(2000) });

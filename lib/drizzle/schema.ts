@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, text, timestamp, integer, boolean, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgSchema, pgTable, pgEnum, uuid, text, timestamp, integer, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { ROLES } from "@/constants/roles";
 import { EXEC_TITLES } from "@/types/exec-title";
@@ -14,6 +14,17 @@ import { EXEC_TITLES } from "@/types/exec-title";
  *   are soft-deleted, not hard-deleted, in normal operation.
  */
 
+// ─────────────────────────────────────────────────────────────────────────
+// NEW: minimal reference to Supabase's built-in auth.users table. We don't
+// own the `auth` schema — this just lets Drizzle know members.id points at
+// a real row there, so the FK constraint (and cascade delete) is enforced
+// at the database level, same as any other relation in this file.
+// ─────────────────────────────────────────────────────────────────────────
+const authSchema = pgSchema("auth");
+export const authUsers = authSchema.table("users", {
+  id: uuid("id").primaryKey(),
+});
+
 export const roleEnum = pgEnum("role", ROLES);
 export const execTitleEnum = pgEnum("exec_title", EXEC_TITLES);
 export const transactionTypeEnum = pgEnum("transaction_type", ["income", "expense"]);
@@ -26,12 +37,25 @@ export const grantStatusEnum = pgEnum("grant_status", ["draft", "submitted", "aw
 export const speakerStatusEnum = pgEnum("speaker_status", ["invited", "confirmed", "declined"]);
 export const campaignStatusEnum = pgEnum("campaign_status", ["planned", "active", "completed"]);
 export const mentorshipStatusEnum = pgEnum("mentorship_status", ["active", "completed"]);
+export const riskSeverityEnum = pgEnum("risk_severity", ["low", "medium", "high"]);
+export const riskStatusEnum = pgEnum("risk_status", ["open", "mitigated", "closed"]);
 
 export const members = pgTable(
   "members",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    clerkUserId: text("clerk_user_id").notNull(),
+    // ── CHANGED ──────────────────────────────────────────────────────
+    // Previously: id: uuid("id").primaryKey().defaultRandom() plus a
+    // separate clerkUserId text column (with its own unique index) that
+    // held Clerk's user id as the link back to the identity provider.
+    //
+    // Now: members.id directly IS auth.users.id. This is the standard
+    // Supabase "profile table" pattern — no separate identity-link column
+    // needed, and RLS policies can just compare against auth.uid().
+    id: uuid("id")
+      .primaryKey()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    // clerkUserId: text("clerk_user_id").notNull(),  ← removed, no longer needed
+    // ─────────────────────────────────────────────────────────────────
     fullName: text("full_name").notNull(),
     email: text("email").notNull(),
     role: roleEnum("role").notNull().default("visitor"),
@@ -45,7 +69,7 @@ export const members = pgTable(
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
-    uniqueIndex("members_clerk_user_id_idx").on(table.clerkUserId),
+    // clerkUserId unique index removed along with the column above
     uniqueIndex("members_email_idx").on(table.email),
   ],
 );
@@ -397,6 +421,21 @@ export const teamMembers = pgTable("team_members", {
 });
 
 /** Membership Officer — volunteer hours log. */
+export const risks = pgTable("risks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  severity: riskSeverityEnum("severity").notNull().default("medium"),
+  status: riskStatusEnum("status").notNull().default("open"),
+  mitigation: text("mitigation"),
+  addedById: uuid("added_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
 export const volunteerLogs = pgTable("volunteer_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
   memberId: uuid("member_id")

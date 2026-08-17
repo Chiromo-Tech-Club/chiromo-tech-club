@@ -5,8 +5,8 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/drizzle/client";
 import { tasks } from "@/lib/drizzle/schema";
-import { requireRole } from "@/lib/clerk/client";
-import { getCurrentMember } from "@/lib/clerk/get-current-user";
+import { requireRole } from "@/lib/supabase/auth-helpers";
+import { getCurrentMember } from "@/lib/supabase/get-current-member";
 import type { ActionResult } from "@/actions/membership";
 
 const createSchema = z.object({

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/lib/drizzle/client";
 import { volunteerLogs } from "@/lib/drizzle/schema";
-import { requireRole } from "@/lib/clerk/client";
+import { requireRole } from "@/lib/supabase/auth-helpers";
 import type { ActionResult } from "@/actions/membership";
 
 const createSchema = z.object({

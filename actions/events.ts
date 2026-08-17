@@ -4,14 +4,14 @@ import { revalidatePath } from "next/cache";
 import { eq, and } from "drizzle-orm";
 import { getDb } from "../lib/drizzle/client";
 import { events, eventRegistrations, members } from "../lib/drizzle/schema";
-import { auth } from "../lib/clerk/client";
+import { getAuthUserId } from "../lib/supabase/auth-helpers";
 import { sendEventReminder } from "../services/email";
 import { formatEventDate } from "../lib/utils/format-date";
 import { ROUTES } from "../constants/routes";
 import type { ActionResult } from "../actions/membership";
 
 export async function registerForEvent(eventSlug: string): Promise<ActionResult> {
-  const { userId } = await auth();
+  const userId = await getAuthUserId();
   if (!userId) {
     return { success: false, error: "Sign in to register for events." };
   }
@@ -21,7 +21,8 @@ export async function registerForEvent(eventSlug: string): Promise<ActionResult>
   const [event] = await db.select().from(events).where(eq(events.slug, eventSlug)).limit(1);
   if (!event) return { success: false, error: "Event not found." };
 
-  const [member] = await db.select().from(members).where(eq(members.clerkUserId, userId)).limit(1);
+  // members.id IS the Supabase auth user id now — a direct PK lookup.
+  const [member] = await db.select().from(members).where(eq(members.id, userId)).limit(1);
   if (!member) return { success: false, error: "Complete your club profile before registering." };
 
   try {

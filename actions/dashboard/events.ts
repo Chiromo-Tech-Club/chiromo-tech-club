@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/lib/drizzle/client";
 import { events } from "@/lib/drizzle/schema";
-import { canAccessExecSection } from "@/lib/clerk/client";
+import { canAccessExecSection } from "@/lib/supabase/auth-helpers";
 import { slugify } from "@/lib/utils/slugify";
 import type { ActionResult } from "@/actions/membership";
 

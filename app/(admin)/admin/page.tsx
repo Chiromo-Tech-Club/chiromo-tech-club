@@ -1,7 +1,7 @@
 import { isNull } from "drizzle-orm";
 import { getDb } from "@/lib/drizzle/client";
 import { projects } from "@/lib/drizzle/schema";
-import { requireRole } from "@/lib/clerk/client";
+import { requireRole } from "@/lib/supabase/auth-helpers";
 import { ProjectsTable } from "@/features/admin/ProjectsTable";
 
 export const metadata = { title: "Admin — Projects" };

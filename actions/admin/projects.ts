@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/drizzle/client";
 import { projects } from "@/lib/drizzle/schema";
-import { requireRole } from "@/lib/clerk/client";
+import { requireRole } from "@/lib/supabase/auth-helpers";
 import { slugify } from "@/lib/utils/slugify";
 import { ROUTES } from "@/constants/routes";
 import type { ActionResult } from "@/actions/membership";

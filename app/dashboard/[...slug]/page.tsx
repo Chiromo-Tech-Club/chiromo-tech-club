@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { desc, eq, isNull, gte, and } from "drizzle-orm";
 import { SHARED_NAV_ITEMS, EXEC_NAV, isSlugForExecTitle } from "@/config/dashboard-nav";
 import { isExecTitle, EXEC_TITLE_LABELS } from "@/types/exec-title";
-import { canAccessExecSection } from "@/lib/clerk/client";
+import { canAccessExecSection } from "@/lib/supabase/auth-helpers";
 import { getDb } from "@/lib/drizzle/client";
 import {
   decisions,
@@ -29,6 +29,7 @@ import {
   teamMembers,
   volunteerLogs,
   projects,
+  risks,
 } from "@/lib/drizzle/schema";
 import { COMMUNITIES } from "@/data/communities";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
@@ -63,6 +64,7 @@ import { Volunteers, type VolunteerLogItem } from "@/features/dashboard/Voluntee
 import { OrgHealthMetrics, type OrgHealthData } from "@/features/dashboard/OrgHealthMetrics";
 import { EngagementAnalytics, type EngagementData } from "@/features/dashboard/EngagementAnalytics";
 import { FinancialCharts, type MonthlyBar } from "@/features/dashboard/FinancialCharts";
+import { RiskTracker, type RiskItem } from "@/features/dashboard/RiskTracker";
 
 interface DashboardCatchAllProps {
   params: Promise<{ slug: string[] }>;
@@ -736,6 +738,17 @@ async function MembershipOfficerEngagementAnalytics() {
   return <EngagementAnalytics data={data} />;
 }
 
+async function ViceChairpersonRiskTracker() {
+  const db = getDb();
+  const rows = await db
+    .select({ id: risks.id, title: risks.title, description: risks.description, severity: risks.severity, status: risks.status, mitigation: risks.mitigation })
+    .from(risks)
+    .where(isNull(risks.deletedAt))
+    .orderBy(desc(risks.createdAt));
+
+  return <RiskTracker risks={rows as RiskItem[]} />;
+}
+
 export default async function DashboardCatchAllPage({ params }: DashboardCatchAllProps) {
   const { slug } = await params;
 
@@ -930,6 +943,32 @@ export default async function DashboardCatchAllPage({ params }: DashboardCatchAl
     }
     if (execTitleParam === "membership_officer" && sectionSlug === "engagement-analytics") {
       return <MembershipOfficerEngagementAnalytics />;
+    }
+
+    // --- Wrap-up batch: 1 new tool + 7 honest reuses (see chat notes for what's deliberately still deferred) ---
+    if (execTitleParam === "vice_chairperson" && sectionSlug === "risk-tracker") {
+      return <ViceChairpersonRiskTracker />;
+    }
+    if (execTitleParam === "chairperson" && sectionSlug === "strategic-analytics") {
+      return <MembershipOfficerEngagementAnalytics />;
+    }
+    if (execTitleParam === "chairperson" && sectionSlug === "executive-performance") {
+      return <ChairpersonOrgHealth />;
+    }
+    if (execTitleParam === "treasurer" && sectionSlug === "receipt-manager") {
+      return <SharedDocuments category="Receipts" title="Receipt Manager" showForm />;
+    }
+    if (execTitleParam === "corporate_affairs" && sectionSlug === "media-library") {
+      return <SharedDocuments category="Media" title="Media Library" showForm />;
+    }
+    if (execTitleParam === "corporate_affairs" && sectionSlug === "brand-assets") {
+      return <SharedDocuments category="Brand Assets" title="Brand Assets" showForm />;
+    }
+    if (execTitleParam === "membership_officer" && sectionSlug === "attendance") {
+      return <MembershipOfficerEventsParticipation />;
+    }
+    if (execTitleParam === "membership_officer" && sectionSlug === "feedback") {
+      return <SharedChat />;
     }
 
     const item = EXEC_NAV[execTitleParam].find((i) => i.slug === sectionSlug);

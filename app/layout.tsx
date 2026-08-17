@@ -1,4 +1,4 @@
-import {ClerkProvider} from "@clerk/nextjs";
+// import {ClerkProvider} from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter as FontSans } from "next/font/google";
 import { SITE_CONFIG } from "../config/site";
@@ -50,10 +50,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <GlobalLoaderProvider>
-          <ClerkProvider>
+          {/* <ClerkProvider> */}
             {children}
             <CommandPalette />
-          </ClerkProvider>
+          {/* </ClerkProvider> */}
         </GlobalLoaderProvider>
       </body>
     </html>
