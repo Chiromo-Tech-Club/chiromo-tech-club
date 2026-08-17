@@ -52,3 +52,34 @@ export async function updateMemberRole(input: z.infer<typeof updateRoleSchema>):
     return { success: false, error: "Could not update this member's role." };
   }
 }
+export async function approveMember(memberId: string): Promise<ActionResult> {
+  const check = await requireRole("admin");
+  if (!check.ok) return { success: false, error: "Admin access required." };
+
+  try {
+    // Upgrades the user to a standard member
+    await setUserRole(memberId, "member", null);
+
+    revalidatePath(ROUTES.adminMembers);
+    return { success: true };
+  } catch (err) {
+    console.error("approveMember failed:", err);
+    return { success: false, error: "Could not approve member." };
+  }
+}
+
+export async function rejectMember(memberId: string): Promise<ActionResult> {
+  const check = await requireRole("admin");
+  if (!check.ok) return { success: false, error: "Admin access required." };
+
+  try {
+    // Keeps or sets the user as a visitor
+    await setUserRole(memberId, "visitor", null);
+
+    revalidatePath(ROUTES.adminMembers);
+    return { success: true };
+  } catch (err) {
+    console.error("rejectMember failed:", err);
+    return { success: false, error: "Could not reject member." };
+  }
+}
