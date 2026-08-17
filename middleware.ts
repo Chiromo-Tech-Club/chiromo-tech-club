@@ -40,7 +40,9 @@ import { PROTECTED_PREFIXES, ROUTES } from "./constants/routes";
  * sessionClaims.metadata did, so that check needs a DB read, which is
  * cheaper to do once in a layout than on every matched request here.
  */
-function matchesPrefix(pathname: string, prefixes: string[]) {
+
+// FIX: Changed 'string[]' to 'readonly string[]' to match PROTECTED_PREFIXES
+function matchesPrefix(pathname: string, prefixes: readonly string[]) {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
