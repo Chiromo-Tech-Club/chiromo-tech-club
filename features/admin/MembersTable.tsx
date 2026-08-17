@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { assignMemberRole } from "@/actions/admin/members";
+import { updateMemberRole } from "@/actions/admin/members";
 import { ROLES } from "@/constants/roles";
 import { EXEC_TITLES, EXEC_TITLE_LABELS, isExecTitle, type ExecTitle } from "@/types/exec-title";
 import { MEMBER_STATUS_LABELS } from "@/types/member-status";
@@ -29,7 +29,7 @@ function RoleRow({ member }: { member: MemberRow }) {
 
   function save() {
     startTransition(async () => {
-      const result = await assignMemberRole({ memberId: member.id, role, execTitle: role === "exec" ? execTitle : null });
+      const result = await updateMemberRole({ memberId: member.id, role, execTitle: role === "exec" ? execTitle : null });
       if (result.success) {
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
