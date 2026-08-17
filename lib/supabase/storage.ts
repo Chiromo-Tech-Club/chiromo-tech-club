@@ -1,4 +1,4 @@
-import { getSupabaseServiceClient } from "@/lib/supabase/client";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { LIMITS } from "@/constants/limits";
 
 /**
