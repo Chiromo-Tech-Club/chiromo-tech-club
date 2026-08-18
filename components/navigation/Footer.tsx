@@ -33,7 +33,7 @@ const EXPLORE_LINKS = [
   { label: "About Us", href: `${ROUTES.home}#who` },
   { label: "Communities", href: ROUTES.communities },
   { label: "Our Impact", href: `${ROUTES.home}#impact` },
-  { label: "Get Involved", href: ROUTES.join },
+  { label: "Get Involved", href: ROUTES.signIn },
   { label: "Contact", href: "mailto:ctc.uonbi@gmail.com" },
 ];
 

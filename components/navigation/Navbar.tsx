@@ -67,7 +67,7 @@ export function Navbar() {
         <NavDropdown
           label="Get Involved"
           items={[
-            { label: "Join the Club", href: ROUTES.join },
+            { label: "Academy", href: ROUTES.academy },
             { label: "FAQ", href: `${ROUTES.home}#faq` },
           ]}
         />

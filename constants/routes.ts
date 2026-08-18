@@ -23,6 +23,9 @@ export const ROUTES = {
   adminMembers: "/admin/members",
   signIn: "/sign-in",
   signUp: "/sign-up",
+  academy: "/academy",
+  academyQuest: (slug: string) => `/academy/quests/${slug}`,
+  academyQuestStep: (questSlug: string, stepOrder: number) => `/academy/quests/${questSlug}/steps/${stepOrder}`,
 } as const;
 
 /** Route prefixes that require an authenticated session. */
