@@ -38,7 +38,7 @@ function NewDocumentForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">Link a Document</h3>
       <p className="mb-3 text-xs text-muted">
         Paste a link (Google Drive, Docs, Sheets, etc.) — file uploads aren&apos;t wired up yet.
@@ -89,7 +89,7 @@ export function DocumentRepository({
     <div className="flex flex-col gap-6">
       {showForm && <NewDocumentForm />}
 
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <FolderOpen size={16} className="text-green" />

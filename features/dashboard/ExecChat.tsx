@@ -140,7 +140,7 @@ export function ExecChat({
   }
 
   return (
-    <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <div className="mb-4 flex items-center gap-2">
         <MessageSquare size={16} className="text-green" />
         <h3 className="font-display text-sm font-bold text-ink">Executive Chat</h3>

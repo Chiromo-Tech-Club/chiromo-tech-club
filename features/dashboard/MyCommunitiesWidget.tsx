@@ -7,7 +7,7 @@ export function MyCommunitiesWidget({ communitySlugs }: { communitySlugs: string
   const joined = COMMUNITIES.filter((c) => communitySlugs.includes(c.slug));
 
   return (
-    <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <div className="mb-4 flex items-center gap-2">
         <Users2 size={16} className="text-green" />
         <h3 className="font-display text-sm font-bold text-ink">My Communities</h3>

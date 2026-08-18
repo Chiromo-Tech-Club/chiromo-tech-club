@@ -12,7 +12,7 @@ export interface CommunityProjectItem {
 
 export function CommunityProjectsWidget({ projects }: { projects: CommunityProjectItem[] }) {
   return (
-    <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <div className="mb-4 flex items-center gap-2">
         <FolderKanban size={16} className="text-green" />
         <h3 className="font-display text-sm font-bold text-ink">Projects in Your Communities</h3>

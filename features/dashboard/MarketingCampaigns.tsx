@@ -45,7 +45,7 @@ function NewCampaignForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">New Campaign</h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Input placeholder="Campaign title" value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -80,7 +80,7 @@ function CampaignCard({ campaign }: { campaign: CampaignItem }) {
             disabled={isPending || campaign.status === s.status}
             className={cn(
               "rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors",
-              campaign.status === s.status ? "bg-green text-white" : "bg-white text-ink-2 hover:bg-line/30",
+              campaign.status === s.status ? "bg-green text-white" : "bg-surface text-ink-2 hover:bg-line/30",
             )}
           >
             {s.label}
@@ -99,7 +99,7 @@ export function MarketingCampaigns({ campaigns }: { campaigns: CampaignItem[] })
         {STATUSES.map((col) => {
           const items = campaigns.filter((c) => c.status === col.status);
           return (
-            <div key={col.status} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-4">
+            <div key={col.status} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-4">
               <div className="mb-3 flex items-center gap-2">
                 <Megaphone size={14} className="text-green" />
                 <h4 className="text-xs font-bold uppercase tracking-wide text-ink-2">

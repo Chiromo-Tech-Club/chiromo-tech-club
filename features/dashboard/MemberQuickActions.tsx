@@ -10,7 +10,7 @@ const ACTIONS = [
 
 export function MemberQuickActions() {
   return (
-    <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">Quick Actions</h3>
       <div className="flex flex-col gap-2">
         {ACTIONS.map((action) => (

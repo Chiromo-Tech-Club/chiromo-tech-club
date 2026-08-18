@@ -59,7 +59,7 @@ function RoleRow({ member }: { member: MemberRow }) {
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as Role)}
-          className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm text-ink"
+          className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-ink"
         >
           {ROLES.map((r) => (
             <option key={r} value={r}>
@@ -73,7 +73,7 @@ function RoleRow({ member }: { member: MemberRow }) {
           <select
             value={execTitle ?? ""}
             onChange={(e) => setExecTitle(isExecTitle(e.target.value) ? e.target.value : null)}
-            className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-sm text-ink"
+            className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-sm text-ink"
           >
             <option value="" disabled>
               Select a title…

@@ -32,7 +32,7 @@ export function CTABand() {
           {status === "done" ? (
             <p className="text-sm font-semibold text-white">You&apos;re subscribed — welcome aboard.</p>
           ) : (
-            <form action={onSubmit} className="flex w-full max-w-[380px] overflow-hidden rounded-full bg-white p-1.5">
+            <form action={onSubmit} className="flex w-full max-w-[380px] overflow-hidden rounded-full bg-surface p-1.5">
               <input
                 type="email"
                 name="email"

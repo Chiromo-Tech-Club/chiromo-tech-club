@@ -57,7 +57,7 @@ function NewGrantForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">New Grant Application</h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Input placeholder="Funder / organization" value={funderName} onChange={(e) => setFunderName(e.target.value)} required />
@@ -69,7 +69,7 @@ function NewGrantForm() {
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         rows={2}
-        className="mt-3 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
+        className="mt-3 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
       />
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
       <Button type="submit" variant="primary" disabled={isPending} className="mt-3">
@@ -102,7 +102,7 @@ function GrantCard({ grant }: { grant: GrantItem }) {
             disabled={isPending || grant.status === s.status}
             className={cn(
               "rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors",
-              grant.status === s.status ? "bg-green text-white" : "bg-white text-ink-2 hover:bg-line/30",
+              grant.status === s.status ? "bg-green text-white" : "bg-surface text-ink-2 hover:bg-line/30",
             )}
           >
             {s.label}
@@ -122,7 +122,7 @@ export function GrantApplications({ grants }: { grants: GrantItem[] }) {
         {STATUSES.map((col) => {
           const items = grants.filter((g) => g.status === col.status);
           return (
-            <div key={col.status} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-4">
+            <div key={col.status} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-4">
               <div className="mb-3 flex items-center gap-2">
                 <Award size={14} className="text-green" />
                 <h4 className="text-xs font-bold uppercase tracking-wide text-ink-2">

@@ -78,7 +78,7 @@ export function AboutCollage() {
               className={`absolute z-10 transition-all duration-500 hover:z-30 hover:scale-110 ${item.className} ${item.rotate}`}
             >
               {/* Image Bubble Container */}
-              <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-white bg-white shadow-md ring-1 ring-line/50 transition-shadow hover:shadow-xl sm:border-4">
+              <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-white bg-surface shadow-md ring-1 ring-line/50 transition-shadow hover:shadow-xl sm:border-4">
                 <Image 
                   src={item.src} 
                   alt={item.alt} 
@@ -90,7 +90,7 @@ export function AboutCollage() {
 
               {/* Clean Micro Tech Pill Badge with Real Icon */}
               {item.badge && (
-                <div className={`absolute ${item.badgePosition} z-30 hidden items-center gap-1.5 whitespace-nowrap rounded-full border border-line/60 bg-white/95 px-2.5 py-1 text-[10px] font-bold text-slate-900 shadow-md backdrop-blur-md sm:flex md:text-xs`}>
+                <div className={`absolute ${item.badgePosition} z-30 hidden items-center gap-1.5 whitespace-nowrap rounded-full border border-line/60 bg-surface/95 px-2.5 py-1 text-[10px] font-bold text-ink shadow-md backdrop-blur-md sm:flex md:text-xs`}>
                   <BadgeIcon size={13} className="text-green" />
                   <span>{item.badge}</span>
                 </div>
@@ -103,7 +103,7 @@ export function AboutCollage() {
         <RevealOnScroll className="relative z-20 mx-auto max-w-[640px] rounded-3xl px-4 py-10 text-center sm:py-16">
           
           {/* Top Pill Badge */}
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-line/60 bg-white/90 px-4 py-1.5 text-xs font-semibold text-slate-800 shadow-sm backdrop-blur-md">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-line/60 bg-surface/90 px-4 py-1.5 text-xs font-semibold text-ink shadow-sm backdrop-blur-md">
             <Sparkles size={14} className="text-green" />
             <span>Chiromo Campus • 4IR & Innovation Hub</span>
           </div>

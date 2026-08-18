@@ -35,7 +35,7 @@ export function MemberDirectory({ members }: { members: DirectoryMember[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-display text-sm font-bold text-ink">Member Directory</h3>
           <span className="text-xs text-muted">{members.length} total</span>
@@ -51,7 +51,7 @@ export function MemberDirectory({ members }: { members: DirectoryMember[] }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-[var(--radius-card-sm)] border border-line bg-white">
+      <div className="overflow-x-auto rounded-[var(--radius-card-sm)] border border-line bg-surface">
         <table className="w-full min-w-[640px] text-left">
           <thead>
             <tr className="border-b border-line text-xs font-semibold uppercase tracking-wide text-muted">

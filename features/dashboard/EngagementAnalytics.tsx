@@ -20,21 +20,21 @@ export function EngagementAnalytics({ data }: { data: EngagementData }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+        <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted">Total Members</div>
           <div className="mt-2 font-display text-2xl font-bold text-ink">{data.totalMembers}</div>
         </div>
-        <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+        <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted">Event Registrations</div>
           <div className="mt-2 font-display text-2xl font-bold text-ink">{data.totalEventRegistrations}</div>
         </div>
-        <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+        <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted">Task Completion</div>
           <div className="mt-2 font-display text-2xl font-bold text-ink">{taskCompletionPct}%</div>
         </div>
       </div>
 
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <div className="mb-4 flex items-center gap-2">
           <BarChart3 size={16} className="text-green" />
           <h3 className="font-display text-sm font-bold text-ink">Members per Community</h3>

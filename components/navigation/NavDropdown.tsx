@@ -16,7 +16,7 @@ export function NavDropdown({ label, items }: NavDropdownProps) {
         {label}
         <ChevronDown size={14} />
       </PopoverTrigger>
-      <PopoverContent className="min-w-[180px] rounded-2xl border border-line bg-white p-2 shadow-[0_20px_50px_rgba(23,20,15,0.12)]">
+      <PopoverContent className="min-w-[180px] rounded-2xl border border-line bg-surface p-2 shadow-[0_20px_50px_rgba(23,20,15,0.12)]">
         {items.map((item) => (
           <Link
             key={item.href}

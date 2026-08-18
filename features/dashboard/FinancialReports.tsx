@@ -23,21 +23,21 @@ export function FinancialReports({ summaries }: { summaries: MonthlySummary[] })
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+        <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted">All-Time Income</div>
           <div className="mt-2 font-display text-2xl font-bold text-green">{formatMoney(grandIncome)}</div>
         </div>
-        <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+        <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted">All-Time Expenses</div>
           <div className="mt-2 font-display text-2xl font-bold text-red-600">{formatMoney(grandExpense)}</div>
         </div>
-        <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+        <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted">Net</div>
           <div className="mt-2 font-display text-2xl font-bold text-ink">{formatMoney(grandIncome - grandExpense)}</div>
         </div>
       </div>
 
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <div className="mb-4 flex items-center gap-2">
           <BarChart3 size={16} className="text-green" />
           <h3 className="font-display text-sm font-bold text-ink">Monthly Breakdown</h3>

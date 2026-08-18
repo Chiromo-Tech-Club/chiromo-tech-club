@@ -8,7 +8,7 @@ interface StatCardProps {
 
 export function StatCard({ label, value, icon: Icon }: StatCardProps) {
   return (
-    <div className="rounded-[var(--radius-card-sm)] border border-line bg-white px-6 py-5">
+    <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface px-6 py-5">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-wide text-muted">{label}</span>
         <Icon size={16} className="text-green" />

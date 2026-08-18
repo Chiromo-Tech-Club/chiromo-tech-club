@@ -63,14 +63,14 @@ export default function JoinPage() {
               href={ROUTES.home}
               className="group mb-6 inline-flex items-center gap-2.5 text-sm font-semibold text-ink-2 transition-colors hover:text-ink"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-white/80 text-ink transition-transform group-hover:-translate-x-1 lg:bg-cream">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface/80 text-ink transition-transform group-hover:-translate-x-1 lg:bg-cream">
                 <ArrowLeftIcon />
               </span>
               Back to Home
             </Link>
 
             {/* Badge */}
-            <div className="mb-4 flex items-center gap-2 self-start rounded-full border border-line bg-white/80 px-3.5 py-1 text-xs font-semibold text-ink shadow-sm backdrop-blur-md lg:bg-cream w-fit">
+            <div className="mb-4 flex items-center gap-2 self-start rounded-full border border-line bg-surface/80 px-3.5 py-1 text-xs font-semibold text-ink shadow-sm backdrop-blur-md lg:bg-cream w-fit">
               <span className="h-2 w-2 rounded-full bg-green animate-pulse" />
               Open Registration
             </div>
@@ -85,7 +85,7 @@ export default function JoinPage() {
             </p>
 
             {/* Form Box */}
-            <div className="mt-8 rounded-[2rem] border border-line/70 bg-white/95 p-6 shadow-xl backdrop-blur-md sm:p-8 lg:bg-white lg:shadow-sm">
+            <div className="mt-8 rounded-[2rem] border border-line/70 bg-surface/95 p-6 shadow-xl backdrop-blur-md sm:p-8 lg:bg-surface lg:shadow-sm">
               <JoinForm />
             </div>
 

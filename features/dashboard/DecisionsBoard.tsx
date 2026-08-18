@@ -43,7 +43,7 @@ function ProposeForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">Propose a Decision</h3>
       <div className="flex flex-col gap-3">
         <Input placeholder="Decision title" value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -53,7 +53,7 @@ function ProposeForm() {
           onChange={(e) => setDescription(e.target.value)}
           required
           rows={3}
-          className="w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
+          className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
         />
         {error && <p className="text-xs text-red-600">{error}</p>}
         <Button type="submit" variant="primary" disabled={isPending} className="self-start">
@@ -115,7 +115,7 @@ export function DecisionsBoard({ decisions }: { decisions: DecisionItem[] }) {
     <div className="flex flex-col gap-6">
       <ProposeForm />
 
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <div className="mb-4 flex items-center gap-2">
           <Clock size={16} className="text-green" />
           <h3 className="font-display text-sm font-bold text-ink">

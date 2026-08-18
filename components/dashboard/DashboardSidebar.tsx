@@ -112,7 +112,7 @@ export function DashboardSidebar({ execTitle, isAdmin, mobileOpen, onClose }: Da
       {/* Mobile drawer */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] transform overflow-y-auto bg-white p-6 shadow-xl transition-transform duration-300 ease-in-out md:hidden",
+          "fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] transform overflow-y-auto bg-surface p-6 shadow-xl transition-transform duration-300 ease-in-out md:hidden",
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -130,7 +130,7 @@ export function DashboardSidebar({ execTitle, isAdmin, mobileOpen, onClose }: Da
       </aside>
 
       {/* Desktop persistent sidebar */}
-      <aside className="hidden min-h-screen w-64 flex-none border-r border-line bg-white px-4 py-6 md:block">
+      <aside className="hidden min-h-screen w-64 flex-none border-r border-line bg-surface px-4 py-6 md:block">
         {sidebarContent}
       </aside>
     </>

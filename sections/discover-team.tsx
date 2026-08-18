@@ -25,9 +25,9 @@ const MARQUEE_TICKER = [...TICKER_WORDS, ...TICKER_WORDS];
  * with white text instead, which stays legible regardless of panel color.
  */
 const PANEL_THEMES = [
-  { panel: "bg-ink", name: "text-white", role: "text-white/60" },
-  { panel: "bg-green", name: "text-ink", role: "text-ink/60" },
-  { panel: "bg-white border border-line", name: "text-ink", role: "text-muted" },
+  { panel: "bg-navy-deep", name: "text-white", role: "text-white/60" },
+  { panel: "bg-green", name: "text-white", role: "text-white/60" },
+  { panel: "bg-surface border border-line", name: "text-ink", role: "text-muted" },
 ] as const;
 
 export function DiscoverTeam() {
@@ -37,7 +37,7 @@ export function DiscoverTeam() {
     <section id="team" className="overflow-hidden py-24">
       <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
         <RevealOnScroll className="mx-auto max-w-[580px] text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-line/60 bg-white/80 px-4 py-1.5 text-xs font-semibold text-ink-2 shadow-sm backdrop-blur-md">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-line/60 bg-cream-2/80 px-4 py-1.5 text-xs font-semibold text-ink-2 shadow-sm backdrop-blur-md">
             <Users size={14} className="text-green" />
             <span>Meet the Core Team</span>
             <span className="relative ml-0.5 flex h-2 w-2">
@@ -55,8 +55,8 @@ export function DiscoverTeam() {
         </RevealOnScroll>
       </div>
 
-      {/* Scrolling brand ticker */}
-      <div className="relative mt-10 overflow-hidden border-y border-line/60 bg-ink py-2.5">
+      {/* Scrolling brand ticker — navy-deep stays dark in both light and dark mode */}
+      <div className="relative mt-10 overflow-hidden border-y border-line/60 bg-navy-deep py-2.5">
         <div
           className={cn(
             "flex w-max items-center gap-8 px-4",
@@ -78,8 +78,8 @@ export function DiscoverTeam() {
 
       {/* Roster marquee */}
       <RevealOnScroll className="group/marquee relative mx-4 mt-10 overflow-hidden py-4 sm:mx-[30px]">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-[#F5F3ED] via-[#F5F3ED]/80 to-transparent sm:w-24" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-[#F5F3ED] via-[#F5F3ED]/80 to-transparent sm:w-24" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-cream via-cream/80 to-transparent sm:w-24" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-cream via-cream/80 to-transparent sm:w-24" />
 
         <div
           className={cn(
@@ -100,7 +100,7 @@ export function DiscoverTeam() {
               >
                 <div className="relative flex w-[210px] flex-col transition-transform duration-500 ease-out hover:-translate-y-1.5 sm:w-[230px]">
                   {/* ---- Photo: clean, no text on it ---- */}
-                  <div className="relative aspect-[4/5] w-full overflow-hidden rounded-t-[20px] border border-line/40 border-b-0 bg-white">
+                  <div className="relative aspect-[4/5] w-full overflow-hidden rounded-t-[20px] border border-line/40 border-b-0 bg-surface">
                     <Image
                       src={m.image}
                       alt={`${m.name}, ${m.role}`}
@@ -111,7 +111,7 @@ export function DiscoverTeam() {
 
                     {/* Nickname pull-quote — always on a dark chip, so the icon is white, not green-on-dark */}
                     {m.nickname && (
-                      <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full border border-white/25 bg-ink/70 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-md">
+                      <span className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-full border border-white/25 bg-navy-deep/70 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm backdrop-blur-md">
                         <Quote size={10} className="text-white/70" />
                         {m.nickname}
                       </span>
@@ -126,11 +126,11 @@ export function DiscoverTeam() {
                     </span>
 
                     {/* Hover wash + view-profile action */}
-                    <div className="absolute inset-0 flex items-center justify-center bg-ink/0 transition-colors duration-500 group-hover/card:bg-ink/35">
+                    <div className="absolute inset-0 flex items-center justify-center bg-navy-deep/0 transition-colors duration-500 group-hover/card:bg-navy-deep/35">
                       <Link
                         href={ROUTES.join}
                         aria-label={`View ${m.name}'s profile`}
-                        className="flex h-11 w-11 translate-y-2 items-center justify-center rounded-full bg-white text-ink opacity-0 shadow-lg transition-all duration-300 hover:bg-green hover:text-white group-hover/card:translate-y-0 group-hover/card:opacity-100"
+                        className="flex h-11 w-11 translate-y-2 items-center justify-center rounded-full bg-surface text-ink opacity-0 shadow-lg transition-all duration-300 hover:bg-green hover:text-white group-hover/card:translate-y-0 group-hover/card:opacity-100"
                       >
                         <ArrowUpRight size={18} />
                       </Link>

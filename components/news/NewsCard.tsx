@@ -15,7 +15,7 @@ export function NewsCard({ article }: { article: NewsArticle }) {
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-white transition-all duration-300 hover:-translate-y-1 hover:border-sky/40 hover:shadow-custom-md"
+      className="group relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-surface transition-all duration-300 hover:-translate-y-1 hover:border-sky/40 hover:shadow-custom-md"
     >
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-cream-2">
         <FadeImage

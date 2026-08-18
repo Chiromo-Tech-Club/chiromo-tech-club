@@ -272,7 +272,7 @@ export default async function CommunitiesPage() {
                 <Link key={c.slug} href={ROUTES.community(c.slug)} className="relative block">
                   <TiltCard
                     maxTilt={2}
-                    className="group relative flex flex-col items-start gap-5 overflow-hidden rounded-card border border-line bg-white p-4 transition-colors duration-300 hover:border-sky/40 hover:bg-cream-2 sm:flex-row sm:items-center"
+                    className="group relative flex flex-col items-start gap-5 overflow-hidden rounded-card border border-line bg-surface p-4 transition-colors duration-300 hover:border-sky/40 hover:bg-cream-2 sm:flex-row sm:items-center"
                   >
                     {/* oversized ghost numeral */}
                     <span className="pointer-events-none absolute -right-2 bottom-[-18px] select-none font-mono text-[92px] font-medium leading-none tracking-tighter text-ink opacity-[0.04] transition-opacity duration-300 group-hover:opacity-[0.08]">
@@ -325,7 +325,7 @@ export default async function CommunitiesPage() {
               {DISCUSSIONS.map((d) => (
                 <article
                   key={d.title}
-                  className="group relative flex flex-col overflow-hidden rounded-card border border-line bg-white p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-sky/30 hover:shadow-custom-md"
+                  className="group relative flex flex-col overflow-hidden rounded-card border border-line bg-surface p-6 transition-all duration-300 hover:-translate-y-0.5 hover:border-sky/30 hover:shadow-custom-md"
                 >
                   <span className="absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 bg-sky transition-transform duration-300 group-hover:scale-x-100" />
                   <div className="mb-3.5 flex items-center gap-2.5">
@@ -464,7 +464,7 @@ export default async function CommunitiesPage() {
               {PEOPLE.map((p) => (
                 <div
                   key={p.name}
-                  className="group flex items-center justify-between rounded-card-sm border border-line bg-white px-4 py-3 transition-colors duration-300 hover:border-sky/30 hover:bg-cream-2"
+                  className="group flex items-center justify-between rounded-card-sm border border-line bg-surface px-4 py-3 transition-colors duration-300 hover:border-sky/30 hover:bg-cream-2"
                 >
                   <div className="flex items-center gap-3">
                     <Avatar tone={p.tone} emoji={p.emoji} />

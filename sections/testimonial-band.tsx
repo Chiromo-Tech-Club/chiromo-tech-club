@@ -111,7 +111,7 @@ export function TestimonialBand() {
           </div>
 
           {/* Visual Card Side */}
-          <div className="overflow-hidden rounded-[var(--radius-card-sm)] bg-white shadow-2xl transition-all duration-300">
+          <div className="overflow-hidden rounded-[var(--radius-card-sm)] bg-surface shadow-2xl transition-all duration-300">
             <div className="relative aspect-[6/5] w-full">
               <Image 
                 src={active.image} 

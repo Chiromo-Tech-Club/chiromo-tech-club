@@ -61,7 +61,7 @@ function NewInvoiceForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">New Invoice</h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Input placeholder="Client / payer" value={clientName} onChange={(e) => setClientName(e.target.value)} required />
@@ -115,7 +115,7 @@ export function InvoiceTracker({ invoices }: { invoices: InvoiceItem[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
           <Receipt size={14} className="text-green" /> Outstanding
         </div>
@@ -124,7 +124,7 @@ export function InvoiceTracker({ invoices }: { invoices: InvoiceItem[] }) {
 
       <NewInvoiceForm />
 
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <h3 className="mb-2 font-display text-sm font-bold text-ink">All Invoices</h3>
         {invoices.length === 0 ? <p className="text-sm text-muted">No invoices yet.</p> : invoices.map((i) => <InvoiceRow key={i.id} invoice={i} />)}
       </div>

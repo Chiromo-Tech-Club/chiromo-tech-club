@@ -17,7 +17,7 @@ const STATUS_STYLES: Record<DecisionLogRow["status"], string> = {
 
 export function DecisionLog({ decisions }: { decisions: DecisionLogRow[] }) {
   return (
-    <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <div className="mb-1 flex items-center gap-2">
         <ScrollText size={16} className="text-green" />
         <h3 className="font-display text-sm font-bold text-ink">Decision Log</h3>

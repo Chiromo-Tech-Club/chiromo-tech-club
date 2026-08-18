@@ -50,7 +50,7 @@ export function NewsSlideshow({ articles }: { articles: NewsArticle[] }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-navy via-navy/10 to-transparent sm:bg-gradient-to-r sm:from-navy/10 sm:via-transparent sm:to-transparent" />
               </div>
               <div className="flex flex-1 flex-col justify-center gap-3 p-7">
-                <span className="w-fit rounded-pill bg-white/10 px-2.5 py-1 font-mono text-label-2xs uppercase tracking-wide text-sky">
+                <span className="w-fit rounded-pill bg-surface/10 px-2.5 py-1 font-mono text-label-2xs uppercase tracking-wide text-sky">
                   {SOURCE_LABEL[a.source]} · Just In
                 </span>
                 <h3 className="line-clamp-2 text-title-h6 leading-snug text-white">{a.title}</h3>
@@ -59,7 +59,7 @@ export function NewsSlideshow({ articles }: { articles: NewsArticle[] }) {
                   href={a.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group/cta mt-1 inline-flex w-fit items-center gap-1.5 rounded-pill bg-white px-4 py-2 text-label-sm font-semibold text-navy transition-transform duration-300 hover:-translate-y-0.5"
+                  className="group/cta mt-1 inline-flex w-fit items-center gap-1.5 rounded-pill bg-surface px-4 py-2 text-label-sm font-semibold text-navy transition-transform duration-300 hover:-translate-y-0.5"
                 >
                   Read on {SOURCE_LABEL[a.source]}
                   <svg viewBox="0 0 16 16" fill="none" strokeWidth="1.6" className="h-3.5 w-3.5 stroke-current transition-transform duration-300 group-hover/cta:translate-x-1">
@@ -77,14 +77,14 @@ export function NewsSlideshow({ articles }: { articles: NewsArticle[] }) {
           <button
             aria-label="Previous story"
             onClick={() => go(index - 1)}
-            className="absolute left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-navy shadow-custom-sm transition-transform hover:scale-105 sm:flex"
+            className="absolute left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-navy shadow-custom-sm transition-transform hover:scale-105 sm:flex"
           >
             ‹
           </button>
           <button
             aria-label="Next story"
             onClick={() => go(index + 1)}
-            className="absolute right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-navy shadow-custom-sm transition-transform hover:scale-105 sm:flex"
+            className="absolute right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-surface/90 text-navy shadow-custom-sm transition-transform hover:scale-105 sm:flex"
           >
             ›
           </button>

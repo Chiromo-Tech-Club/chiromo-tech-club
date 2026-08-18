@@ -411,6 +411,15 @@
   --color-line: rgba(15, 23, 42, 0.08);
   --color-line-strong: rgba(15, 23, 42, 0.16);
 
+  /* Semantic aliases — auto-flip via Chiromo token references */
+  --color-text: var(--color-ink);
+  --color-text-2: var(--color-ink-2);
+  --color-text-3: var(--color-muted);
+  --color-bg: var(--color-cream);
+  --color-bg-1: var(--color-cream-2);
+  --color-surface: #FFFFFF;
+  --color-accent: var(--color-green);
+
   /* Typography — Plus Jakarta Sans & JetBrains Mono */
   --font-display: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
   --font-body: "Plus Jakarta Sans", ui-sans-serif, sans-serif;
@@ -631,198 +640,6 @@
   
 }
 
-/* Dark Mode Support - Tailwind v4.1 CSS Variables */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg-strong-950: var(--color-neutral-0);
-    --color-bg-surface-800: var(--color-neutral-200);
-    --color-bg-sub-300: var(--color-neutral-600);
-    --color-bg-soft-200: var(--color-neutral-700);
-    --color-bg-weak-50: var(--color-neutral-800);
-    --color-bg-weak-25: var(--color-neutral-900);
-    --color-bg-white-0: var(--color-neutral-950);
-
-    --color-text-strong-950: var(--color-neutral-0);
-    --color-text-sub-600: var(--color-neutral-400);
-    --color-text-soft-400: var(--color-neutral-500);
-    --color-text-disabled-300: var(--color-neutral-600);
-    --color-text-white-0: var(--color-neutral-950);
-
-    --color-stroke-strong-950: var(--color-neutral-0);
-    --color-stroke-sub-300: var(--color-neutral-600);
-    --color-stroke-soft-200: var(--color-neutral-800);
-    --color-stroke-white-0: var(--color-neutral-950);
-
-    --color-faded-dark: var(--color-neutral-300);
-    --color-faded-base: var(--color-neutral-500);
-    --color-faded-light: var(--color-neutral-alpha-24);
-    --color-faded-lighter: var(--color-neutral-alpha-10);
-
-    --color-information-dark: var(--color-blue-400);
-    --color-information-base: var(--color-blue-500);
-    --color-information-light: var(--color-blue-alpha-24);
-    --color-information-lighter: var(--color-blue-alpha-16);
-
-    --color-warning-dark: var(--color-orange-400);
-    --color-warning-base: var(--color-orange-600);
-    --color-warning-light: var(--color-orange-alpha-24);
-    --color-warning-lighter: var(--color-orange-alpha-16);
-
-    --color-error-dark: var(--color-red-400);
-    --color-error-base: var(--color-red-600);
-    --color-error-light: var(--color-red-alpha-24);
-    --color-error-lighter: var(--color-red-alpha-16);
-
-    --color-success-dark: var(--color-green-400);
-    --color-success-base: var(--color-green-600);
-    --color-success-light: var(--color-green-alpha-16);
-    --color-success-lighter: var(--color-green-alpha-10);
-
-    --color-away-dark: var(--color-yellow-400);
-    --color-away-base: var(--color-yellow-600);
-    --color-away-light: var(--color-yellow-alpha-24);
-    --color-away-lighter: var(--color-yellow-alpha-16);
-
-    --color-feature-dark: var(--color-purple-400);
-    --color-feature-base: var(--color-purple-500);
-    --color-feature-light: var(--color-purple-alpha-24);
-    --color-feature-lighter: var(--color-purple-alpha-16);
-
-    --color-verified-dark: var(--color-sky-400);
-    --color-verified-base: var(--color-sky-600);
-    --color-verified-light: var(--color-sky-alpha-24);
-    --color-verified-lighter: var(--color-sky-alpha-16);
-
-    --color-highlighted-dark: var(--color-pink-400);
-    --color-highlighted-base: var(--color-pink-600);
-    --color-highlighted-light: var(--color-pink-alpha-24);
-    --color-highlighted-lighter: var(--color-pink-alpha-16);
-
-    --color-stable-dark: var(--color-teal-400);
-    --color-stable-base: var(--color-teal-600);
-    --color-stable-light: var(--color-teal-alpha-24);
-    --color-stable-lighter: var(--color-teal-alpha-16);
-
-    --color-primary-base: var(--color-blue-400);
-    --color-primary-light: var(--color-blue-alpha-16);
-    --color-primary-lighter: var(--color-blue-alpha-10);
-
-    --color-overlay-gray: oklch(32.11% 0.0000 0 / 56%);
-    --color-overlay-slate: oklch(30.90% 0.0210 265.90 / 56%);
-    --color-overlay: var(--color-overlay-gray);
-    
-    --color-social-apple: oklch(100.00% 0.0000 0);
-    --color-social-twitter: oklch(100.00% 0.0000 0);
-    --color-social-github: oklch(100.00% 0.0000 0);
-    --color-social-notion: oklch(100.00% 0.0000 0);
-    --color-social-tidal: oklch(100.00% 0.0000 0);
-    --color-social-amazon: oklch(100.00% 0.0000 0);
-    --color-social-zendesk: oklch(100.00% 0.0000 0);
-
-    
-    --shadow-complex-12: 0 80px 80px -40px rgba(23, 23, 23, 0),
-      0 48px 48px -24px rgba(23, 23, 23, 0);
-    
-    --shadow-colored-gray: 0 20px 20px -10px rgba(23, 23, 23, 0),
-      0 10px 10px -5px rgba(23, 23, 23, 0),
-      0 6px 6px -3px rgba(23, 23, 23, 0),
-      0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0),
-      0 0 0 1px rgba(23, 23, 23, 0);
-    
-    --shadow-complex: 0 20px 20px -10px rgba(23, 23, 23, 0),
-      0 10px 10px -5px rgba(23, 23, 23, 0),
-      0 6px 6px -3px rgba(23, 23, 23, 0),
-      0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0),
-      0 0 0 1px #262626,
-      0 -1px 1px -0.5px rgba(23, 23, 23, 0.04) inset;
-    
-    --shadow-complex-2: 0 10px 10px -5px rgba(23, 23, 23, 0),
-      0 6px 6px -3px rgba(23, 23, 23, 0),
-      0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0),
-      0 0 0 1px rgba(23, 23, 23, 0);
-    
-    --shadow-complex-4: 0 3px 3px -1.5px rgba(23, 23, 23, 0.04),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0.04),
-      0 0 0 1px rgba(23, 23, 23, 0.02);
-    
-    --shadow-complex-5: 0 0 6px 0 rgba(255, 255, 255, 0.24) inset,
-      0 40px 40px -20px rgba(23, 23, 23, 0.04),
-      0 10px 10px -5px rgba(23, 23, 23, 0.04),
-      0 6px 6px -3px rgba(23, 23, 23, 0),
-      0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0);
-    
-    --shadow-complex-6: 0 40px 40px -20px rgba(23, 23, 23, 0.04),
-      0 10px 10px -5px rgba(23, 23, 23, 0.04),
-      0 6px 6px -3px rgba(23, 23, 23, 0),
-      0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0),
-      0 0 6px 0 rgba(255, 255, 255, 0.24) inset;
-    
-    --shadow-complex-7: 0 1px 2px 0 rgba(14, 18, 27, 0.24),
-      0 0 0 1px #4d82ff;
-    
-    --shadow-complex-8: 0 20px 20px -10px rgba(23, 23, 23, 0.04),
-      0 10px 10px -5px rgba(23, 23, 23, 0.04),
-      0 6px 6px -3px rgba(23, 23, 23, 0.04),
-      0 3px 3px -1.5px rgba(23, 23, 23, 0.04),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0.04),
-      0 0 0 1px rgba(23, 23, 23, 0.08),
-      0 -1px 1px -0.5px rgba(23, 23, 23, 0.06) inset;
-    
-    --shadow-complex-9: 0 80px 40px -20px rgba(23, 23, 23, 0.04),
-      0 40px 40px -20px rgba(23, 23, 23, 0.04),
-      0 10px 10px -5px rgba(23, 23, 23, 0.04),
-      0 6px 6px -3px rgba(23, 23, 23, 0),
-      0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0),
-      0 0 6px 0 rgba(255, 255, 255, 0.04) inset;
-    
-    --shadow-complex-10: 0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0);
-    
-    --shadow-complex-11: 0 -1px 1px -0.5px rgba(23, 23, 23, 0.04) inset,
-      0 20px 20px -10px rgba(23, 23, 23, 0),
-      0 10px 10px -5px rgba(23, 23, 23, 0),
-      0 6px 6px -3px rgba(23, 23, 23, 0),
-      0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0),
-      0 0 0 1px rgba(23, 23, 23, 0);
-    
-    --shadow-custom-input: 0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0),
-      0 0 0 1px #262626;
-    
-    --shadow-custom-input-2: 0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0),
-      0 0 0 1px #262626;
-    
-    --shadow-custom-input-3: 0 3px 3px -1.5px rgba(23, 23, 23, 0.06),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0.06);
-    
-    --shadow-custom-input-4: 0 3px 3px -1.5px rgba(23, 23, 23, 0.04),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0.04),
-      0 0 0 1px rgba(23, 23, 23, 0);
-    
-    --shadow-custom-input-active: 0 6px 6px -3px rgba(23, 23, 23, 0.02),
-      0 3px 3px -1.5px rgba(23, 23, 23, 0.04),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0.04),
-      0 0 0 1.4px #335cff;
-    
-    --shadow-gray-shadow: 0 0 0 1px #262626;
-    
-    --shadow-gray-shadow-4: 0 6px 6px -3px rgba(23, 23, 23, 0),
-      0 3px 3px -1.5px rgba(23, 23, 23, 0),
-      0 1px 1px -0.5px rgba(23, 23, 23, 0),
-      0 0 0 1px #262626,
-      0 -1px 1px -0.5px rgba(23, 23, 23, 0) inset;
-    
-  }
-}
-
 /* Class-based Dark Mode Support */
 .dark {
   --color-bg-strong-950: var(--color-neutral-0);
@@ -1010,26 +827,18 @@
     0 1px 1px -0.5px rgba(23, 23, 23, 0),
     0 0 0 1px #262626,
     0 -1px 1px -0.5px rgba(23, 23, 23, 0) inset;
-      /* Chiromo Tech Club Theme — dark mode */
-  --color-cream: #0B1120;        /* page background */
-  --color-cream-2: #111827;      /* card/surface background */
-  --color-white: #1E293B;        /* raised surfaces that were literal white */
+  
+  /* Chiromo Tech Club Theme — dark mode (backgrounds/text swap, same accent palette) */
+  --color-cream: #0B1324;
+  --color-cream-2: #121E36;
+  --color-surface: #1B2A4A;
 
-  --color-ink: #F1F5F9;          /* primary text */
-  --color-ink-2: #CBD5E1;        /* secondary text */
-  --color-muted: #94A3B8;        /* muted text */
-
-  --color-navy: #3B5BDB;         /* brighter than light-mode navy so it reads on dark bg */
-  --color-navy-dark: #2F4BC0;
-  --color-navy-deep: #24399B;
-
-  --color-sky: #60A5FA;
-  --color-sky-dark: #3B82F6;
-  --color-sky-deep: #2563EB;
+  --color-ink: #F8FAFC;
+  --color-ink-2: #CBD5E1;
+  --color-muted: #94A3B8;
 
   --color-line: rgba(255, 255, 255, 0.08);
   --color-line-strong: rgba(255, 255, 255, 0.16);
-  
 }
 
 /* Keyframe Animations - AlignUI System */
@@ -1227,7 +1036,7 @@ body {
 }
 .chat-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #d4d4d4 transparent;
+  scrollbar-color: var(--color-muted) transparent;
 }
 
 .chat-scroll::-webkit-scrollbar {
@@ -1239,10 +1048,10 @@ body {
 }
 
 .chat-scroll::-webkit-scrollbar-thumb {
-  background-color: #d4d4d4;
+  background-color: var(--color-muted);
   border-radius: 9999px;
 }
 
 .chat-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: #bcbcbc;
+  background-color: var(--color-ink-2);
 }

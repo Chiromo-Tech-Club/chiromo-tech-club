@@ -38,7 +38,7 @@ export function Navbar() {
       
       {/* Brand */}
       <Link href={ROUTES.home} className="group flex items-center gap-3 font-display text-lg font-extrabold tracking-tight">
-        <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-line/30 bg-white shadow-inner transition-transform duration-500 group-hover:rotate-12 group-hover:scale-105 sm:h-14 sm:w-14">
+        <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-line/30 bg-surface shadow-inner transition-transform duration-500 group-hover:rotate-12 group-hover:scale-105 sm:h-14 sm:w-14">
           <Image 
             src="/images/image.svg" 
             alt="ctc_uon logo" 
@@ -81,7 +81,7 @@ export function Navbar() {
           type="button"
           onClick={openPalette}
           aria-label="Open Command Palette Search"
-          className="group hidden items-center gap-3 rounded-full border border-line/60 bg-white/70 px-4 py-2 text-xs font-medium text-ink-2 shadow-sm backdrop-blur-md transition-all hover:border-ink/30 hover:bg-white hover:text-ink hover:shadow-md md:flex lg:w-60"
+          className="group hidden items-center gap-3 rounded-full border border-line/60 bg-surface/70 px-4 py-2 text-xs font-medium text-ink-2 shadow-sm backdrop-blur-md transition-all hover:border-ink/30 hover:bg-surface hover:text-ink hover:shadow-md md:flex lg:w-60"
         >
           <Search size={15} strokeWidth={2.2} className="text-ink-2 transition-colors group-hover:text-ink" />
           <span className="flex-1 text-left font-sans text-xs text-ink-2/80 group-hover:text-ink">
@@ -108,7 +108,7 @@ export function Navbar() {
 
               {/* Dropdown Panel */}
               <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-40 pointer-events-none translate-y-2 opacity-0 transition-all duration-300 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
-                <div className="flex flex-col gap-1 rounded-2xl border border-line/40 bg-white/95 p-1.5 shadow-xl backdrop-blur-xl">
+                <div className="flex flex-col gap-1 rounded-2xl border border-line/40 bg-surface/95 p-1.5 shadow-xl backdrop-blur-xl">
                   <Link
                     href="/sign-in"
                     className="rounded-xl px-4 py-2.5 text-sm font-bold text-ink/80 transition-all hover:bg-cream hover:text-ink hover:translate-x-1"
@@ -152,7 +152,7 @@ export function Navbar() {
               appearance={{
                 elements: {
                   avatarBox: "h-9 w-9 border border-line/50",
-                  userButtonPopoverCard: "bg-white rounded-2xl border border-line/40 shadow-xl !clip-path-none !mask-none",
+                  userButtonPopoverCard: "bg-surface rounded-2xl border border-line/40 shadow-xl !clip-path-none !mask-none",
                   userButtonPopoverFooter: "hidden",
                 }
               }}

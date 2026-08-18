@@ -26,7 +26,7 @@ export function OrgHealthMetrics({ data }: { data: OrgHealthData }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {cards.map((c) => (
-        <div key={c.label} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+        <div key={c.label} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
             <c.icon size={14} className="text-green" /> {c.label}
           </div>

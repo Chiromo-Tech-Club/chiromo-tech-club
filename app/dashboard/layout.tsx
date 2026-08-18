@@ -37,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     return (
       <div className="min-h-screen bg-cream">
-        <header className="flex items-center justify-between gap-3 border-b border-line bg-white px-4 py-3 sm:px-6 md:px-8 md:py-4">
+        <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 sm:px-6 md:px-8 md:py-4">
           <Link href="/" className="flex min-w-0 items-center gap-2">
             <span className="truncate font-display text-sm font-semibold text-ink">Member Dashboard</span>
           </Link>

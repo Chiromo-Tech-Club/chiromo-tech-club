@@ -2,7 +2,7 @@ import { ShieldAlert } from "lucide-react";
 
 export function AccessDenied() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[var(--radius-card-sm)] border border-line bg-white px-8 py-20 text-center">
+    <div className="flex flex-col items-center justify-center rounded-[var(--radius-card-sm)] border border-line bg-surface px-8 py-20 text-center">
       <span className="flex h-12 w-12 items-center justify-center rounded-full bg-pink/10 text-pink">
         <ShieldAlert size={20} />
       </span>

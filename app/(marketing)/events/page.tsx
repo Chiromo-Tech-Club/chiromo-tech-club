@@ -179,7 +179,7 @@ function EventRow({ event }: { event: EventListItem }) {
   return (
     <Link
       href={ROUTES.event(event.slug)}
-      className="group flex flex-col gap-4 rounded-card border border-line bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-sky/40 hover:shadow-custom-md sm:flex-row sm:items-center sm:gap-5 sm:p-5"
+      className="group flex flex-col gap-4 rounded-card border border-line bg-surface p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-sky/40 hover:shadow-custom-md sm:flex-row sm:items-center sm:gap-5 sm:p-5"
     >
       <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-card-sm sm:h-20 sm:w-28">
         <FadeImage src={event.coverImage} priority={false} />
@@ -230,7 +230,7 @@ function ScopeTabs({ active, category }: { active: Scope; category: string }) {
     { key: "past", label: "Past" },
   ];
   return (
-    <div className="inline-flex items-center gap-1 rounded-pill border border-line bg-white p-1">
+    <div className="inline-flex items-center gap-1 rounded-pill border border-line bg-surface p-1">
       {tabs.map((t) => (
         <Link
           key={t.key}
@@ -441,7 +441,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
             </div>
             <Link
               href={ROUTES.event(featured.slug)}
-              className="group/cta inline-flex shrink-0 items-center gap-1.5 self-start rounded-pill bg-white px-5 py-2.5 text-label-sm font-semibold text-navy transition-transform duration-300 hover:-translate-y-0.5 sm:self-auto"
+              className="group/cta inline-flex shrink-0 items-center gap-1.5 self-start rounded-pill bg-surface px-5 py-2.5 text-label-sm font-semibold text-navy transition-transform duration-300 hover:-translate-y-0.5 sm:self-auto"
             >
               RSVP
               <svg viewBox="0 0 16 16" fill="none" strokeWidth="1.6" className="h-3.5 w-3.5 stroke-current transition-transform duration-300 group-hover/cta:translate-x-1">

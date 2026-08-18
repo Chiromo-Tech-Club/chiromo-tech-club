@@ -57,14 +57,14 @@ function NewTaskForm({ memberOptions }: { memberOptions: MemberOption[] }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">New Task</h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr_1fr]">
         <Input placeholder="Task title" value={title} onChange={(e) => setTitle(e.target.value)} required />
         <select
           value={assigneeId}
           onChange={(e) => setAssigneeId(e.target.value)}
-          className="rounded-full border border-line bg-white px-4 py-2.5 text-sm text-ink"
+          className="rounded-full border border-line bg-surface px-4 py-2.5 text-sm text-ink"
         >
           <option value="">Unassigned</option>
           {memberOptions.map((m) => (
@@ -80,7 +80,7 @@ function NewTaskForm({ memberOptions }: { memberOptions: MemberOption[] }) {
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         rows={2}
-        className="mt-3 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
+        className="mt-3 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
       />
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
       <Button type="submit" variant="primary" disabled={isPending} className="mt-3">
@@ -115,7 +115,7 @@ function TaskCard({ task }: { task: TaskItem }) {
             disabled={isPending || task.status === col.status}
             className={cn(
               "rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors",
-              task.status === col.status ? "bg-green text-white" : "bg-white text-ink-2 hover:bg-line/30",
+              task.status === col.status ? "bg-green text-white" : "bg-surface text-ink-2 hover:bg-line/30",
             )}
           >
             {col.label}
@@ -135,7 +135,7 @@ export function TaskBoard({ tasks, memberOptions }: { tasks: TaskItem[]; memberO
         {COLUMNS.map((col) => {
           const items = tasks.filter((t) => t.status === col.status);
           return (
-            <div key={col.status} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-4">
+            <div key={col.status} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-4">
               <div className="mb-3 flex items-center gap-2">
                 <ListTodo size={14} className="text-green" />
                 <h4 className="text-xs font-bold uppercase tracking-wide text-ink-2">

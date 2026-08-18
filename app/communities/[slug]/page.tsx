@@ -123,7 +123,7 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
               <TiltCard
                 key={p.slug}
                 maxTilt={3}
-                className="rounded-card-sm border border-line bg-white p-6 transition-colors duration-300 hover:border-sky/40 hover:bg-cream-2"
+                className="rounded-card-sm border border-line bg-surface p-6 transition-colors duration-300 hover:border-sky/40 hover:bg-cream-2"
               >
                 <div className="mb-2.5 flex flex-wrap gap-1.5">
                   {p.tags.map((tag) => (

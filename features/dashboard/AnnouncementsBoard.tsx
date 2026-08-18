@@ -35,7 +35,7 @@ function NewAnnouncementForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">Post an Announcement</h3>
       <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
       <textarea
@@ -44,7 +44,7 @@ function NewAnnouncementForm() {
         onChange={(e) => setBody(e.target.value)}
         required
         rows={3}
-        className="mt-3 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
+        className="mt-3 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
       />
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
       <Button type="submit" variant="primary" disabled={isPending} className="mt-3">
@@ -59,7 +59,7 @@ export function AnnouncementsBoard({ announcements }: { announcements: Announcem
     <div className="flex flex-col gap-6">
       <NewAnnouncementForm />
 
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <div className="mb-4 flex items-center gap-2">
           <Megaphone size={16} className="text-green" />
           <h3 className="font-display text-sm font-bold text-ink">All Announcements</h3>

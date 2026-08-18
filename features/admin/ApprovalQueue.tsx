@@ -32,7 +32,7 @@ export function ApprovalQueue({ pendingMembers }: { pendingMembers: PendingMembe
 
   if (visible.length === 0) {
     return (
-      <div className="rounded-[var(--radius-card-sm)] border border-dashed border-line-strong bg-white px-8 py-16 text-center text-sm text-muted">
+      <div className="rounded-[var(--radius-card-sm)] border border-dashed border-line-strong bg-surface px-8 py-16 text-center text-sm text-muted">
         No pending registrations — you&apos;re all caught up.
       </div>
     );
@@ -41,7 +41,7 @@ export function ApprovalQueue({ pendingMembers }: { pendingMembers: PendingMembe
   return (
     <div className="flex flex-col gap-3">
       {visible.map((m) => (
-        <div key={m.id} className="flex items-center justify-between rounded-[var(--radius-card-sm)] border border-line bg-white px-5 py-4">
+        <div key={m.id} className="flex items-center justify-between rounded-[var(--radius-card-sm)] border border-line bg-surface px-5 py-4">
           <div>
             <div className="text-sm font-medium text-ink">{m.fullName}</div>
             <div className="text-xs text-muted">

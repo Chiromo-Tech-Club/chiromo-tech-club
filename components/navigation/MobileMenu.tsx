@@ -54,14 +54,14 @@ export function MobileMenu() {
               <Link
                 href="/sign-in"
                 onClick={() => setOpen(false)}
-                className="flex items-center justify-center rounded-xl border border-line bg-white/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-white"
+                className="flex items-center justify-center rounded-xl border border-line bg-surface/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-surface"
               >
                 Login
               </Link>
               <Link
                 href="/sign-up"
                 onClick={() => setOpen(false)}
-                className="flex items-center justify-center rounded-xl border border-line bg-white/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-white"
+                className="flex items-center justify-center rounded-xl border border-line bg-surface/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-surface"
               >
                 Register
               </Link>
@@ -81,7 +81,7 @@ export function MobileMenu() {
             <Link
               href={ROUTES.dashboard}
               onClick={() => setOpen(false)}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line bg-white/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-white"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line bg-surface/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-surface"
             >
               <LayoutDashboard size={16} strokeWidth={2.4} />
               Dashboard

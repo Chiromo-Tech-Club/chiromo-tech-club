@@ -57,7 +57,7 @@ export function TransactionTypeTracker({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
           {isIncome ? <TrendingUp size={14} className="text-green" /> : <TrendingDown size={14} className="text-red-500" />}
           Total {isIncome ? "Income" : "Expenses"}
@@ -67,7 +67,7 @@ export function TransactionTypeTracker({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <h3 className="mb-4 font-display text-sm font-bold text-ink">Record {isIncome ? "Income" : "an Expense"}</h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} required />
@@ -80,7 +80,7 @@ export function TransactionTypeTracker({
         </Button>
       </form>
 
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <h3 className="mb-4 font-display text-sm font-bold text-ink">{isIncome ? "Income" : "Expense"} Entries</h3>
         {rows.length === 0 ? (
           <p className="text-sm text-muted">Nothing recorded yet.</p>

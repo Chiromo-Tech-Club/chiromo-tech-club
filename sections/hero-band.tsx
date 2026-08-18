@@ -60,7 +60,7 @@ export function HeroBand() {
   }, [reduced]);
 
   return (
-    <header className="relative overflow-hidden bg-white px-6 pb-20 pt-12 md:px-12 md:pt-20">
+    <header className="relative overflow-hidden bg-cream px-6 pb-20 pt-12 md:px-12 md:pt-20">
       {/* Decorative floating doodle (top left) */}
       <div ref={doodleWrapperRef} className="absolute left-[5%] top-[12%] hidden lg:block opacity-70">
         <svg className="w-16 text-pink" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
@@ -153,7 +153,7 @@ export function HeroBand() {
                 >
                   <Link href={ROUTES.join} className="flex items-center gap-3">
                     <span>Join the Club</span>
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-pink transition-transform duration-300 group-hover:rotate-45">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface text-pink transition-transform duration-300 group-hover:rotate-45">
                       <ArrowUpRight size={18} strokeWidth={3} />
                     </span>
                   </Link>
@@ -172,7 +172,7 @@ export function HeroBand() {
               }}
               className={cn(
                 "flex flex-col justify-between rounded-[28px] p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md",
-                p.highlighted ? "bg-pink text-white shadow-[0_16px_40px_-10px_var(--color-pink)]" : "bg-[#F5F2EB] text-ink",
+                p.highlighted ? "bg-pink text-white shadow-[0_16px_40px_-10px_var(--color-pink)]" : "bg-cream-2 text-ink",
               )}
             >
               <div className="mb-8">
@@ -186,7 +186,7 @@ export function HeroBand() {
                 href={ROUTES.community(p.slug)}
                 className={cn(
                   "block w-full rounded-full py-3.5 text-center text-sm font-bold shadow-sm transition-all active:scale-[0.98]",
-                  p.highlighted ? "bg-white text-pink hover:bg-white/90" : "bg-white text-ink hover:bg-cream",
+                  p.highlighted ? "bg-surface text-pink hover:bg-surface/90" : "bg-surface text-ink hover:bg-cream",
                 )}
               >
                 Learn More

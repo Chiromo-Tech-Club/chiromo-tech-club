@@ -47,10 +47,10 @@ function NewLogForm({ memberOptions }: { memberOptions: MemberOption[] }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">Log Volunteer Hours</h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <select value={memberId} onChange={(e) => setMemberId(e.target.value)} className="rounded-full border border-line bg-white px-4 py-2.5 text-sm text-ink" required>
+        <select value={memberId} onChange={(e) => setMemberId(e.target.value)} className="rounded-full border border-line bg-surface px-4 py-2.5 text-sm text-ink" required>
           <option value="">Member…</option>
           {memberOptions.map((m) => (
             <option key={m.id} value={m.id}>
@@ -73,7 +73,7 @@ export function Volunteers({ logs, memberOptions }: { logs: VolunteerLogItem[]; 
   return (
     <div className="flex flex-col gap-6">
       <NewLogForm memberOptions={memberOptions} />
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <div className="mb-4 flex items-center gap-2">
           <HeartHandshake size={16} className="text-green" />
           <h3 className="font-display text-sm font-bold text-ink">Volunteer Log</h3>

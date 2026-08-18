@@ -117,12 +117,12 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="grid min-h-screen grid-cols-1 bg-white lg:grid-cols-12">
+    <div className="grid min-h-screen grid-cols-1 bg-surface lg:grid-cols-12">
       {/* LEFT COLUMN: AUTH FORM SECTION */}
       <div className="flex min-h-screen flex-col justify-between overflow-y-auto px-6 py-8 sm:px-12 lg:col-span-6 lg:px-16 xl:col-span-5">
         <div className="flex items-center justify-between">
           <Link href={ROUTES.home} className="flex items-center gap-2.5">
-            <div className="relative h-9 w-9 overflow-hidden rounded-full border border-line bg-white p-1">
+            <div className="relative h-9 w-9 overflow-hidden rounded-full border border-line bg-surface p-1">
               <Image src="/images/image.svg" alt="CTC Logo" width={32} height={32} className="h-full w-full object-contain" />
             </div>
             <span className="font-display text-label-md font-semibold text-ink">chiromo.</span>
@@ -265,7 +265,7 @@ export default function SignInPage() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={googleLoading}
-              className="flex w-full items-center justify-center gap-3 rounded-md border border-line bg-white py-2.5 text-label-sm font-semibold text-ink transition-colors hover:bg-gray-50 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-3 rounded-md border border-line bg-surface py-2.5 text-label-sm font-semibold text-ink transition-colors hover:bg-cream-2 disabled:opacity-60"
             >
               <GoogleIcon />
               {googleLoading ? "Redirecting…" : "Continue with Google"}

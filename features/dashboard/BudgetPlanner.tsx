@@ -50,7 +50,7 @@ function NewTransactionForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">Record a Transaction</h3>
 
       <div className="mb-3 flex gap-2">
@@ -91,19 +91,19 @@ export function BudgetPlanner({ transactions }: { transactions: TransactionItem[
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+        <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
             <Wallet size={14} className="text-green" /> Balance
           </div>
           <div className="mt-2 font-display text-2xl font-bold text-ink">{formatMoney(balance)}</div>
         </div>
-        <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+        <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
             <TrendingUp size={14} className="text-green" /> Total Income
           </div>
           <div className="mt-2 font-display text-2xl font-bold text-green">{formatMoney(totalIncome)}</div>
         </div>
-        <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-5">
+        <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-5">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
             <TrendingDown size={14} className="text-red-500" /> Total Expenses
           </div>
@@ -113,7 +113,7 @@ export function BudgetPlanner({ transactions }: { transactions: TransactionItem[
 
       <NewTransactionForm />
 
-      <div className="rounded-[var(--radius-card-sm)] border border-line bg-white p-6">
+      <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <h3 className="mb-4 font-display text-sm font-bold text-ink">Recent Transactions</h3>
         {transactions.length === 0 ? (
           <p className="text-sm text-muted">No transactions recorded yet.</p>

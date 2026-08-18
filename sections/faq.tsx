@@ -54,7 +54,7 @@ export function FAQ() {
                   <span
                     className={cn(
                       "flex h-6 w-6 flex-none items-center justify-center rounded-full",
-                      isOpen ? "bg-white/20 text-white" : "bg-white text-ink",
+                      isOpen ? "bg-white/20 text-white" : "bg-surface text-ink",
                     )}
                   >
                     {isOpen ? <Minus size={13} /> : <Plus size={13} />}

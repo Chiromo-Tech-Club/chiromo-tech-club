@@ -52,13 +52,13 @@ export function UserMenu({ avatarUrl, fullName }: UserMenuProps) {
         <>
           {/* Click-away layer */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-10 z-50 w-44 rounded-card-sm border border-line bg-white p-1 shadow-lg">
+          <div className="absolute right-0 top-10 z-50 w-44 rounded-card-sm border border-line bg-surface p-1 shadow-lg">
             <div className="truncate px-3 py-2 text-label-xs font-medium text-ink-2">{fullName}</div>
             <button
               type="button"
               onClick={handleSignOut}
               disabled={signingOut}
-              className="w-full rounded-card-sm px-3 py-2 text-left text-label-sm text-ink transition-colors hover:bg-gray-50 disabled:opacity-60"
+              className="w-full rounded-card-sm px-3 py-2 text-left text-label-sm text-ink transition-colors hover:bg-cream-2 disabled:opacity-60"
             >
               {signingOut ? "Signing out…" : "Sign out"}
             </button>

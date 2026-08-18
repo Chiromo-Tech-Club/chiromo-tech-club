@@ -56,7 +56,7 @@ export function Hero() {
           ref={(el) => {
             floatRefs.current[f.id] = el;
           }}
-          className={`absolute z-[1] flex items-center gap-2 rounded-[14px] border border-line bg-white/[0.03] px-4 py-3.5 font-mono text-[11px] text-text-2 opacity-0 backdrop-blur-sm ${f.className}`}
+          className={`absolute z-[1] flex items-center gap-2 rounded-[14px] border border-line bg-surface/[0.03] px-4 py-3.5 font-mono text-[11px] text-text-2 opacity-0 backdrop-blur-sm ${f.className}`}
         >
           {f.label}
         </div>
