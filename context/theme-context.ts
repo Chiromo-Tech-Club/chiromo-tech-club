@@ -10,12 +10,10 @@ export interface ThemeContextValue {
 }
 
 /**
- * Chiromo is dark-first by brief, so this defaults to "dark" with no
- * light-mode UI built yet. The context exists now so a future toggle is
- * additive, not a refactor.
+ * Chiromo defaults to light mode on first landing.
  */
 export const ThemeContext = createContext<ThemeContextValue>({
-  theme: "dark",
+  theme: "light",
   setTheme: () => {},
 });
 
