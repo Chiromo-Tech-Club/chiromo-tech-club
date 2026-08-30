@@ -94,7 +94,7 @@ export function AuthAccessGate({ isUnlocked, onUnlock, pageType }: AuthAccessGat
                     onUnlock(true);
                   }
                 }}
-                placeholder="Enter referral code (e.g. CTC2026)"
+                placeholder="Enter referral code"
                 className="w-full rounded-xl border border-line bg-surface pl-8 pr-3 py-2 text-xs font-mono uppercase tracking-wider text-ink outline-none transition-colors focus:border-navy"
               />
             </div>
@@ -132,7 +132,7 @@ export function AuthAccessGate({ isUnlocked, onUnlock, pageType }: AuthAccessGat
                 href={ROUTES.register}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-green px-3.5 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-green/90 active:scale-95"
               >
-                <span>Register at /register instead</span>
+                <span>Register instead</span>
                 <ArrowRight size={13} />
               </Link>
             </div>
