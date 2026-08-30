@@ -28,7 +28,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ROUTES } from "@/constants/routes";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentRole } from "@/lib/supabase/auth-helpers";
+import { getAuthUserId } from "@/lib/supabase/auth-helpers";
 
 const ADMIN_NAV = [
   { href: ROUTES.admin, label: "Projects" },
@@ -36,19 +37,14 @@ const ADMIN_NAV = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect(ROUTES.signIn);
+  const userId = await getAuthUserId();
+  if (!userId) redirect(ROUTES.signIn);
 
-  const { data: member } = await supabase
-    .from("members")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  const role = await getCurrentRole();
 
-  if (member?.role !== "admin") redirect(ROUTES.dashboard);
+  if (role !== "admin" && role !== "exec") {
+    redirect(ROUTES.dashboard);
+  }
 
   return (
     <div>

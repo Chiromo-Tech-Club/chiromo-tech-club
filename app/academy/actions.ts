@@ -9,6 +9,7 @@ import { academyQuests, academyQuestSteps, academyUserProgress, academyCodingCha
 import { getAuthUserId } from "@/lib/supabase/auth-helpers"; // resolves the logged-in member's row id
 // ─────────────────────────────────────────────────────────────────────────
 import { executeCode } from "@/lib/academy/piston";
+import { runSandboxCode } from "@/lib/academy/sandbox-runner";
 
 /** Shared by every step type: records progress and, on the final step, completes the quest and awards points. */
 async function applyStepCompletion(memberId: string, questSlug: string, stepOrder: number) {
@@ -109,7 +110,13 @@ export async function submitCodingChallenge(
 
   const results: TestCaseResult[] = [];
   for (const tc of testCases) {
-    const run = await executeCode({ language, code, stdin: tc.stdin, timeLimitMs: challenge.timeLimitMs });
+    let run;
+    try {
+      run = await executeCode({ language, code, stdin: tc.stdin, timeLimitMs: challenge.timeLimitMs });
+    } catch {
+      // Fallback to local sandbox runner when remote API is unavailable
+      run = await runSandboxCode({ language, code, stdin: tc.stdin, timeLimitMs: challenge.timeLimitMs });
+    }
     const actual = run.stdout.trim();
     const expected = tc.expectedStdout.trim();
     const passed = !run.compileError && !run.timedOut && actual === expected;

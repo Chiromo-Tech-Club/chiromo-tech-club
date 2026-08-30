@@ -1,4 +1,5 @@
 export const EXEC_TITLES = [
+  "patron",
   "chairperson",
   "vice_chairperson",
   "secretary_general",
@@ -15,6 +16,7 @@ export function isExecTitle(value: unknown): value is ExecTitle {
 }
 
 export const EXEC_TITLE_LABELS: Record<ExecTitle, string> = {
+  patron: "Patron / VC & Faculty Oversight",
   chairperson: "Chairperson",
   vice_chairperson: "Vice Chairperson",
   secretary_general: "Secretary General",

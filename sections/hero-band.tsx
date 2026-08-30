@@ -91,12 +91,12 @@ export function HeroBand() {
       <div className="mx-auto max-w-[1280px]">
         <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-[1.1fr_0.9fr]">
           <div>
-            <div
+            {/* <div
               ref={badgeRef}
               className="mb-6 inline-flex items-center rounded-full border border-line bg-cream/60 px-4 py-1.5 text-xs font-semibold text-ink-2 shadow-sm"
             >
               #1 tech community at UoN
-            </div>
+            </div> */}
 
             <h1 className="font-display text-[clamp(42px,6.5vw,78px)] font-extrabold leading-[1.05] tracking-tight text-ink">
               <span

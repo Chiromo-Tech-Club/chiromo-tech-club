@@ -4,12 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, Lock } from "lucide-react";
 import { TextField, Label, Input, Button, Spinner } from "@heroui/react";
 import { ROUTES } from "@/constants/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { validateEmail, validateFullName, validateSignUpPassword } from "@/lib/utils/auth-validation";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
+import { AuthAccessGate } from "@/components/auth/AuthAccessGate";
 
 // ─────────────────────────────────────────────────────────────────────────
 // CLERK (commented out — kept for reference / rollback)
@@ -50,6 +51,7 @@ const INPUT_CLASS_ERROR =
 export default function SignUpPage() {
   const router = useRouter();
 
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,6 +66,7 @@ export default function SignUpPage() {
   const [googleError, setGoogleError] = useState<string | null>(null);
 
   function handleBlur(field: "fullName" | "email" | "password") {
+    if (!isUnlocked) return;
     setTouched((t) => ({ ...t, [field]: true }));
     setFieldErrors((prev) => ({
       ...prev,
@@ -86,6 +89,10 @@ export default function SignUpPage() {
 
   async function handleEmailSignUp(e: React.FormEvent) {
     e.preventDefault();
+    if (!isUnlocked) {
+      setFormError("Access locked: Please enter a valid referral/access code above.");
+      return;
+    }
     setFormError(null);
 
     if (!validateAll()) return;
@@ -125,6 +132,10 @@ export default function SignUpPage() {
   }
 
   async function handleGoogleSignUp() {
+    if (!isUnlocked) {
+      setGoogleError("Access locked: Please enter a valid referral/access code above.");
+      return;
+    }
     setGoogleLoading(true);
     setGoogleError(null);
     const supabase = getSupabaseBrowserClient();
@@ -170,35 +181,12 @@ export default function SignUpPage() {
           </div>
 
           <div className="w-full max-w-md">
-            {/* ───────────────────────────────────────────────────────────
-                CLERK (commented out — kept for reference / rollback)
-               ─────────────────────────────────────────────────────────── */}
-            {/*
-            <ClerkLoading>
-              <div className="flex min-h-[340px] flex-col items-center justify-center gap-10">
-                <WifiLoader label="loading" />
-              </div>
-            </ClerkLoading>
-
-            <ClerkLoaded>
-              <SignUp
-                appearance={{
-                  elements: {
-                    rootBox: "w-full max-w-md",
-                    cardBox: "w-full shadow-none border-0 bg-transparent rounded-none",
-                    card: "w-full shadow-none border-0 p-0 bg-transparent rounded-none",
-                    headerTitle: "hidden",
-                    headerSubtitle: "hidden",
-                    footer: "bg-transparent",
-                    formButtonPrimary:
-                      "bg-navy hover:bg-navy/90 text-label-sm font-semibold rounded-md transition-colors py-2.5",
-                    formFieldInput: "rounded-md border-line focus:border-navy focus:ring-navy",
-                  },
-                }}
-              />
-            </ClerkLoaded>
-            */}
-            {/* ─────────────────────────────────────────────────────────── */}
+            {/* Referral / Access Gate */}
+            <AuthAccessGate
+              isUnlocked={isUnlocked}
+              onUnlock={setIsUnlocked}
+              pageType="sign-up"
+            />
 
             {confirmationSent ? (
               <div className="rounded-md border border-line bg-cream/40 p-5 text-center">
@@ -213,13 +201,7 @@ export default function SignUpPage() {
               </div>
             ) : (
               <>
-                {/* HeroUI v3 API: TextField/Label/Input compound components,
-                    variant is "primary" | "secondary" only, no
-                    startContent/endContent — password toggle placed
-                    manually. Requires the Email provider enabled in
-                    Supabase (Authentication → Providers → Email).
-                    Inline, per-field validation (Clerk-style): errors show
-                    on blur and again on submit, directly under their field. */}
+                {/* HeroUI v3 API: TextField/Label/Input compound components */}
                 <form onSubmit={handleEmailSignUp} noValidate className="flex flex-col gap-4">
                   <TextField isRequired className="flex flex-col gap-1.5">
                     <Label className="text-label-xs font-medium text-ink-2">Full name</Label>
@@ -227,13 +209,18 @@ export default function SignUpPage() {
                       type="text"
                       variant="primary"
                       value={fullName}
+                      disabled={!isUnlocked}
+                      placeholder={isUnlocked ? "Dennis Ritchie" : "Locked — enter referral code above"}
                       onChange={(e) => {
+                        if (!isUnlocked) return;
                         setFullName(e.target.value);
                         if (touched.fullName) setFieldErrors((prev) => ({ ...prev, fullName: validateFullName(e.target.value) }));
                       }}
                       onBlur={() => handleBlur("fullName")}
                       aria-invalid={!!fieldErrors.fullName}
-                      className={`${fieldErrors.fullName ? INPUT_CLASS_ERROR : INPUT_CLASS} rounded-md`}
+                      className={`${fieldErrors.fullName ? INPUT_CLASS_ERROR : INPUT_CLASS} rounded-md ${
+                        !isUnlocked ? "cursor-not-allowed opacity-50 bg-cream/30" : ""
+                      }`}
                     />
                     {fieldErrors.fullName && (
                       <p className="flex items-center gap-1 text-label-2xs text-red-500">
@@ -248,13 +235,18 @@ export default function SignUpPage() {
                       type="email"
                       variant="primary"
                       value={email}
+                      disabled={!isUnlocked}
+                      placeholder={isUnlocked ? "student@uonbi.ac.ke" : "Locked — enter referral code above"}
                       onChange={(e) => {
+                        if (!isUnlocked) return;
                         setEmail(e.target.value);
                         if (touched.email) setFieldErrors((prev) => ({ ...prev, email: validateEmail(e.target.value) }));
                       }}
                       onBlur={() => handleBlur("email")}
                       aria-invalid={!!fieldErrors.email}
-                      className={`${fieldErrors.email ? INPUT_CLASS_ERROR : INPUT_CLASS} rounded-lg`}
+                      className={`${fieldErrors.email ? INPUT_CLASS_ERROR : INPUT_CLASS} rounded-lg ${
+                        !isUnlocked ? "cursor-not-allowed opacity-50 bg-cream/30" : ""
+                      }`}
                     />
                     {fieldErrors.email && (
                       <p className="flex items-center gap-1 text-label-2xs text-red-500">
@@ -270,18 +262,24 @@ export default function SignUpPage() {
                         type={showPassword ? "text" : "password"}
                         variant="primary"
                         value={password}
+                        disabled={!isUnlocked}
+                        placeholder={isUnlocked ? "••••••••" : "Locked — enter referral code above"}
                         onChange={(e) => {
+                          if (!isUnlocked) return;
                           setPassword(e.target.value);
                           if (touched.password) setFieldErrors((prev) => ({ ...prev, password: validateSignUpPassword(e.target.value) }));
                         }}
                         onBlur={() => handleBlur("password")}
                         aria-invalid={!!fieldErrors.password}
-                        className={`${fieldErrors.password ? INPUT_CLASS_ERROR : INPUT_CLASS} pr-10 rounded-lg`}
+                        className={`${fieldErrors.password ? INPUT_CLASS_ERROR : INPUT_CLASS} pr-10 rounded-lg ${
+                          !isUnlocked ? "cursor-not-allowed opacity-50 bg-cream/30" : ""
+                        }`}
                       />
                       <button
                         type="button"
+                        disabled={!isUnlocked}
                         onClick={() => setShowPassword((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink disabled:opacity-40"
                         aria-label={showPassword ? "Hide password" : "Show password"}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -305,10 +303,20 @@ export default function SignUpPage() {
                   <Button
                     type="submit"
                     variant="primary"
-                    isDisabled={formLoading}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-navy py-2.5 text-label-sm font-semibold text-white"
+                    isDisabled={formLoading || !isUnlocked}
+                    className={`flex w-full items-center justify-center gap-2 rounded-lg bg-navy py-2.5 text-label-sm font-semibold text-white ${
+                      !isUnlocked ? "cursor-not-allowed opacity-50" : ""
+                    }`}
                   >
-                    {formLoading ? <Spinner size="sm" color="current" /> : "Create account"}
+                    {!isUnlocked ? (
+                      <span className="flex items-center gap-1.5">
+                        <Lock size={14} /> Account Creation Disabled
+                      </span>
+                    ) : formLoading ? (
+                      <Spinner size="sm" color="current" />
+                    ) : (
+                      "Create account"
+                    )}
                   </Button>
                 </form>
 
@@ -321,11 +329,13 @@ export default function SignUpPage() {
                 <button
                   type="button"
                   onClick={handleGoogleSignUp}
-                  disabled={googleLoading}
-                  className="flex w-full items-center justify-center gap-3 rounded-lg border border-line bg-surface py-2.5 text-label-sm font-semibold text-ink transition-colors hover:bg-cream-2 disabled:opacity-60"
+                  disabled={googleLoading || !isUnlocked}
+                  className={`flex w-full items-center justify-center gap-3 rounded-lg border border-line bg-surface py-2.5 text-label-sm font-semibold text-ink transition-colors hover:bg-cream-2 ${
+                    !isUnlocked ? "cursor-not-allowed opacity-50" : "disabled:opacity-60"
+                  }`}
                 >
                   <GoogleIcon />
-                  {googleLoading ? "Redirecting…" : "Sign up with Google"}
+                  {!isUnlocked ? "Google Sign Up Disabled" : googleLoading ? "Redirecting…" : "Sign up with Google"}
                 </button>
 
                 {googleError && <p className="mt-3 text-label-xs text-red-500">{googleError}</p>}

@@ -23,7 +23,16 @@ export const SHARED_NAV_ITEMS: DashboardNavItem[] = [
  * renders <ComingSoon>.
  */
 export const EXEC_NAV: Record<ExecTitle, DashboardNavItem[]> = {
+  patron: [
+    { slug: "registration-requests", label: "Registration Approvals" },
+    { slug: "institutional-oversight", label: "Institutional Oversight" },
+    { slug: "faculty-approvals", label: "Faculty Approvals" },
+    { slug: "recent-decisions", label: "Signed Decisions" },
+    { slug: "policy-documents", label: "Constitution & Policy" },
+    { slug: "org-health", label: "Club Health Metrics" },
+  ],
   chairperson: [
+    { slug: "registration-requests", label: "Member Approvals" },
     { slug: "strategic-analytics", label: "Strategic Analytics" },
     { slug: "executive-performance", label: "Executive Performance" },
     { slug: "committee-reports", label: "Committee Reports" },
@@ -38,6 +47,7 @@ export const EXEC_NAV: Record<ExecTitle, DashboardNavItem[]> = {
     { slug: "activity-timeline", label: "Recent Activity Timeline" },
   ],
   vice_chairperson: [
+    { slug: "registration-requests", label: "Membership Approvals" },
     { slug: "project-tracker", label: "Project Tracker" },
     { slug: "initiative-dashboard", label: "Initiative Dashboard" },
     { slug: "task-assignments", label: "Task Assignments" },

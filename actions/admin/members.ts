@@ -1,8 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { requireRole, setUserRole } from "@/lib/supabase/auth-helpers";
+import { getDb } from "@/lib/drizzle/client";
+import { members } from "@/lib/drizzle/schema";
+import { requireRole, setUserRole, getAuthUserId, getCurrentRole, getCurrentExecTitle } from "@/lib/supabase/auth-helpers";
 import { ROLES } from "@/constants/roles";
 import { EXEC_TITLES } from "@/types/exec-title";
 import { ROUTES } from "@/constants/routes";
@@ -19,15 +22,33 @@ const updateRoleSchema = z
     path: ["execTitle"],
   });
 
+/** Check if current user is an admin or executive officer eligible to manage approvals. */
+async function canManageApprovals(): Promise<boolean> {
+  const role = await getCurrentRole();
+  if (role === "admin") return true;
+  if (role === "exec") {
+    const title = await getCurrentExecTitle();
+    // Patron, Chairperson, Vice Chairperson, Secretary General, Treasurer, Membership Officer can review
+    return (
+      title === "patron" ||
+      title === "chairperson" ||
+      title === "vice_chairperson" ||
+      title === "secretary_general" ||
+      title === "treasurer" ||
+      title === "membership_officer" ||
+      title === "training_coordinator" ||
+      title === "corporate_affairs"
+    );
+  }
+  return false;
+}
+
 /**
- * Promotes/demotes a member. `setUserRole()` writes role + execTitle
- * straight to the `members` row — that table is the only source of
- * truth now (Clerk's publicMetadata mirror is gone), so there's nothing
- * left to keep in sync.
+ * Promotes/demotes a member and assigns their executive seat.
  */
 export async function updateMemberRole(input: z.infer<typeof updateRoleSchema>): Promise<ActionResult> {
-  const check = await requireRole("admin");
-  if (!check.ok) return { success: false, error: "Admin access required." };
+  const isAllowed = await canManageApprovals();
+  if (!isAllowed) return { success: false, error: "Administrative/Executive access required." };
 
   const parsed = updateRoleSchema.safeParse(input);
   if (!parsed.success) {
@@ -38,10 +59,6 @@ export async function updateMemberRole(input: z.infer<typeof updateRoleSchema>):
   const resolvedExecTitle = role === "exec" ? execTitle : null;
 
   try {
-    // setUserRole() (Supabase version) writes role + execTitle to the
-    // members row directly — no separate Clerk publicMetadata write and
-    // no clerkUserId lookup needed anymore, since members.id IS the auth
-    // user id already.
     await setUserRole(memberId, role, resolvedExecTitle);
 
     revalidatePath(ROUTES.adminMembers);
@@ -52,15 +69,33 @@ export async function updateMemberRole(input: z.infer<typeof updateRoleSchema>):
     return { success: false, error: "Could not update this member's role." };
   }
 }
-export async function approveMember(memberId: string): Promise<ActionResult> {
-  const check = await requireRole("admin");
-  if (!check.ok) return { success: false, error: "Admin access required." };
+
+/**
+ * Approves a pending club membership registration.
+ */
+export async function approveMember(memberId: string, notes?: string): Promise<ActionResult> {
+  const isAllowed = await canManageApprovals();
+  if (!isAllowed) return { success: false, error: "Executive or Admin access required." };
+
+  const reviewerId = await getAuthUserId();
+  const db = getDb();
 
   try {
-    // Upgrades the user to a standard member
-    await setUserRole(memberId, "member", null);
+    // Upgrades the user to a standard member and marks membership approved
+    await db
+      .update(members)
+      .set({
+        role: "member",
+        membershipStatus: "approved",
+        reviewedById: reviewerId || null,
+        reviewedAt: new Date(),
+        reviewNotes: notes || "Approved by leadership",
+        updatedAt: new Date(),
+      })
+      .where(eq(members.id, memberId));
 
     revalidatePath(ROUTES.adminMembers);
+    revalidatePath(ROUTES.dashboard);
     return { success: true };
   } catch (err) {
     console.error("approveMember failed:", err);
@@ -68,18 +103,67 @@ export async function approveMember(memberId: string): Promise<ActionResult> {
   }
 }
 
-export async function rejectMember(memberId: string): Promise<ActionResult> {
-  const check = await requireRole("admin");
-  if (!check.ok) return { success: false, error: "Admin access required." };
+/**
+ * Rejects a membership application with an optional reason.
+ */
+export async function rejectMember(memberId: string, reason?: string): Promise<ActionResult> {
+  const isAllowed = await canManageApprovals();
+  if (!isAllowed) return { success: false, error: "Executive or Admin access required." };
+
+  const reviewerId = await getAuthUserId();
+  const db = getDb();
 
   try {
-    // Keeps or sets the user as a visitor
-    await setUserRole(memberId, "visitor", null);
+    await db
+      .update(members)
+      .set({
+        role: "visitor",
+        membershipStatus: "rejected",
+        reviewedById: reviewerId || null,
+        reviewedAt: new Date(),
+        reviewNotes: reason || "Application rejected",
+        updatedAt: new Date(),
+      })
+      .where(eq(members.id, memberId));
 
     revalidatePath(ROUTES.adminMembers);
+    revalidatePath(ROUTES.dashboard);
     return { success: true };
   } catch (err) {
     console.error("rejectMember failed:", err);
     return { success: false, error: "Could not reject member." };
+  }
+}
+
+/**
+ * Updates membership payment / fee deposit status (e.g., recorded by Treasurer).
+ */
+export async function updateMemberPaymentStatus(
+  memberId: string,
+  feeStatus: "unpaid" | "deposit_paid" | "fully_paid",
+  amountPaid: number,
+  mpesaRef?: string,
+): Promise<ActionResult> {
+  const isAllowed = await canManageApprovals();
+  if (!isAllowed) return { success: false, error: "Executive or Admin access required." };
+
+  const db = getDb();
+  try {
+    await db
+      .update(members)
+      .set({
+        membershipFeeStatus: feeStatus,
+        feeAmountPaid: amountPaid,
+        mpesaReference: mpesaRef || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(members.id, memberId));
+
+    revalidatePath(ROUTES.adminMembers);
+    revalidatePath(ROUTES.dashboard);
+    return { success: true };
+  } catch (err) {
+    console.error("updateMemberPaymentStatus failed:", err);
+    return { success: false, error: "Could not update payment status." };
   }
 }

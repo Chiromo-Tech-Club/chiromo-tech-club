@@ -54,8 +54,6 @@ export const members = pgTable(
     id: uuid("id")
       .primaryKey()
       .references(() => authUsers.id, { onDelete: "cascade" }),
-    // clerkUserId: text("clerk_user_id").notNull(),  ← removed, no longer needed
-    // ─────────────────────────────────────────────────────────────────
     fullName: text("full_name").notNull(),
     email: text("email").notNull(),
     role: roleEnum("role").notNull().default("visitor"),
@@ -64,6 +62,22 @@ export const members = pgTable(
     avatarUrl: text("avatar_url"),
     bio: text("bio"),
     githubHandle: text("github_handle"),
+    // ── Registration & Academic Profile ──
+    studentId: text("student_id"),
+    campus: text("campus").default("Chiromo Campus"),
+    isChiromo: boolean("is_chiromo").default(true),
+    course: text("course"),
+    yearOfStudy: text("year_of_study"),
+    phoneNumber: text("phone_number"),
+    authProvider: text("auth_provider").default("email_password"), // 'google' | 'email_password'
+    // ── Membership Approval & Fee Status ──
+    membershipStatus: text("membership_status").default("pending"), // 'pending' | 'approved' | 'rejected'
+    membershipFeeStatus: text("membership_fee_status").default("unpaid"), // 'unpaid' | 'deposit_paid' | 'fully_paid'
+    feeAmountPaid: integer("fee_amount_paid").default(0), // KES (500 full, 250 deposit, etc)
+    mpesaReference: text("mpesa_reference"),
+    reviewedById: uuid("reviewed_by_id"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    reviewNotes: text("review_notes"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),

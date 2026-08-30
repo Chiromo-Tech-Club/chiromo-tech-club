@@ -50,6 +50,14 @@ export function MobileMenu() {
         {/* Action Buttons: Login, Register & Join — signed-out visitors only */}
         {!isSignedIn && (
           <div className="mt-8 flex flex-col gap-3 border-t border-line pt-6">
+            <Link
+              href={ROUTES.register}
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-center rounded-xl bg-green text-white py-3 text-sm font-bold shadow-md transition-all active:scale-95 hover:bg-green/90"
+            >
+              ✨ Register for Club
+            </Link>
+
             <div className="grid grid-cols-2 gap-3">
               <Link
                 href="/sign-in"
@@ -63,11 +71,11 @@ export function MobileMenu() {
                 onClick={() => setOpen(false)}
                 className="flex items-center justify-center rounded-xl border border-line bg-surface/60 py-3 text-sm font-bold text-ink shadow-sm transition-all active:scale-95 hover:bg-surface"
               >
-                Register
+                Sign Up
               </Link>
             </div>
 
-            <Button asChild variant="primary" className="justify-center">
+            <Button asChild variant="ghost" className="justify-center">
               <Link href={ROUTES.join} onClick={() => setOpen(false)}>
                 Join Us
               </Link>

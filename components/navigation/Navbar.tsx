@@ -68,6 +68,7 @@ export function Navbar() {
           label="Get Involved"
           items={[
             { label: "Academy", href: ROUTES.academy },
+            { label: "Join the Club", href: ROUTES.register },
             { label: "FAQ", href: `${ROUTES.home}#faq` },
           ]}
         />
@@ -107,8 +108,14 @@ export function Navbar() {
               <div className="absolute right-0 top-full h-4 w-full" />
 
               {/* Dropdown Panel */}
-              <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-40 pointer-events-none translate-y-2 opacity-0 transition-all duration-300 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
+              <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-48 pointer-events-none translate-y-2 opacity-0 transition-all duration-300 ease-out group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100">
                 <div className="flex flex-col gap-1 rounded-2xl border border-line/40 bg-surface/95 p-1.5 shadow-xl backdrop-blur-xl">
+                  <Link
+                    href={ROUTES.register}
+                    className="rounded-xl px-4 py-2 text-xs font-bold text-ink bg-sky/10 transition-all hover:bg-sky/20 hover:translate-x-1"
+                  >
+                  Register for Club
+                  </Link>
                   <Link
                     href="/sign-in"
                     className="rounded-xl px-4 py-2.5 text-sm font-bold text-ink/80 transition-all hover:bg-cream hover:text-ink hover:translate-x-1"
@@ -119,7 +126,7 @@ export function Navbar() {
                     href="/sign-up"
                     className="rounded-xl px-4 py-2.5 text-sm font-bold text-ink/80 transition-all hover:bg-cream hover:text-ink hover:translate-x-1"
                   >
-                    Register
+                    Create Account
                   </Link>
                 </div>
               </div>

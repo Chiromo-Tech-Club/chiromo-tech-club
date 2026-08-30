@@ -35,6 +35,7 @@ import { COMMUNITIES } from "@/data/communities";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
 import { AccessDenied } from "@/components/dashboard/AccessDenied";
 import { DecisionsBoard, type DecisionItem } from "@/features/dashboard/DecisionsBoard";
+import { MembersTable } from "@/features/admin/MembersTable";
 import { InitiativeTracker, type InitiativeItem } from "@/features/dashboard/InitiativeTracker";
 import { MinutesEditor, type MinutesItem } from "@/features/dashboard/MinutesEditor";
 import { BudgetPlanner, type TransactionItem } from "@/features/dashboard/BudgetPlanner";
@@ -821,6 +822,67 @@ export default async function DashboardCatchAllPage({ params }: DashboardCatchAl
     }
     if (execTitleParam === "membership_officer" && sectionSlug === "member-directory") {
       return <MembershipOfficerDirectory />;
+    }
+    if (
+      (execTitleParam === "membership_officer" ||
+        execTitleParam === "chairperson" ||
+        execTitleParam === "vice_chairperson" ||
+        execTitleParam === "patron") &&
+      sectionSlug === "registration-requests"
+    ) {
+      const memberRows = await getDb()
+        .select({
+          id: members.id,
+          fullName: members.fullName,
+          email: members.email,
+          role: members.role,
+          execTitle: members.execTitle,
+          studentId: members.studentId,
+          campus: members.campus,
+          isChiromo: members.isChiromo,
+          course: members.course,
+          yearOfStudy: members.yearOfStudy,
+          phoneNumber: members.phoneNumber,
+          authProvider: members.authProvider,
+          membershipStatus: members.membershipStatus,
+          membershipFeeStatus: members.membershipFeeStatus,
+          feeAmountPaid: members.feeAmountPaid,
+          mpesaReference: members.mpesaReference,
+          createdAt: members.createdAt,
+        })
+        .from(members)
+        .where(isNull(members.deletedAt))
+        .orderBy(desc(members.createdAt));
+
+      const communityRows = await getDb()
+        .select({ memberId: memberCommunities.memberId, communitySlug: memberCommunities.communitySlug })
+        .from(memberCommunities);
+
+      const communitiesByMember = new Map<string, string[]>();
+      for (const c of communityRows) {
+        const list = communitiesByMember.get(c.memberId) ?? [];
+        list.push(c.communitySlug);
+        communitiesByMember.set(c.memberId, list);
+      }
+
+      const items = memberRows.map((row) => ({
+        ...row,
+        status: (row.membershipStatus as any) || (row.role === "visitor" ? "pending" : "approved"),
+        isChiromo: row.isChiromo ?? true,
+        feeAmountPaid: row.feeAmountPaid ?? 0,
+        communitySlugs: communitiesByMember.get(row.id) ?? [],
+        createdAt: row.createdAt ? row.createdAt.toISOString() : undefined,
+      }));
+
+      return (
+        <div className="space-y-6">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-ink">Member Approvals & Applications</h2>
+            <p className="text-xs text-muted">Review, verify student profiles, track fee deposits, and approve official members.</p>
+          </div>
+          <MembersTable members={items} />
+        </div>
+      );
     }
     if (execTitleParam === "training_coordinator" && sectionSlug === "resource-library") {
       return <TrainingCoordinatorResources />;

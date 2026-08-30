@@ -1,12 +1,13 @@
-import { isNull } from "drizzle-orm";
+import { isNull, desc } from "drizzle-orm";
 import { getDb } from "@/lib/drizzle/client";
 import { members, memberCommunities } from "@/lib/drizzle/schema";
-import { requireRole } from "@/lib/supabase/auth-helpers";
-import { MembersTable, type MemberRow } from "@/features/admin/MembersTable";
+import { getCurrentRole } from "@/lib/supabase/auth-helpers";
+import { MembersTable, type ExtendedMemberRow } from "@/features/admin/MembersTable";
+import type { MemberStatus } from "@/types/member-status";
 
-export const metadata = { title: "Admin — Members" };
+export const metadata = { title: "Admin — Members & Approvals" };
 
-async function getMembers(): Promise<MemberRow[]> {
+async function getMembers(): Promise<ExtendedMemberRow[]> {
   const db = getDb();
 
   const rows = await db
@@ -16,11 +17,22 @@ async function getMembers(): Promise<MemberRow[]> {
       email: members.email,
       role: members.role,
       execTitle: members.execTitle,
-      // Removed status from here since it doesn't exist in the database schema yet
+      studentId: members.studentId,
+      campus: members.campus,
+      isChiromo: members.isChiromo,
+      course: members.course,
+      yearOfStudy: members.yearOfStudy,
+      phoneNumber: members.phoneNumber,
+      authProvider: members.authProvider,
+      membershipStatus: members.membershipStatus,
+      membershipFeeStatus: members.membershipFeeStatus,
+      feeAmountPaid: members.feeAmountPaid,
+      mpesaReference: members.mpesaReference,
+      createdAt: members.createdAt,
     })
     .from(members)
     .where(isNull(members.deletedAt))
-    .orderBy(members.fullName);
+    .orderBy(desc(members.createdAt));
 
   const communityRows = await db
     .select({ memberId: memberCommunities.memberId, communitySlug: memberCommunities.communitySlug })
@@ -35,32 +47,32 @@ async function getMembers(): Promise<MemberRow[]> {
 
   return rows.map((row) => ({
     ...row,
-    status: "active" as any, // Force the status field to satisfy the MemberRow TypeScript requirement
+    status: (row.membershipStatus as MemberStatus) || (row.role === "visitor" ? "pending" : "approved"),
+    isChiromo: row.isChiromo ?? true,
+    feeAmountPaid: row.feeAmountPaid ?? 0,
     communitySlugs: communitiesByMember.get(row.id) ?? [],
+    createdAt: row.createdAt ? row.createdAt.toISOString() : undefined,
   }));
 }
 
 export default async function AdminMembersPage() {
-  const check = await requireRole("admin");
-  if (!check.ok) {
-    // Escaped apostrophe here
+  const role = await getCurrentRole();
+  if (role !== "admin" && role !== "exec") {
     return <div className="text-text-2">You don&apos;t have access to this page.</div>;
   }
 
   const memberRows = await getMembers();
 
   return (
-    // Replaced max-w-[1280px] with max-w-7xl
-    <div className="mx-auto max-w-7xl">
-      <h1 className="font-display text-3xl">Members</h1>
-      <p className="mt-2 max-w-xl text-sm text-text-2">
-        {/* Escaped apostrophe here */}
-        Promote a member to Executive (and assign their seat) or Admin. Changes apply immediately — there&apos;s
-        nothing else to update elsewhere.
-      </p>
-      <div className="mt-8">
-        <MembersTable members={memberRows} />
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <div className="mb-6">
+        <h1 className="font-display text-3xl font-extrabold text-ink">Member Approvals & Administration</h1>
+        <p className="mt-2 max-w-2xl text-sm text-text-2">
+          Review pending club registrations, track student ID & campus verification, manage membership fee deposits, and assign executive leadership seats.
+        </p>
       </div>
+
+      <MembersTable members={memberRows} />
     </div>
   );
 }

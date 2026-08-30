@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Sparkles, Quote, Users } from "lucide-react";
+import { ArrowUpRight, Sparkles, Quote} from "lucide-react";
 import { TEAM_MEMBERS } from "../data/team";
 import { ROUTES } from "../constants/routes";
 import { Button } from "../components/alignui/button";
@@ -37,14 +37,14 @@ export function DiscoverTeam() {
     <section id="team" className="overflow-hidden py-24">
       <div className="mx-auto max-w-[1280px] px-6 sm:px-8">
         <RevealOnScroll className="mx-auto max-w-[580px] text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-line/60 bg-cream-2/80 px-4 py-1.5 text-xs font-semibold text-ink-2 shadow-sm backdrop-blur-md">
+          {/* <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-line/60 bg-cream-2/80 px-4 py-1.5 text-xs font-semibold text-ink-2 shadow-sm backdrop-blur-md">
             <Users size={14} className="text-green" />
             <span>Meet the Core Team</span>
             <span className="relative ml-0.5 flex h-2 w-2">
               <span className="absolute inset-0 animate-ping rounded-full bg-green opacity-75" />
               <span className="relative h-2 w-2 rounded-full bg-green" />
             </span>
-          </div>
+          </div> */}
 
           <h2 className="font-display text-[clamp(28px,3.8vw,42px)] font-extrabold leading-[1.15] tracking-tight text-ink">
             Discover the builders behind the code

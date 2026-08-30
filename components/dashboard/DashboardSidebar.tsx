@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, X } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, Users, X } from "lucide-react";
 import { SHARED_NAV_ITEMS, EXEC_NAV } from "@/config/dashboard-nav";
 import { EXEC_TITLE_LABELS, type ExecTitle } from "@/types/exec-title";
 import { ROUTES } from "@/constants/routes";
@@ -71,6 +71,41 @@ export function DashboardSidebar({ execTitle, isAdmin, mobileOpen, onClose }: Da
         <Link href={ROUTES.dashboard} onClick={onClose} className="block">
           Overview
         </Link>
+      </div>
+
+      {/* Admin Quick Link - accessible to any admin or executive */}
+      <div className="mb-6">
+        <h4 className="mb-2 px-3.5 text-xs font-semibold uppercase tracking-wide text-muted">Administration</h4>
+        <nav className="flex flex-col gap-1">
+          <Link
+            href={ROUTES.adminMembers}
+            onClick={onClose}
+            className={cn(
+              "flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm transition-colors",
+              pathname === ROUTES.adminMembers
+                ? "bg-green text-white font-medium"
+                : "text-ink-2 hover:bg-cream hover:text-ink"
+            )}
+          >
+            <ShieldCheck size={16} className={pathname === ROUTES.adminMembers ? "text-white" : "text-sky"} />
+            <span>Member Approvals</span>
+          </Link>
+          {isAdmin && (
+            <Link
+              href={ROUTES.admin}
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm transition-colors",
+                pathname === ROUTES.admin
+                  ? "bg-green text-white font-medium"
+                  : "text-ink-2 hover:bg-cream hover:text-ink"
+              )}
+            >
+              <LayoutDashboard size={16} className={pathname === ROUTES.admin ? "text-white" : "text-ink-2"} />
+              <span>Project Admin</span>
+            </Link>
+          )}
+        </nav>
       </div>
 
       <div className="mb-6">
