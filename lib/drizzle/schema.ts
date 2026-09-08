@@ -56,6 +56,8 @@ export const members = pgTable(
       .references(() => authUsers.id, { onDelete: "cascade" }),
     fullName: text("full_name").notNull(),
     email: text("email").notNull(),
+    /** Public handle shown on membership card & directory (unique when set). */
+    username: text("username"),
     role: roleEnum("role").notNull().default("visitor"),
     /** Only meaningful when role = "exec" — which named seat they hold. */
     execTitle: execTitleEnum("exec_title"),
@@ -78,6 +80,8 @@ export const members = pgTable(
     reviewedById: uuid("reviewed_by_id"),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     reviewNotes: text("review_notes"),
+    /** Preferred membership-card color theme id (see card-theme.ts). */
+    cardTheme: text("card_theme").default("navy_gold"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -85,6 +89,7 @@ export const members = pgTable(
   (table) => [
     // clerkUserId unique index removed along with the column above
     uniqueIndex("members_email_idx").on(table.email),
+    uniqueIndex("members_username_idx").on(table.username),
   ],
 );
 

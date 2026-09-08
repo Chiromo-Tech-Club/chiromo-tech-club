@@ -2,13 +2,17 @@ import { Users, CalendarCheck, FolderKanban, Megaphone as MegaphoneIcon } from "
 import { desc, gte, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/drizzle/client";
 import { members, events, projects, announcements } from "@/lib/drizzle/schema";
-// import { getCurrentMember } from "@/lib/clerk/get-current-user"; // CLERK — kept for reference/rollback
 import { getCurrentMember } from "@/lib/supabase/get-current-member";
+import { getCurrentRole } from "@/lib/supabase/auth-helpers";
 import { WelcomeCard } from "@/features/dashboard/WelcomeCard";
 import { StatCard } from "@/features/dashboard/StatCard";
 import { UpcomingEventsWidget, type UpcomingEventItem } from "@/features/dashboard/UpcomingEventsWidget";
 import { AnnouncementsWidget, type AnnouncementItem } from "@/features/dashboard/AnnouncementsWidget";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
+import { MemberOverview } from "@/features/dashboard/MemberOverview";
+import { MembershipCard } from "@/features/dashboard/MembershipCard";
+import { redirect } from "next/navigation";
+import { ROUTES } from "@/constants/routes";
 
 async function getOverviewData() {
   const db = getDb();
@@ -72,11 +76,37 @@ async function getOverviewData() {
 
 export default async function DashboardOverviewPage() {
   const member = await getCurrentMember();
+  if (!member) redirect(ROUTES.signIn);
+
+  const role = await getCurrentRole();
+  if (role !== "exec" && role !== "admin") {
+    return <MemberOverview member={member as any} />;
+  }
+
   const data = await getOverviewData();
 
   return (
     <div className="flex w-full flex-col gap-4 sm:gap-6">
       <WelcomeCard fullName={member?.fullName ?? "there"} execTitle={member?.execTitle ?? null} />
+
+      <MembershipCard
+        memberId={member.id}
+        fullName={member.fullName}
+        email={member.email}
+        avatarUrl={member.avatarUrl}
+        username={(member as { username?: string | null }).username}
+        studentId={(member as { studentId?: string | null }).studentId}
+        campus={(member as { campus?: string | null }).campus}
+        isChiromo={(member as { isChiromo?: boolean | null }).isChiromo}
+        course={(member as { course?: string | null }).course}
+        yearOfStudy={(member as { yearOfStudy?: string | null }).yearOfStudy}
+        createdAt={member.createdAt}
+        membershipStatus={(member as { membershipStatus?: string | null }).membershipStatus ?? "approved"}
+        isApproved
+        role={member.role}
+        execTitle={member.execTitle}
+        cardTheme={(member as { cardTheme?: string | null }).cardTheme}
+      />
 
       {/* Stats grid: 1 col on phones, 2 on tablets, 4 on desktop */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">

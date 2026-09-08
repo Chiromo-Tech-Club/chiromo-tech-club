@@ -7,7 +7,7 @@ import {
   rejectMember, 
   updateMemberPaymentStatus 
 } from "@/actions/admin/members";
-import { ROLES } from "@/constants/roles";
+import { ROLES, ROLE_LABELS } from "@/constants/roles";
 import { EXEC_TITLES, EXEC_TITLE_LABELS, isExecTitle, type ExecTitle } from "@/types/exec-title";
 import { MEMBER_STATUS_LABELS } from "@/types/member-status";
 import type { Role } from "@/types/roles";
@@ -158,7 +158,7 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
 
         <div className="rounded-2xl border border-line/70 bg-surface/90 p-4 shadow-sm backdrop-blur-md">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted">Chiromo (Jerome)</span>
+            <span className="text-xs font-semibold text-muted">Chiromo ()</span>
             <Building2 size={16} className="text-sky" />
           </div>
           <p className="mt-2 font-display text-2xl font-extrabold text-ink">{chiromoCount}</p>
@@ -244,7 +244,7 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
           className="rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-ink"
         >
           <option value="all">All Campuses</option>
-          <option value="chiromo">Chiromo (Jerome) Only</option>
+          <option value="chiromo">Chiromo () Only</option>
           <option value="other">Other Campuses</option>
         </select>
 
@@ -399,17 +399,25 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
           ))}
         </div>
       ) : (
-        /* ALL MEMBERS & EXECUTIVE SEAT TABLE */
-        <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
+        /* ALL MEMBERS — WHO IS WHO */
+        <div className="space-y-3">
+          <div className="rounded-2xl border border-sky/20 bg-sky/5 px-4 py-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky">Who is who</p>
+            <p className="mt-1 text-sm font-semibold text-ink">Assign each person&apos;s club role and executive seat</p>
+            <p className="mt-0.5 text-xs text-muted">
+              Set Club Role to Executive (or Administrator) and pick their seat — Chairperson, Vice Chairperson, Treasurer, etc. That seat title is what appears on their membership card.
+            </p>
+          </div>
+          <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
           <table className="w-full border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-line bg-cream/40 text-xs uppercase tracking-wide text-muted">
                 <th className="py-3 px-4 font-semibold">Member</th>
                 <th className="py-3 px-4 font-semibold">Auth / Campus</th>
                 <th className="py-3 px-4 font-semibold">Status</th>
-                <th className="py-3 px-4 font-semibold">Role</th>
-                <th className="py-3 px-4 font-semibold">Exec Title</th>
-                <th className="py-3 px-4 text-right font-semibold">Actions</th>
+                <th className="py-3 px-4 font-semibold">Club Role</th>
+                <th className="py-3 px-4 font-semibold">Exec Seat</th>
+                <th className="py-3 px-4 text-right font-semibold">Save</th>
               </tr>
             </thead>
             <tbody>
@@ -418,6 +426,7 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
@@ -434,7 +443,11 @@ function MemberRowItem({ member }: { member: ExtendedMemberRow }) {
 
   function save() {
     startTransition(async () => {
-      const result = await updateMemberRole({ memberId: member.id, role, execTitle: role === "exec" ? execTitle : null });
+      const result = await updateMemberRole({
+        memberId: member.id,
+        role,
+        execTitle: role === "exec" || role === "admin" ? execTitle : null,
+      });
       if (result.success) {
         setSaved(true);
         setTimeout(() => setSaved(false), 1500);
@@ -479,21 +492,22 @@ function MemberRowItem({ member }: { member: ExtendedMemberRow }) {
         >
           {ROLES.map((r) => (
             <option key={r} value={r}>
-              {r.toUpperCase()}
+              {ROLE_LABELS[r]}
             </option>
           ))}
         </select>
       </td>
       <td className="py-3 px-4">
-        {role === "exec" ? (
+        {role === "exec" || role === "admin" ? (
           <select
             value={execTitle ?? ""}
             onChange={(e) => setExecTitle(isExecTitle(e.target.value) ? e.target.value : null)}
             className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs text-ink font-medium"
           >
-            <option value="" disabled>
-              Select executive seat…
+            <option value="" disabled={role === "exec"}>
+              {role === "exec" ? "Select executive seat…" : "Optional seat (optional)…"}
             </option>
+            {role === "admin" ? <option value="">No seat — Administrator only</option> : null}
             {EXEC_TITLES.map((t) => (
               <option key={t} value={t}>
                 {EXEC_TITLE_LABELS[t]}
@@ -512,7 +526,7 @@ function MemberRowItem({ member }: { member: ExtendedMemberRow }) {
           onClick={save}
           className="rounded-lg text-xs"
         >
-          {isPending ? "Saving…" : saved ? "Saved" : "Save Seat"}
+          {isPending ? "Saving…" : saved ? "Saved" : "Save Role"}
         </Button>
       </td>
     </tr>

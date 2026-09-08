@@ -3,13 +3,27 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/drizzle/client";
+import { ensureMembersColumns } from "@/lib/drizzle/ensure-members-columns";
 import { members, memberCommunities } from "@/lib/drizzle/schema";
-import { getAuthUserId } from "@/lib/supabase/auth-helpers";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { fullRegistrationSchema, type FullRegistrationInput } from "@/lib/validations/registration";
 import { sendNewsletterConfirmation } from "@/services/email";
 import { ROUTES } from "@/constants/routes";
 import type { ActionResult } from "@/actions/membership";
+
+function registrationErrorMessage(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  if (/column .* does not exist|42703/i.test(msg)) {
+    return "Database is missing membership columns. Open Supabase → SQL Editor and run lib/drizzle/migrations/RUN_IN_SUPABASE_members_columns.sql, then try again.";
+  }
+  if (/duplicate key|unique constraint|23505/i.test(msg)) {
+    return "An account with this email or student ID is already registered.";
+  }
+  if (/foreign key|23503/i.test(msg)) {
+    return "Please sign in first so we can link registration to your account, then submit again.";
+  }
+  return "Unable to complete registration. Please check your details and try again.";
+}
 
 export async function submitClubRegistration(
   input: FullRegistrationInput,
@@ -44,9 +58,12 @@ export async function submitClubRegistration(
       : "unpaid";
 
   const isChiromoCampus =
-    data.isChiromo || data.campus.toLowerCase().includes("chiromo") || data.campus.toLowerCase().includes("jerome");
+    data.isChiromo || data.campus.toLowerCase().includes("chiromo") || data.campus.toLowerCase().includes("");
 
   try {
+    // Heal older Supabase schemas (missing username / membership columns)
+    await ensureMembersColumns();
+
     if (userId) {
       // Upsert into `members` table keyed by auth.users.id
       const [savedMember] = await db
@@ -83,7 +100,7 @@ export async function submitClubRegistration(
             course: data.course,
             yearOfStudy: data.yearOfStudy,
             authProvider,
-            membershipStatus: "pending",
+            // Do NOT reset membershipStatus on update — approval must stick
             membershipFeeStatus: feeStatus,
             feeAmountPaid,
             mpesaReference: data.mpesaReference || null,
@@ -128,7 +145,11 @@ export async function submitClubRegistration(
             course: data.course,
             yearOfStudy: data.yearOfStudy,
             authProvider: "email_password",
-            membershipStatus: "pending",
+            // Preserve existing approval — only set pending for never-reviewed rows
+            membershipStatus:
+              existingMember.membershipStatus === "approved" || existingMember.membershipStatus === "rejected"
+                ? existingMember.membershipStatus
+                : "pending",
             membershipFeeStatus: feeStatus,
             feeAmountPaid,
             mpesaReference: data.mpesaReference || null,
@@ -171,7 +192,7 @@ export async function submitClubRegistration(
     console.error("submitClubRegistration failed:", err);
     return {
       success: false,
-      error: "Unable to complete registration. Please check your details and try again.",
+      error: registrationErrorMessage(err),
     };
   }
 }

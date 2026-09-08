@@ -8,7 +8,11 @@ import { getTechNews } from "@/lib/news";
 import { NewsSlideshow } from "@/components/news/Newsslideshow";
 import { NewsPaginatedGrid } from "@/components/news/Newspaginatedgrid";
 
-export const metadata = { title: "Communities" };
+export const metadata = {
+  title: "Communities — AI, Cloud, Security, Software & More",
+  description:
+    "Explore Chiromo Tech Club communities at the University of Nairobi: Artificial Intelligence, Cloud Computing, Cybersecurity, Software Engineering, Robotics, UI/UX, Data Science, and Mobile Development.",
+};
 
 /** Broad cross-community tag set for the site-wide feed. Each community's
  *  own page narrows this down further — see COMMUNITY_NEWS_TAGS there. */

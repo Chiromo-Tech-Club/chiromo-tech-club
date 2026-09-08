@@ -30,7 +30,7 @@ import { Input } from "@/components/alignui/input";
 import { ROUTES } from "@/constants/routes";
 
 const CAMPUS_OPTIONS = [
-  { id: "chiromo", label: "Chiromo Campus (Jerome / Science Hub)", isChiromo: true },
+  { id: "chiromo", label: "Chiromo Campus ( / Science Hub)", isChiromo: true },
   { id: "main", label: "Main Campus (CBD)", isChiromo: false },
   { id: "kenya_science", label: "Kenya Science Campus", isChiromo: false },
   { id: "upper_kabete", label: "Upper Kabete Campus (CAVS)", isChiromo: false },
@@ -58,7 +58,7 @@ export function RegistrationWizard({
     githubHandle: "",
     bio: "",
     studentId: "",
-    campus: "Chiromo Campus (Jerome / Science Hub)",
+    campus: "Chiromo Campus ( / Science Hub)",
     isChiromo: true,
     faculty: "Faculty of Science & Technology",
     course: "",
@@ -394,7 +394,7 @@ export function RegistrationWizard({
                 <GraduationCap className="text-sky" size={20} /> Academic & Campus Verification
               </h3>
               <p className="mt-1 text-xs text-text-2">
-                Specify your University registration details and whether you are based at Chiromo (Jerome) campus.
+                Specify your University registration details and whether you are based at Chiromo () campus.
               </p>
             </div>
 

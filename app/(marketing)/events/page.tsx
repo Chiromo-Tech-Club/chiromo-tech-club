@@ -13,7 +13,11 @@ import {
 } from "@/features/events/categorize";
 import type { ClubEvent } from "@/types/event";
 
-export const metadata = { title: "Events" };
+export const metadata = {
+  title: "Events — Workshops, Hackathons & Meetups",
+  description:
+    "Upcoming and past Chiromo Tech Club events at the University of Nairobi: workshops, hackathons, tech talks, and community meetups at Chiromo Campus.",
+};
 
 type RawEvent = Pick<ClubEvent, "slug" | "title" | "description" | "startsAt" | "location">;
 type EventListItem = RawEvent & { category: EventCategory; coverImage: string };

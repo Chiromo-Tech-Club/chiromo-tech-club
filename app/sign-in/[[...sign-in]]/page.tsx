@@ -2,20 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, AlertCircle, Lock } from "lucide-react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { TextField, Label, Input, Button, Spinner } from "@heroui/react";
 import { ROUTES } from "@/constants/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { validateEmail, validateSignInPassword } from "@/lib/utils/auth-validation";
-import { AuthAccessGate } from "@/components/auth/AuthAccessGate";
-
-// ─────────────────────────────────────────────────────────────────────────
-// CLERK (commented out — kept for reference / rollback)
-// ─────────────────────────────────────────────────────────────────────────
-// import { SignIn, ClerkLoading, ClerkLoaded } from "@clerk/nextjs";
-// ─────────────────────────────────────────────────────────────────────────
 
 function ArrowLeftIcon() {
   return (
@@ -46,24 +39,36 @@ const INPUT_CLASS =
 const INPUT_CLASS_ERROR =
   "w-full rounded-md border border-red-400 px-3 py-2.5 text-label-sm outline-none transition-colors focus:border-red-500";
 
-export default function SignInPage() {
-  const router = useRouter();
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  no_account:
+    "No CTC account found for that Google login. Sign-in never creates accounts. Use Sign up with a referral code, or register at /register first.",
+  signup_locked:
+    "Sign-up is locked without a referral code. Open Sign up, enter your invite code, then try Google again.",
+  auth_failed: "Authentication failed. Please try again.",
+};
 
-  const [isUnlocked, setIsUnlocked] = useState(false);
+function SignInForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({});
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formLoading, setFormLoading] = useState(false);
-  // Errors that aren't about a specific field — e.g. "invalid credentials" from Supabase.
   const [formError, setFormError] = useState<string | null>(null);
-
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const err = searchParams.get("error");
+    if (err && AUTH_ERROR_MESSAGES[err]) {
+      setGoogleError(AUTH_ERROR_MESSAGES[err]);
+    }
+  }, [searchParams]);
+
   function handleBlur(field: "email" | "password") {
-    if (!isUnlocked) return;
     setTouched((t) => ({ ...t, [field]: true }));
     setFieldErrors((prev) => ({
       ...prev,
@@ -84,10 +89,6 @@ export default function SignInPage() {
 
   async function handleEmailSignIn(e: React.FormEvent) {
     e.preventDefault();
-    if (!isUnlocked) {
-      setFormError("Access locked: Please enter a valid referral/access code above.");
-      return;
-    }
     setFormError(null);
 
     if (!validateAll()) return;
@@ -97,9 +98,6 @@ export default function SignInPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      // Supabase's own message ("Invalid login credentials") doesn't point at
-      // one field, so it stays a form-level error rather than forcing it
-      // onto email or password specifically.
       setFormError(error.message);
       setFormLoading(false);
       return;
@@ -110,16 +108,16 @@ export default function SignInPage() {
   }
 
   async function handleGoogleSignIn() {
-    if (!isUnlocked) {
-      setGoogleError("Access locked: Please enter a valid referral/access code above.");
-      return;
-    }
     setGoogleLoading(true);
     setGoogleError(null);
     const supabase = getSupabaseBrowserClient();
+    // intent=signin tells the callback to reject brand-new OAuth users
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?intent=signin`,
+        queryParams: { prompt: "select_account" },
+      },
     });
     if (error) {
       setGoogleError(error.message);
@@ -128,8 +126,118 @@ export default function SignInPage() {
   }
 
   return (
+    <div className="w-full max-w-md">
+      <form onSubmit={handleEmailSignIn} noValidate className="flex flex-col gap-4">
+        <TextField isRequired className="flex flex-col gap-1.5">
+          <Label className="text-label-xs font-medium text-ink-2">Email</Label>
+          <Input
+            type="email"
+            variant="primary"
+            value={email}
+            placeholder="student@uonbi.ac.ke"
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (touched.email) setFieldErrors((prev) => ({ ...prev, email: validateEmail(e.target.value) }));
+            }}
+            onBlur={() => handleBlur("email")}
+            aria-invalid={!!fieldErrors.email}
+            className={`${fieldErrors.email ? INPUT_CLASS_ERROR : INPUT_CLASS} rounded-md`}
+          />
+          {fieldErrors.email && (
+            <p className="flex items-center gap-1 text-label-2xs text-red-500">
+              <AlertCircle size={12} /> {fieldErrors.email}
+            </p>
+          )}
+        </TextField>
+
+        <TextField isRequired className="flex flex-col gap-1.5">
+          <Label className="text-label-xs font-medium text-ink-2">Password</Label>
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              variant="primary"
+              value={password}
+              placeholder="••••••••"
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (touched.password)
+                  setFieldErrors((prev) => ({ ...prev, password: validateSignInPassword(e.target.value) }));
+              }}
+              onBlur={() => handleBlur("password")}
+              aria-invalid={!!fieldErrors.password}
+              className={`${fieldErrors.password ? INPUT_CLASS_ERROR : INPUT_CLASS} rounded-md pr-10`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          {fieldErrors.password && (
+            <p className="flex items-center gap-1 text-label-2xs text-red-500">
+              <AlertCircle size={12} /> {fieldErrors.password}
+            </p>
+          )}
+        </TextField>
+
+        {formError && (
+          <p className="flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-label-xs text-red-600">
+            <AlertCircle size={14} className="flex-none" /> {formError}
+          </p>
+        )}
+
+        <Button
+          type="submit"
+          variant="primary"
+          isDisabled={formLoading}
+          className="flex w-full items-center justify-center gap-2 rounded-md bg-navy py-2.5 text-label-sm font-semibold text-white"
+        >
+          {formLoading ? <Spinner size="sm" color="current" /> : "Sign in"}
+        </Button>
+      </form>
+
+      <div className="my-5 flex items-center gap-3">
+        <div className="h-px flex-1 bg-line" />
+        <span className="text-label-xs text-ink-2">or</span>
+        <div className="h-px flex-1 bg-line" />
+      </div>
+
+      <button
+        type="button"
+        onClick={handleGoogleSignIn}
+        disabled={googleLoading}
+        className="flex w-full items-center justify-center gap-3 rounded-md border border-line bg-surface py-2.5 text-label-sm font-semibold text-ink transition-colors hover:bg-cream-2 disabled:opacity-60"
+      >
+        <GoogleIcon />
+        {googleLoading ? "Redirecting…" : "Continue with Google"}
+      </button>
+
+      {googleError && (
+        <p className="mt-3 flex items-start gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-label-xs text-red-600">
+          <AlertCircle size={14} className="mt-0.5 flex-none" /> {googleError}
+        </p>
+      )}
+
+      <p className="mt-6 text-center text-label-xs text-ink-2">
+        Don&apos;t have an account?{" "}
+        <Link href={ROUTES.signUp} className="font-semibold text-ink hover:underline">
+          Sign up (referral code required)
+        </Link>
+        {" · "}
+        <Link href={ROUTES.register} className="font-semibold text-green hover:underline">
+          Register for club
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
     <div className="grid min-h-screen grid-cols-1 bg-surface lg:grid-cols-12">
-      {/* LEFT COLUMN: AUTH FORM SECTION */}
       <div className="flex min-h-screen flex-col justify-between overflow-y-auto px-6 py-8 sm:px-12 lg:col-span-6 lg:px-16 xl:col-span-5">
         <div className="flex items-center justify-between">
           <Link href={ROUTES.home} className="flex items-center gap-2.5">
@@ -154,136 +262,14 @@ export default function SignInPage() {
           <div className="mb-6">
             <h1 className="font-display text-title-h5 font-medium text-ink sm:text-title-h4">Welcome back</h1>
             <p className="mt-1.5 text-paragraph-sm text-ink-2">
-              Sign in to access your tech track workspace and member projects.
+              Sign in to access your tech track workspace and member projects. New accounts are not created from this
+              page.
             </p>
           </div>
 
-          <div className="w-full max-w-md">
-            {/* Referral / Access Gate */}
-            <AuthAccessGate
-              isUnlocked={isUnlocked}
-              onUnlock={setIsUnlocked}
-              pageType="sign-in"
-            />
-
-            {/* Email / password form */}
-            <form onSubmit={handleEmailSignIn} noValidate className="flex flex-col gap-4">
-              <TextField isRequired className="flex flex-col gap-1.5">
-                <Label className="text-label-xs font-medium text-ink-2">Email</Label>
-                <Input
-                  type="email"
-                  variant="primary"
-                  value={email}
-                  disabled={!isUnlocked}
-                  placeholder={isUnlocked ? "student@uonbi.ac.ke" : "Locked — enter referral code above"}
-                  onChange={(e) => {
-                    if (!isUnlocked) return;
-                    setEmail(e.target.value);
-                    if (touched.email) setFieldErrors((prev) => ({ ...prev, email: validateEmail(e.target.value) }));
-                  }}
-                  onBlur={() => handleBlur("email")}
-                  aria-invalid={!!fieldErrors.email}
-                  className={`${fieldErrors.email ? INPUT_CLASS_ERROR : INPUT_CLASS} rounded-md ${
-                    !isUnlocked ? "cursor-not-allowed opacity-50 bg-cream/30" : ""
-                  }`}
-                />
-                {fieldErrors.email && (
-                  <p className="flex items-center gap-1 text-label-2xs text-red-500">
-                    <AlertCircle size={12} /> {fieldErrors.email}
-                  </p>
-                )}
-              </TextField>
-
-              <TextField isRequired className="flex flex-col gap-1.5">
-                <Label className="text-label-xs font-medium text-ink-2">Password</Label>
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    variant="primary"
-                    value={password}
-                    disabled={!isUnlocked}
-                    placeholder={isUnlocked ? "••••••••" : "Locked — enter referral code above"}
-                    onChange={(e) => {
-                      if (!isUnlocked) return;
-                      setPassword(e.target.value);
-                      if (touched.password) setFieldErrors((prev) => ({ ...prev, password: validateSignInPassword(e.target.value) }));
-                    }}
-                    onBlur={() => handleBlur("password")}
-                    aria-invalid={!!fieldErrors.password}
-                    className={`${fieldErrors.password ? INPUT_CLASS_ERROR : INPUT_CLASS} pr-10 rounded-md ${
-                      !isUnlocked ? "cursor-not-allowed opacity-50 bg-cream/30" : ""
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    disabled={!isUnlocked}
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink disabled:opacity-40"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-                {fieldErrors.password && (
-                  <p className="flex items-center gap-1 text-label-2xs text-red-500">
-                    <AlertCircle size={12} /> {fieldErrors.password}
-                  </p>
-                )}
-              </TextField>
-
-              {formError && (
-                <p className="flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-label-xs text-red-600">
-                  <AlertCircle size={14} className="flex-none" /> {formError}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                variant="primary"
-                isDisabled={formLoading || !isUnlocked}
-                className={`flex w-full items-center justify-center gap-2 rounded-md bg-navy py-2.5 text-label-sm font-semibold text-white ${
-                  !isUnlocked ? "cursor-not-allowed opacity-50" : ""
-                }`}
-              >
-                {!isUnlocked ? (
-                  <span className="flex items-center gap-1.5">
-                    <Lock size={14} /> Sign In Disabled
-                  </span>
-                ) : formLoading ? (
-                  <Spinner size="sm" color="current" />
-                ) : (
-                  "Sign in"
-                )}
-              </Button>
-            </form>
-
-            <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-line" />
-              <span className="text-label-xs text-ink-2">or</span>
-              <div className="h-px flex-1 bg-line" />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={googleLoading || !isUnlocked}
-              className={`flex w-full items-center justify-center gap-3 rounded-md border border-line bg-surface py-2.5 text-label-sm font-semibold text-ink transition-colors hover:bg-cream-2 ${
-                !isUnlocked ? "cursor-not-allowed opacity-50" : "disabled:opacity-60"
-              }`}
-            >
-              <GoogleIcon />
-              {!isUnlocked ? "Google Login Disabled" : googleLoading ? "Redirecting…" : "Continue with Google"}
-            </button>
-
-            {googleError && <p className="mt-3 text-label-xs text-red-500">{googleError}</p>}
-
-            <p className="mt-6 text-center text-label-xs text-ink-2">
-              Don&apos;t have an account?{" "}
-              <Link href={ROUTES.signUp} className="font-semibold text-ink hover:underline">
-                Sign up
-              </Link>
-            </p>
-          </div>
+          <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-cream-2" />}>
+            <SignInForm />
+          </Suspense>
         </div>
 
         <div className="pt-4 text-label-xs text-muted">
@@ -291,7 +277,6 @@ export default function SignInPage() {
         </div>
       </div>
 
-      {/* RIGHT COLUMN: DARK PORTAL BANNER */}
       <div className="relative hidden bg-navy-deep lg:col-span-6 lg:flex lg:flex-col lg:justify-between lg:p-16 xl:col-span-7">
         <div className="absolute inset-0 z-0 overflow-hidden">
           <Image
@@ -306,7 +291,7 @@ export default function SignInPage() {
 
         <div className="relative z-10 flex justify-end">
           <span className="inline-flex items-center gap-2 rounded-pill border border-white/15 bg-white/10 px-4 py-1.5 text-label-xs font-semibold text-white backdrop-blur-md">
-            <span className="h-2 w-2 rounded-full bg-sky animate-pulse" />
+            <span className="h-2 w-2 animate-pulse rounded-full bg-sky" />
             Member Portal
           </span>
         </div>

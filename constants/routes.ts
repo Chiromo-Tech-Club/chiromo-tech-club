@@ -17,6 +17,7 @@ export const ROUTES = {
   join: "/join",
   register: "/register",
   dashboard: "/dashboard",
+  dashboardProfile: "/dashboard/profile",
   dashboardSection: (execTitle: string, slug: string) => `/dashboard/${execTitle}/${slug}`,
   admin: "/admin",
   adminProjects: "/admin/projects",

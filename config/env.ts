@@ -11,7 +11,6 @@ import { z } from "zod";
  */
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
 
   // Clerk (added when lib/clerk is wired up)
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),

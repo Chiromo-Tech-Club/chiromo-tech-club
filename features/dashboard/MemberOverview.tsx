@@ -3,13 +3,9 @@ import Link from "next/link";
 import { 
   Trophy, 
   Sparkles, 
-  GraduationCap, 
-  Building2, 
-  CreditCard, 
   ArrowRight, 
   Flame, 
   CheckCircle2, 
-  BookOpen, 
   Award,
   Code2
 } from "lucide-react";
@@ -23,6 +19,7 @@ import { UpcomingEventsWidget, type UpcomingEventItem } from "@/features/dashboa
 import { CommunityProjectsWidget, type CommunityProjectItem } from "@/features/dashboard/CommunityProjectsWidget";
 import { AnnouncementsWidget, type AnnouncementItem } from "@/features/dashboard/AnnouncementsWidget";
 import { MemberQuickActions } from "@/features/dashboard/MemberQuickActions";
+import { MembershipCard } from "@/features/dashboard/MembershipCard";
 import { ROUTES } from "@/constants/routes";
 
 async function getMemberOverviewData(member: Member) {
@@ -119,22 +116,58 @@ async function getMemberOverviewData(member: Member) {
   }
 
   // 5. Full member registration details
-  const [memberDetail] = await db
-    .select({
-      studentId: members.studentId,
-      campus: members.campus,
-      isChiromo: members.isChiromo,
-      course: members.course,
-      yearOfStudy: members.yearOfStudy,
-      membershipStatus: members.membershipStatus,
-      membershipFeeStatus: members.membershipFeeStatus,
-      feeAmountPaid: members.feeAmountPaid,
-      mpesaReference: members.mpesaReference,
-      authProvider: members.authProvider,
-    })
-    .from(members)
-    .where(eq(members.id, member.id))
-    .limit(1);
+  let memberDetail: {
+    studentId: string | null;
+    campus: string | null;
+    isChiromo: boolean | null;
+    course: string | null;
+    yearOfStudy: string | null;
+    membershipStatus: string | null;
+    membershipFeeStatus: string | null;
+    feeAmountPaid: number | null;
+    mpesaReference: string | null;
+    authProvider: string | null;
+    cardTheme: string | null;
+  } | undefined;
+
+  try {
+    const [row] = await db
+      .select({
+        studentId: members.studentId,
+        campus: members.campus,
+        isChiromo: members.isChiromo,
+        course: members.course,
+        yearOfStudy: members.yearOfStudy,
+        membershipStatus: members.membershipStatus,
+        membershipFeeStatus: members.membershipFeeStatus,
+        feeAmountPaid: members.feeAmountPaid,
+        mpesaReference: members.mpesaReference,
+        authProvider: members.authProvider,
+        cardTheme: members.cardTheme,
+      })
+      .from(members)
+      .where(eq(members.id, member.id))
+      .limit(1);
+    memberDetail = row;
+  } catch {
+    const [row] = await db
+      .select({
+        studentId: members.studentId,
+        campus: members.campus,
+        isChiromo: members.isChiromo,
+        course: members.course,
+        yearOfStudy: members.yearOfStudy,
+        membershipStatus: members.membershipStatus,
+        membershipFeeStatus: members.membershipFeeStatus,
+        feeAmountPaid: members.feeAmountPaid,
+        mpesaReference: members.mpesaReference,
+        authProvider: members.authProvider,
+      })
+      .from(members)
+      .where(eq(members.id, member.id))
+      .limit(1);
+    memberDetail = row ? { ...row, cardTheme: "navy_gold" } : undefined;
+  }
 
   return {
     upcomingEvents: upcomingEvents.map<UpcomingEventItem>((e) => ({
@@ -162,8 +195,22 @@ export async function MemberOverview({ member }: { member: Member }) {
   const profile = data.profile;
   const academy = data.academy;
 
-  const isApproved = profile?.membershipStatus === "approved" || member.role === "member" || member.role === "exec" || member.role === "admin";
+  const elevatedRole =
+    member.role === "member" || member.role === "exec" || member.role === "admin";
+
+  // Prefer live DB status; fall back to role so approved members never stay PENDING
+  // just because membership_status was reset or missing from a partial query.
+  const membershipStatus =
+    profile?.membershipStatus ??
+    member.membershipStatus ??
+    (elevatedRole ? "approved" : "pending");
+
+  const isApproved = membershipStatus === "approved" || elevatedRole;
   const isChiromo = profile?.isChiromo ?? true;
+  const cardTheme =
+    (member as { cardTheme?: string | null }).cardTheme ??
+    (profile as { cardTheme?: string | null } | undefined)?.cardTheme ??
+    "navy_gold";
 
   // Compute Gamification Level based on points
   const currentLevel = Math.floor(academy.totalPoints / 200) + 1;
@@ -173,84 +220,87 @@ export async function MemberOverview({ member }: { member: Member }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Top Welcome Card */}
-      <WelcomeCard fullName={member.fullName} execTitle={null} />
+      <WelcomeCard fullName={member.fullName} execTitle={member.execTitle ?? null} />
 
-      {/* Member Digital ID & Academy Gamification Spotlight Grid */}
+      {/* Printable Membership Card */}
+      <div className="space-y-3">
+        <MembershipCard
+          memberId={member.id}
+          fullName={member.fullName}
+          email={member.email}
+          avatarUrl={member.avatarUrl}
+          username={(member as { username?: string | null }).username}
+          studentId={profile?.studentId}
+          campus={profile?.campus || (isChiromo ? "Chiromo Campus ( / Science Hub)" : "Main Campus")}
+          isChiromo={isChiromo}
+          course={profile?.course}
+          yearOfStudy={profile?.yearOfStudy}
+          createdAt={member.createdAt}
+          membershipStatus={membershipStatus}
+          isApproved={isApproved}
+          role={member.role}
+          execTitle={member.execTitle}
+          cardTheme={cardTheme}
+        />
+        <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+          <Link
+            href={ROUTES.dashboardProfile}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-bold text-ink shadow-sm hover:bg-cream"
+          >
+            Update photo & profile
+          </Link>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
+            <span>
+              <span className="font-semibold text-ink-2">Reg</span>{" "}
+              <span className="font-mono text-ink">{profile?.studentId || "Pending"}</span>
+            </span>
+            <span>
+              <span className="font-semibold text-ink-2">Fee</span>{" "}
+              {profile?.membershipFeeStatus === "fully_paid"
+                ? "500 KES Paid"
+                : profile?.membershipFeeStatus === "deposit_paid"
+                  ? "250 KES Deposit"
+                  : "Pay Later"}
+            </span>
+          </div>
+        </div>
+        {!profile?.studentId && (
+          <div className="flex items-center justify-between rounded-xl border border-sky/20 bg-sky/5 p-3">
+            <span className="text-xs font-medium text-sky">Complete registration so your card shows student ID & programme</span>
+            <Link href={ROUTES.register} className="flex items-center gap-1 text-xs font-bold text-sky hover:underline">
+              Register Now <ArrowRight size={13} />
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Academy Gamification + Status */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        
-        {/* Digital Membership ID Card */}
         <div className="relative overflow-hidden rounded-3xl border border-line/80 bg-gradient-to-br from-surface via-surface to-cream/40 p-6 shadow-md backdrop-blur-md lg:col-span-6">
           <div className="flex items-start justify-between">
             <div>
-              <span className="inline-block rounded-full bg-navy/10 px-3 py-1 text-[11px] font-extrabold tracking-wider text-navy uppercase">
-                Official CTC Member Card
+              <span className="inline-block rounded-full bg-navy/10 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-navy">
+                Membership Status
               </span>
               <h3 className="mt-2 font-display text-xl font-extrabold text-ink">{member.fullName}</h3>
-              <p className="text-xs text-muted font-mono">{member.email}</p>
+              <p className="font-mono text-xs text-muted">{member.email}</p>
             </div>
-
-            <div className="text-right">
-              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                isApproved 
-                  ? "bg-green/10 text-green ring-1 ring-green/20" 
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                isApproved
+                  ? "bg-green/10 text-green ring-1 ring-green/20"
                   : "bg-amber-500/10 text-amber-700 ring-1 ring-amber-500/20"
-              }`}>
-                <CheckCircle2 size={12} />
-                {isApproved ? "Verified Member" : "Application Pending"}
-              </span>
-            </div>
+              }`}
+            >
+              <CheckCircle2 size={12} />
+              {isApproved ? "Verified Member" : "Application Pending"}
+            </span>
           </div>
-
-          <div className="mt-6 grid grid-cols-2 gap-3 border-t border-line/60 pt-4 text-xs">
-            <div>
-              <span className="text-[11px] text-muted flex items-center gap-1">
-                <GraduationCap size={13} className="text-sky" /> Student Reg No.
-              </span>
-              <p className="mt-0.5 font-mono font-bold text-ink">
-                {profile?.studentId || "Complete in Registration"}
-              </p>
-            </div>
-
-            <div>
-              <span className="text-[11px] text-muted flex items-center gap-1">
-                <Building2 size={13} className="text-green" /> Home Campus
-              </span>
-              <p className="mt-0.5 font-bold text-ink">
-                {profile?.campus || (isChiromo ? "Chiromo Campus (Jerome)" : "Main Campus")}
-              </p>
-            </div>
-
-            <div>
-              <span className="text-[11px] text-muted flex items-center gap-1">
-                <BookOpen size={13} className="text-navy" /> Course & Year
-              </span>
-              <p className="mt-0.5 font-medium text-ink">
-                {profile?.course || "Computing & Sciences"} {profile?.yearOfStudy ? `• ${profile.yearOfStudy}` : ""}
-              </p>
-            </div>
-
-            <div>
-              <span className="text-[11px] text-muted flex items-center gap-1">
-                <CreditCard size={13} className="text-sky" /> Fee Status
-              </span>
-              <p className="mt-0.5 font-bold text-green font-mono">
-                {profile?.membershipFeeStatus === "fully_paid"
-                  ? "500 KES (Full Paid)"
-                  : profile?.membershipFeeStatus === "deposit_paid"
-                  ? "250 KES (Deposit Active)"
-                  : "Flexible / Pay Later"}
-              </p>
-            </div>
-          </div>
-
-          {!profile?.studentId && (
-            <div className="mt-4 rounded-xl border border-sky/20 bg-sky/5 p-3 flex items-center justify-between">
-              <span className="text-xs text-sky font-medium">Complete progressive registration for official badge</span>
-              <Link href={ROUTES.register} className="text-xs font-bold text-sky hover:underline flex items-center gap-1">
-                Register Now <ArrowRight size={13} />
-              </Link>
-            </div>
-          )}
+          <p className="mt-4 text-xs leading-relaxed text-muted">
+            Your printable card above uses your photo, CTC logo, membership ID (
+            <span className="font-mono text-ink">CTC-UN-…</span> for UoN / Chiromo), academic expiry, and an italic
+            signature generated from your name.
+          </p>
         </div>
 
         {/* Academy & Interactive Puzzle Hub Tracker */}

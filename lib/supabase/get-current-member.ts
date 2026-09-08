@@ -64,6 +64,7 @@ export async function getCurrentMember() {
 
         return {
           ...coreRow,
+          username: null,
           studentId: null,
           campus: "Chiromo Campus",
           isChiromo: true,
@@ -71,13 +72,18 @@ export async function getCurrentMember() {
           yearOfStudy: null,
           phoneNumber: null,
           authProvider: "email_password",
-          membershipStatus: "pending",
+          // If role was already elevated, don't fake a pending status
+          membershipStatus:
+            coreRow.role === "member" || coreRow.role === "exec" || coreRow.role === "admin"
+              ? "approved"
+              : "pending",
           membershipFeeStatus: "unpaid",
           feeAmountPaid: 0,
           mpesaReference: null,
           reviewedById: null,
           reviewedAt: null,
           reviewNotes: null,
+          cardTheme: "navy_gold",
         } as typeof members.$inferSelect;
       } catch (fallbackErr) {
         console.error("Core members fallback query also failed:", fallbackErr);

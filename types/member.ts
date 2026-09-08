@@ -10,6 +10,7 @@ export interface Member {
   clerkUserId?: string;
   fullName: string;
   email: string;
+  username?: string | null;
   role: Role;
   execTitle: ExecTitle | null;
   communitySlugs: string[];
@@ -30,6 +31,7 @@ export interface Member {
   reviewedById?: string | null;
   reviewedAt?: string | null;
   reviewNotes?: string | null;
+  cardTheme?: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

@@ -1055,3 +1055,34 @@ body {
 .chat-scroll::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-ink-2);
 }
+
+@keyframes ctc-holo-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* When Print is blocked from opening a popup, hide everything except the card */
+@media print {
+  body.ctc-print-card-only * {
+    visibility: hidden !important;
+  }
+  body.ctc-print-card-only #ctc-membership-card-print,
+  body.ctc-print-card-only #ctc-membership-card-print * {
+    visibility: visible !important;
+  }
+  body.ctc-print-card-only #ctc-membership-card-print {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 86mm !important;
+    height: 54mm !important;
+    margin: 0 auto !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

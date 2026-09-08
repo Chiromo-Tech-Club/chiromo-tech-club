@@ -50,21 +50,32 @@ export async function getAuthUserId(): Promise<string | null> {
 /**
  * Reads the caller's role straight from the `members` table (row where
  * id === auth.uid()) instead of Clerk's publicMetadata.role. Falls back to
- * DEFAULT_ROLE if unset, not signed in, or the row is soft-deleted — so a
- * missing/bad row fails closed, same guarantee the old version gave.
+ * DEFAULT_ROLE if unset, not signed in, query fails, or the row is soft-deleted.
  */
 export async function getCurrentRole(): Promise<Role> {
   const userId = await getAuthUserId();
   if (!userId) return DEFAULT_ROLE;
 
-  const db = getDb();
-  const [member] = await db
-    .select({ role: members.role })
-    .from(members)
-    .where(and(eq(members.id, userId), isNull(members.deletedAt)))
-    .limit(1);
+  try {
+    const db = getDb();
+    const [member] = await db
+      .select({ role: members.role })
+      .from(members)
+      .where(and(eq(members.id, userId), isNull(members.deletedAt)))
+      .limit(1);
 
-  return isRole(member?.role) ? member.role : DEFAULT_ROLE;
+    return isRole(member?.role) ? member.role : DEFAULT_ROLE;
+  } catch (err) {
+    console.warn("getCurrentRole Drizzle query failed, falling back to Supabase:", err);
+    try {
+      const supabase = await getSupabaseServerClient();
+      const { data } = await supabase.from("members").select("role").eq("id", userId).maybeSingle();
+      return isRole(data?.role) ? data.role : DEFAULT_ROLE;
+    } catch (fallbackErr) {
+      console.error("getCurrentRole fallback also failed:", fallbackErr);
+      return DEFAULT_ROLE;
+    }
+  }
 }
 
 /** Only meaningful when getCurrentRole() === "exec" — which named seat they hold. */
@@ -72,14 +83,26 @@ export async function getCurrentExecTitle(): Promise<ExecTitle | null> {
   const userId = await getAuthUserId();
   if (!userId) return null;
 
-  const db = getDb();
-  const [member] = await db
-    .select({ execTitle: members.execTitle })
-    .from(members)
-    .where(and(eq(members.id, userId), isNull(members.deletedAt)))
-    .limit(1);
+  try {
+    const db = getDb();
+    const [member] = await db
+      .select({ execTitle: members.execTitle })
+      .from(members)
+      .where(and(eq(members.id, userId), isNull(members.deletedAt)))
+      .limit(1);
 
-  return isExecTitle(member?.execTitle) ? member.execTitle : null;
+    return isExecTitle(member?.execTitle) ? member.execTitle : null;
+  } catch (err) {
+    console.warn("getCurrentExecTitle Drizzle query failed, falling back to Supabase:", err);
+    try {
+      const supabase = await getSupabaseServerClient();
+      const { data } = await supabase.from("members").select("exec_title").eq("id", userId).maybeSingle();
+      const title = (data as { exec_title?: string | null } | null)?.exec_title;
+      return isExecTitle(title) ? title : null;
+    } catch {
+      return null;
+    }
+  }
 }
 
 export async function requireRole(required: Role): Promise<{ ok: true } | { ok: false; role: Role }> {
@@ -109,8 +132,12 @@ export async function canAccessExecSection(sectionTitle: ExecTitle): Promise<boo
  */
 export async function setUserRole(memberId: string, role: Role, execTitle: ExecTitle | null): Promise<void> {
   const db = getDb();
+  // Keep named seats for Executive (required) and Administrator (optional leadership title).
+  const resolvedTitle =
+    role === "exec" || role === "admin" ? execTitle : null;
+
   await db
     .update(members)
-    .set({ role, execTitle: role === "exec" ? execTitle : null, updatedAt: new Date() })
+    .set({ role, execTitle: resolvedTitle, updatedAt: new Date() })
     .where(eq(members.id, memberId));
 }

@@ -3,7 +3,7 @@ import { UserPen, Compass, CalendarPlus } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 
 const ACTIONS = [
-  { href: ROUTES.join, label: "Edit My Profile", icon: UserPen },
+  { href: ROUTES.dashboardProfile, label: "Edit My Profile", icon: UserPen },
   { href: ROUTES.communities, label: "Browse Communities", icon: Compass },
   { href: ROUTES.events, label: "Find an Event", icon: CalendarPlus },
 ];

@@ -1,15 +1,13 @@
 "use client";
 
-// New file — Clerk's <UserButton /> was a fully-built profile menu
-// (avatar, account settings, sign-out) with no setup required. Supabase
-// doesn't ship an equivalent component, so this is a minimal stand-in:
-// just an avatar + sign-out for now. Extend this later if you want
-// account settings, theme toggle, etc. inside the same menu.
+// Minimal account menu: avatar, edit profile, sign-out.
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { ROUTES } from "@/constants/routes";
 
 interface UserMenuProps {
   avatarUrl: string | null;
@@ -40,7 +38,8 @@ export function UserMenu({ avatarUrl, fullName }: UserMenuProps) {
         aria-label="Account menu"
       >
         {avatarUrl ? (
-          <Image src={avatarUrl} alt={fullName} width={32} height={32} className="h-full w-full object-cover" />
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt={fullName} className="h-full w-full object-cover" />
         ) : (
           <span className="flex h-full w-full items-center justify-center bg-navy text-xs font-semibold text-white">
             {initial}
@@ -50,10 +49,16 @@ export function UserMenu({ avatarUrl, fullName }: UserMenuProps) {
 
       {open && (
         <>
-          {/* Click-away layer */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-10 z-50 w-44 rounded-card-sm border border-line bg-surface p-1 shadow-lg">
+          <div className="absolute right-0 top-10 z-50 w-48 rounded-card-sm border border-line bg-surface p-1 shadow-lg">
             <div className="truncate px-3 py-2 text-label-xs font-medium text-ink-2">{fullName}</div>
+            <Link
+              href={ROUTES.dashboardProfile}
+              onClick={() => setOpen(false)}
+              className="block w-full rounded-card-sm px-3 py-2 text-left text-label-sm text-ink transition-colors hover:bg-cream-2"
+            >
+              Edit profile
+            </Link>
             <button
               type="button"
               onClick={handleSignOut}

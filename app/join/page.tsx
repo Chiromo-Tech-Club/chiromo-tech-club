@@ -3,7 +3,11 @@ import Link from "next/link";
 import { JoinForm } from "@/features/membership/JoinForm";
 import { ROUTES } from "@/constants/routes";
 
-export const metadata = { title: "Join the Club | Chiromo Tech Club" };
+export const metadata = {
+  title: "Join Chiromo Tech Club",
+  description:
+    "Join Chiromo Tech Club (CTC) at the University of Nairobi Chiromo Campus — connect with AI, software, cloud, security, and robotics communities.",
+};
 
 function ArrowLeftIcon() {
   return (

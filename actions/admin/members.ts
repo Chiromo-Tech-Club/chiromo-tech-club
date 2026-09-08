@@ -56,7 +56,7 @@ export async function updateMemberRole(input: z.infer<typeof updateRoleSchema>):
   }
 
   const { memberId, role, execTitle } = parsed.data;
-  const resolvedExecTitle = role === "exec" ? execTitle : null;
+  const resolvedExecTitle = role === "exec" || role === "admin" ? execTitle : null;
 
   try {
     await setUserRole(memberId, role, resolvedExecTitle);

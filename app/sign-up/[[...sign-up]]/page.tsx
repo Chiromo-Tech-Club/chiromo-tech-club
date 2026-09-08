@@ -104,7 +104,7 @@ export default function SignUpPage() {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?intent=signup`,
       },
     });
 
@@ -141,7 +141,10 @@ export default function SignUpPage() {
     const supabase = getSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?intent=signup`,
+        queryParams: { prompt: "select_account" },
+      },
     });
     if (error) {
       setGoogleError(error.message);
@@ -185,7 +188,6 @@ export default function SignUpPage() {
             <AuthAccessGate
               isUnlocked={isUnlocked}
               onUnlock={setIsUnlocked}
-              pageType="sign-up"
             />
 
             {confirmationSent ? (
