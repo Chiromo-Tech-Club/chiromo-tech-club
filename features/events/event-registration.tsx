@@ -7,12 +7,12 @@ import { ROUTES } from "@/constants/routes";
 
 export function EventRegistrationForm({
   eventSlug,
-  isSignedIn,
+  isSignedIn = false,
   alreadyRegistered,
   spotsLeft,
 }: {
   eventSlug: string;
-  isSignedIn: boolean;
+  isSignedIn?: boolean;
   alreadyRegistered?: boolean;
   spotsLeft?: number | null;
 }) {
