@@ -293,7 +293,7 @@ export const tasks = pgTable("tasks", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
-/** Recent Documents — links to external files (Drive/Docs) rather than uploads; no file storage is wired up yet. */
+/** Recent Documents — uploaded files (or legacy external links) stored as a public URL. */
 export const documents = pgTable("documents", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),

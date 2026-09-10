@@ -1,4 +1,4 @@
-import { uploadPublicImage, uploadPrivateAvatar, BUCKETS } from "@/lib/supabase/storage";
+import { uploadPublicImage, uploadPrivateAvatar, uploadPublicDocument, BUCKETS } from "@/lib/supabase/storage";
 import { slugify } from "@/lib/utils/slugify";
 
 /**
@@ -19,4 +19,10 @@ export async function uploadEventCover(eventSlug: string, file: File) {
 
 export async function uploadMemberAvatar(memberId: string, file: File) {
   return uploadPrivateAvatar(memberId, file);
+}
+
+export async function uploadClubDocument(memberId: string, file: File) {
+  const safeName = slugify(file.name) || "document";
+  const path = `${memberId}/${Date.now()}-${safeName}`;
+  return uploadPublicDocument(path, file);
 }

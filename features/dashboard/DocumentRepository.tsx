@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { FolderOpen, ExternalLink, Search } from "lucide-react";
+import { useMemo, useRef, useState, useTransition } from "react";
+import { FolderOpen, ExternalLink, Search, FileUp } from "lucide-react";
 import { addDocument } from "@/actions/dashboard/documents";
 import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
+import { LIMITS } from "@/constants/limits";
 
 export interface DocumentItem {
   id: string;
@@ -16,21 +17,35 @@ export interface DocumentItem {
 }
 
 function NewDocumentForm() {
+  const fileRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
   const [category, setCategory] = useState("");
+  const [fileName, setFileName] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const file = fileRef.current?.files?.[0];
+    if (!file) {
+      setError("Choose a file to upload.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("title", title);
+    formData.set("category", category);
+    formData.set("file", file);
+
     startTransition(async () => {
-      const result = await addDocument({ title, url, category });
+      const result = await addDocument(formData);
       if (result.success) {
         setTitle("");
-        setUrl("");
         setCategory("");
+        setFileName(null);
+        if (fileRef.current) fileRef.current.value = "";
       } else {
         setError(result.error ?? "Something went wrong.");
       }
@@ -39,18 +54,39 @@ function NewDocumentForm() {
 
   return (
     <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
-      <h3 className="mb-4 font-display text-sm font-bold text-ink">Link a Document</h3>
+      <h3 className="mb-4 font-display text-sm font-bold text-ink">Upload a Document</h3>
       <p className="mb-3 text-xs text-muted">
-        Paste a link (Google Drive, Docs, Sheets, etc.) — file uploads aren&apos;t wired up yet.
+        Upload a PDF, Word, Excel, PowerPoint, text, or image file (max{" "}
+        {LIMITS.maxDocumentBytes / (1024 * 1024)} MB).
       </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr]">
         <Input placeholder="Document title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-        <Input placeholder="Category (e.g. Finance, Legal)" value={category} onChange={(e) => setCategory(e.target.value)} />
+        <Input
+          placeholder="Category (e.g. Finance, Legal)"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
       </div>
-      <Input placeholder="URL" type="url" value={url} onChange={(e) => setUrl(e.target.value)} required className="mt-3" />
+
+      <label className="mt-3 flex cursor-pointer flex-col items-start gap-2 rounded-xl border border-dashed border-line bg-cream/40 px-4 py-4 transition-colors hover:bg-cream">
+        <span className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
+          <FileUp size={16} className="text-green" />
+          {fileName ? "Change file" : "Choose file"}
+        </span>
+        <span className="text-xs text-muted">{fileName ?? "No file selected"}</span>
+        <input
+          ref={fileRef}
+          type="file"
+          className="sr-only"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.webp,application/pdf,image/*"
+          onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+          required
+        />
+      </label>
+
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
       <Button type="submit" variant="primary" disabled={isPending} className="mt-3">
-        {isPending ? "Saving…" : "Add Document"}
+        {isPending ? "Uploading…" : "Add Document"}
       </Button>
     </form>
   );
@@ -72,7 +108,12 @@ export function DocumentRepository({
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return documents;
-    return documents.filter((d) => d.title.toLowerCase().includes(q) || d.category.toLowerCase().includes(q) || d.uploadedByName.toLowerCase().includes(q));
+    return documents.filter(
+      (d) =>
+        d.title.toLowerCase().includes(q) ||
+        d.category.toLowerCase().includes(q) ||
+        d.uploadedByName.toLowerCase().includes(q),
+    );
   }, [documents, query]);
 
   const grouped = useMemo(() => {
@@ -108,14 +149,19 @@ export function DocumentRepository({
           )}
         </div>
         {visible.length === 0 ? (
-          <p className="text-sm text-muted">{query ? `No documents match "${query}".` : "No documents linked yet."}</p>
+          <p className="text-sm text-muted">{query ? `No documents match "${query}".` : "No documents uploaded yet."}</p>
         ) : (
           Array.from(grouped.entries()).map(([category, items]) => (
             <div key={category} className="mb-5 last:mb-0">
               <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">{category}</div>
               {items.map((d) => (
                 <div key={d.id} className="flex items-center justify-between border-b border-line py-2.5 last:border-0">
-                  <a href={d.url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm font-medium text-ink hover:text-green">
+                  <a
+                    href={d.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 text-sm font-medium text-ink hover:text-green"
+                  >
                     {d.title}
                     <ExternalLink size={11} className="text-muted" />
                   </a>
