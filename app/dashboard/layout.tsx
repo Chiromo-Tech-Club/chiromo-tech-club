@@ -7,9 +7,21 @@ import { getCurrentRole, getCurrentExecTitle } from "@/lib/supabase/auth-helpers
 import { getCurrentMember } from "@/lib/supabase/get-current-member";
 import { UserMenu } from "@/components/dashboard/UserMenu";
 import { ExecDashboardShell } from "@/components/dashboard/ExecDashboard";
+import { PendingApprovalScreen } from "@/components/dashboard/PendingApprovalScreen";
 import { ROUTES } from "@/constants/routes";
 
 export const metadata = { title: "Dashboard" };
+
+function hasDashboardAccess(member: {
+  role: string;
+  membershipStatus?: string | null;
+}): boolean {
+  if (member.role === "admin" || member.role === "exec") return true;
+  const status =
+    member.membershipStatus ??
+    (member.role === "member" ? "approved" : "pending");
+  return status === "approved";
+}
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const role = await getCurrentRole();
@@ -19,7 +31,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const member = await getCurrentMember();
 
   if (!member) {
-    redirect(ROUTES.signUp);
+    redirect(`${ROUTES.register}?complete=1`);
+  }
+
+  // Membership must be approved before the dashboard (and its links) are usable.
+  if (!hasDashboardAccess(member)) {
+    return <PendingApprovalScreen fullName={member.fullName} email={member.email} />;
   }
 
   if (!isExecOrAdmin) {
@@ -31,7 +48,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .limit(1);
 
     if (!communityRow) {
-      redirect(ROUTES.join);
+      redirect(`${ROUTES.register}?complete=1`);
     }
 
     return (

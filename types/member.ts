@@ -20,6 +20,8 @@ export interface Member {
   studentId?: string | null;
   campus?: string | null;
   isChiromo?: boolean;
+  institutionName?: string | null;
+  department?: string | null;
   course?: string | null;
   yearOfStudy?: string | null;
   phoneNumber?: string | null;
@@ -58,6 +60,8 @@ export interface ClubRegistrationInput {
   studentId: string;
   campus: string;
   isChiromo: boolean;
+  institutionName?: string;
+  department?: string;
   faculty?: string;
   course: string;
   yearOfStudy: string;
@@ -69,6 +73,8 @@ export interface ClubRegistrationInput {
   paymentOption: "full_500" | "deposit_250";
   mpesaReference?: string;
   mpesaPhoneNumber?: string;
+  // Account (when not already signed in)
+  password?: string;
   // Step 5: Terms
   agreedToCodeOfConduct: boolean;
 }

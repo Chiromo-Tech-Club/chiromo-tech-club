@@ -19,6 +19,8 @@ export async function ensureMembersColumns(): Promise<void> {
       ADD COLUMN IF NOT EXISTS "student_id" text,
       ADD COLUMN IF NOT EXISTS "campus" text DEFAULT 'Chiromo Campus',
       ADD COLUMN IF NOT EXISTS "is_chiromo" boolean DEFAULT true,
+      ADD COLUMN IF NOT EXISTS "institution_name" text,
+      ADD COLUMN IF NOT EXISTS "department" text,
       ADD COLUMN IF NOT EXISTS "course" text,
       ADD COLUMN IF NOT EXISTS "year_of_study" text,
       ADD COLUMN IF NOT EXISTS "phone_number" text,

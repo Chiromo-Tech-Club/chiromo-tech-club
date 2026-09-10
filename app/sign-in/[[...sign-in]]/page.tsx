@@ -41,9 +41,9 @@ const INPUT_CLASS_ERROR =
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   no_account:
-    "No CTC account found for that Google login. Sign-in never creates accounts. Use Sign up with a referral code, or register at /register first.",
+    "No CTC account found for that Google login. Sign up or complete registration at /register first, then sign in.",
   signup_locked:
-    "Sign-up is locked without a referral code. Open Sign up, enter your invite code, then try Google again.",
+    "Sign-up is open — try again from the Sign up page, or register at /register.",
   auth_failed: "Authentication failed. Please try again.",
 };
 

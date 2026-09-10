@@ -6,7 +6,12 @@ import { getDb } from "@/lib/drizzle/client";
 import { ensureMembersColumns } from "@/lib/drizzle/ensure-members-columns";
 import { members, memberCommunities } from "@/lib/drizzle/schema";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { fullRegistrationSchema, type FullRegistrationInput } from "@/lib/validations/registration";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
+import {
+  fullRegistrationSchema,
+  OTHER_CAMPUS_LABEL,
+  type FullRegistrationInput,
+} from "@/lib/validations/registration";
 import { sendNewsletterConfirmation } from "@/services/email";
 import { ROUTES } from "@/constants/routes";
 import type { ActionResult } from "@/actions/membership";
@@ -14,20 +19,137 @@ import type { ActionResult } from "@/actions/membership";
 function registrationErrorMessage(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err ?? "");
   if (/column .* does not exist|42703/i.test(msg)) {
-    return "Database is missing membership columns. Open Supabase → SQL Editor and run lib/drizzle/migrations/RUN_IN_SUPABASE_members_columns.sql, then try again.";
+    return "Database is missing membership columns. Open Supabase → SQL Editor and run the members column migration, then try again.";
   }
-  if (/duplicate key|unique constraint|23505/i.test(msg)) {
-    return "An account with this email or student ID is already registered.";
+  if (/duplicate key|unique constraint|23505|already been registered|already registered/i.test(msg)) {
+    return "An account with this email already exists. Sign in, or use Finish with Google on this page.";
   }
   if (/foreign key|23503/i.test(msg)) {
-    return "Please sign in first so we can link registration to your account, then submit again.";
+    return "Please create your account in this registration form (password or Google), then submit again.";
   }
   return "Unable to complete registration. Please check your details and try again.";
 }
 
+function resolveCampusFields(data: FullRegistrationInput) {
+  const isOther =
+    !data.isChiromo &&
+    (data.campus === OTHER_CAMPUS_LABEL || data.campus.toLowerCase().includes("other"));
+
+  const institutionName = isOther ? data.institutionName?.trim() || null : null;
+  const department =
+    (isOther ? data.department?.trim() : data.department?.trim() || data.faculty?.trim()) || null;
+
+  const campus = isOther && institutionName ? institutionName : data.campus;
+  const isChiromoCampus =
+    data.isChiromo || campus.toLowerCase().includes("chiromo");
+
+  return { campus, isChiromoCampus, institutionName, department };
+}
+
+type MemberProfileValues = {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  bio: string | null;
+  githubHandle: string | null;
+  studentId: string;
+  campus: string;
+  isChiromo: boolean;
+  institutionName: string | null;
+  department: string | null;
+  course: string;
+  yearOfStudy: string;
+  authProvider: string;
+  membershipFeeStatus: string;
+  feeAmountPaid: number;
+  mpesaReference: string | null;
+};
+
+async function upsertMemberProfile(
+  userId: string,
+  profile: MemberProfileValues,
+  communitySlugs: string[],
+  preserveApproval: boolean,
+) {
+  const db = getDb();
+
+  const [existing] = await db.select({ membershipStatus: members.membershipStatus }).from(members).where(eq(members.id, userId)).limit(1);
+
+  const membershipStatus =
+    preserveApproval &&
+    (existing?.membershipStatus === "approved" || existing?.membershipStatus === "rejected")
+      ? existing.membershipStatus
+      : "pending";
+
+  const [savedMember] = await db
+    .insert(members)
+    .values({
+      id: userId,
+      ...profile,
+      membershipStatus: "pending",
+    })
+    .onConflictDoUpdate({
+      target: members.id,
+      set: {
+        ...profile,
+        membershipStatus,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+
+  if (communitySlugs.length > 0) {
+    await db
+      .insert(memberCommunities)
+      .values(communitySlugs.map((slug) => ({ memberId: savedMember.id, communitySlug: slug })))
+      .onConflictDoNothing();
+  }
+
+  return savedMember;
+}
+
+/**
+ * Creates (or links) a Supabase auth user for email/password registration.
+ * Returns the auth user id.
+ */
+async function ensureAuthUserForRegistration(
+  email: string,
+  password: string,
+  fullName: string,
+): Promise<{ userId: string; created: boolean }> {
+  const admin = getSupabaseServiceClient();
+
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName },
+  });
+
+  if (data.user) {
+    return { userId: data.user.id, created: true };
+  }
+
+  if (error && /already|registered|exists/i.test(error.message)) {
+    throw new Error(
+      "An account with this email already exists. Sign in, or use Finish joining with Google below.",
+    );
+  }
+
+  throw new Error(error?.message ?? "Could not create account.");
+}
+
 export async function submitClubRegistration(
   input: FullRegistrationInput,
-): Promise<ActionResult<{ registrationId: string; status: string; isNewGuest?: boolean }>> {
+): Promise<
+  ActionResult<{
+    registrationId: string;
+    status: string;
+    isNewGuest?: boolean;
+    /** Client should sign in with email/password to open the dashboard. */
+    needsClientSignIn?: boolean;
+  }>
+> {
   const parsed = fullRegistrationSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -37,16 +159,17 @@ export async function submitClubRegistration(
   }
 
   const data = parsed.data;
-  const db = getDb();
+  const { campus, isChiromoCampus, institutionName, department } = resolveCampusFields(data);
 
-  // Try to see if user is already authenticated (via Google or Supabase Auth session)
   const supabase = await getSupabaseServerClient();
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser();
 
-  const authProvider = authUser?.app_metadata?.provider === "google" ? "google" : "email_password";
-  const userId = authUser?.id;
+  let userId = authUser?.id ?? null;
+  let authProvider =
+    authUser?.app_metadata?.provider === "google" ? "google" : "email_password";
+  let needsClientSignIn = false;
 
   const feeAmountPaid =
     data.paymentOption === "full_500" ? 500 : data.paymentOption === "deposit_250" ? 250 : 0;
@@ -54,140 +177,66 @@ export async function submitClubRegistration(
     data.paymentOption === "full_500"
       ? "fully_paid"
       : data.paymentOption === "deposit_250"
-      ? "deposit_paid"
-      : "unpaid";
-
-  const isChiromoCampus =
-    data.isChiromo || data.campus.toLowerCase().includes("chiromo") || data.campus.toLowerCase().includes("");
+        ? "deposit_paid"
+        : "unpaid";
 
   try {
-    // Heal older Supabase schemas (missing username / membership columns)
     await ensureMembersColumns();
 
-    if (userId) {
-      // Upsert into `members` table keyed by auth.users.id
-      const [savedMember] = await db
-        .insert(members)
-        .values({
-          id: userId,
-          fullName: data.fullName,
-          email: data.email,
-          phoneNumber: data.phoneNumber,
-          bio: data.bio || null,
-          githubHandle: data.githubHandle || null,
-          studentId: data.studentId,
-          campus: data.campus,
-          isChiromo: isChiromoCampus,
-          course: data.course,
-          yearOfStudy: data.yearOfStudy,
-          authProvider,
-          membershipStatus: "pending",
-          membershipFeeStatus: feeStatus,
-          feeAmountPaid,
-          mpesaReference: data.mpesaReference || null,
-        })
-        .onConflictDoUpdate({
-          target: members.id,
-          set: {
-            fullName: data.fullName,
-            email: data.email,
-            phoneNumber: data.phoneNumber,
-            bio: data.bio || null,
-            githubHandle: data.githubHandle || null,
-            studentId: data.studentId,
-            campus: data.campus,
-            isChiromo: isChiromoCampus,
-            course: data.course,
-            yearOfStudy: data.yearOfStudy,
-            authProvider,
-            // Do NOT reset membershipStatus on update — approval must stick
-            membershipFeeStatus: feeStatus,
-            feeAmountPaid,
-            mpesaReference: data.mpesaReference || null,
-            updatedAt: new Date(),
-          },
-        })
-        .returning();
-
-      if (data.communitySlugs.length > 0) {
-        await db
-          .insert(memberCommunities)
-          .values(data.communitySlugs.map((slug) => ({ memberId: savedMember.id, communitySlug: slug })))
-          .onConflictDoNothing();
-      }
-
-      await sendNewsletterConfirmation(data.email, data.fullName).catch((err) =>
-        console.error("Confirmation email failed:", err),
-      );
-
-      revalidatePath(ROUTES.dashboard);
-      revalidatePath(ROUTES.adminMembers);
-
-      return {
-        success: true,
-        data: { registrationId: savedMember.id, status: "pending", isNewGuest: false },
-      };
-    } else {
-      // For visitors completing registration prior to signing in, check if member with this email exists
-      const [existingMember] = await db.select().from(members).where(eq(members.email, data.email)).limit(1);
-
-      if (existingMember) {
-        await db
-          .update(members)
-          .set({
-            fullName: data.fullName,
-            phoneNumber: data.phoneNumber,
-            bio: data.bio || null,
-            githubHandle: data.githubHandle || null,
-            studentId: data.studentId,
-            campus: data.campus,
-            isChiromo: isChiromoCampus,
-            course: data.course,
-            yearOfStudy: data.yearOfStudy,
-            authProvider: "email_password",
-            // Preserve existing approval — only set pending for never-reviewed rows
-            membershipStatus:
-              existingMember.membershipStatus === "approved" || existingMember.membershipStatus === "rejected"
-                ? existingMember.membershipStatus
-                : "pending",
-            membershipFeeStatus: feeStatus,
-            feeAmountPaid,
-            mpesaReference: data.mpesaReference || null,
-            updatedAt: new Date(),
-          })
-          .where(eq(members.id, existingMember.id));
-
-        if (data.communitySlugs.length > 0) {
-          await db
-            .insert(memberCommunities)
-            .values(data.communitySlugs.map((slug) => ({ memberId: existingMember.id, communitySlug: slug })))
-            .onConflictDoNothing();
-        }
-
-        await sendNewsletterConfirmation(data.email, data.fullName).catch((err) =>
-          console.error("Confirmation email failed:", err),
-        );
-
-        revalidatePath(ROUTES.adminMembers);
+    // Registration creates the account — no separate /sign-up needed.
+    if (!userId) {
+      const password = data.password?.trim() ?? "";
+      if (password.length < 8) {
         return {
-          success: true,
-          data: { registrationId: existingMember.id, status: "pending", isNewGuest: false },
+          success: false,
+          error: "Create a password (min 8 characters) or finish joining with Google first.",
         };
       }
 
-      await sendNewsletterConfirmation(data.email, data.fullName).catch((err) =>
-        console.error("Confirmation email failed:", err),
-      );
-
-      return {
-        success: true,
-        data: {
-          registrationId: "guest_pending",
-          status: "pending",
-          isNewGuest: true,
-        },
-      };
+      const ensured = await ensureAuthUserForRegistration(data.email, password, data.fullName);
+      userId = ensured.userId;
+      authProvider = "email_password";
+      needsClientSignIn = true;
     }
+
+    const profile: MemberProfileValues = {
+      fullName: data.fullName,
+      email: data.email,
+      phoneNumber: data.phoneNumber,
+      bio: data.bio || null,
+      githubHandle: data.githubHandle || null,
+      studentId: data.studentId,
+      campus,
+      isChiromo: isChiromoCampus,
+      institutionName,
+      department,
+      course: data.course,
+      yearOfStudy: data.yearOfStudy,
+      authProvider,
+      membershipFeeStatus: feeStatus,
+      feeAmountPaid,
+      mpesaReference: data.mpesaReference || null,
+    };
+
+    const savedMember = await upsertMemberProfile(userId, profile, data.communitySlugs, true);
+
+    await sendNewsletterConfirmation(data.email, data.fullName).catch((err) =>
+      console.error("Confirmation email failed:", err),
+    );
+
+    revalidatePath(ROUTES.dashboard);
+    revalidatePath(ROUTES.adminMembers);
+    revalidatePath(ROUTES.register);
+
+    return {
+      success: true,
+      data: {
+        registrationId: savedMember.id,
+        status: "pending",
+        isNewGuest: false,
+        needsClientSignIn,
+      },
+    };
   } catch (err) {
     console.error("submitClubRegistration failed:", err);
     return {

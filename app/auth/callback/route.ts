@@ -1,14 +1,13 @@
 // Supabase OAuth returns here with ?code=...
 // intent=signin → reject brand-new Google accounts (no silent sign-up)
-// intent=signup → require referral unlock cookie set on /sign-up
+// intent=signup | register → allow new accounts (open signup / membership flow)
 
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { ROUTES } from "@/constants/routes";
 
-const REFERRAL_COOKIE = "ctc_signup_referral";
-const NEW_USER_WINDOW_MS = 90_000; // treat as newly created if within 90s
+const NEW_USER_WINDOW_MS = 90_000;
 
 function isNewlyCreatedUser(createdAt: string | undefined): boolean {
   if (!createdAt) return false;
@@ -60,26 +59,16 @@ export async function GET(request: Request) {
   }
 
   const isNew = isNewlyCreatedUser(user.created_at);
-  const isGoogle = user.app_metadata?.provider === "google" || user.identities?.some((i) => i.provider === "google");
 
   // Sign-in must never create accounts — Google OAuth otherwise auto-registers.
   if (intent === "signin" && isNew) {
     return rejectAndCleanup(user.id, origin, "no_account");
   }
 
-  // Google sign-up requires a verified referral unlock cookie (set on /sign-up).
-  // Email confirmation links may arrive later without the cookie — only gate new Google users.
-  if (intent === "signup" && isNew && isGoogle) {
-    const cookieHeader = request.headers.get("cookie") ?? "";
-    const hasReferral = cookieHeader.split(";").some((c) => c.trim().startsWith(`${REFERRAL_COOKIE}=1`));
-
-    if (!hasReferral) {
-      return rejectAndCleanup(user.id, origin, "signup_locked");
-    }
-
-    const response = NextResponse.redirect(`${origin}${next}`);
-    response.cookies.set(REFERRAL_COOKIE, "", { path: "/", maxAge: 0 });
-    return response;
+  // Open signup & registration — no referral lock.
+  if (intent === "signup" || intent === "register") {
+    const destination = next || ROUTES.register;
+    return NextResponse.redirect(`${origin}${destination}`);
   }
 
   return NextResponse.redirect(`${origin}${next}`);

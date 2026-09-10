@@ -68,6 +68,10 @@ export const members = pgTable(
     studentId: text("student_id"),
     campus: text("campus").default("Chiromo Campus"),
     isChiromo: boolean("is_chiromo").default(true),
+    /** Set when campus is Other / External — which school they attend. */
+    institutionName: text("institution_name"),
+    /** Faculty / department / school within their institution. */
+    department: text("department"),
     course: text("course"),
     yearOfStudy: text("year_of_study"),
     phoneNumber: text("phone_number"),

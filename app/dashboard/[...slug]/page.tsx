@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { desc, eq, isNull, gte, and } from "drizzle-orm";
 import { SHARED_NAV_ITEMS, EXEC_NAV, isSlugForExecTitle } from "@/config/dashboard-nav";
 import { isExecTitle, EXEC_TITLE_LABELS } from "@/types/exec-title";
-import { canAccessExecSection } from "@/lib/supabase/auth-helpers";
+import { canAccessExecSection, getCurrentRole } from "@/lib/supabase/auth-helpers";
 import { getDb } from "@/lib/drizzle/client";
 import {
   decisions,
@@ -48,7 +48,7 @@ import { DocumentRepository, type DocumentItem } from "@/features/dashboard/Docu
 import { ExecChat } from "@/features/dashboard/ExecChat";
 import type { ChatMessageItem } from "@/actions/dashboard/chat";
 import { Calendar, type CalendarEntry } from "@/features/dashboard/Calendar";
-import { getActiveCalendarSrcList } from "@/lib/calendar/sources";
+import { getActiveCalendarSrcList, listGoogleCalendarSources } from "@/lib/calendar/sources";
 import { CommitteeActivityFeed, type ActivityEntry } from "@/features/dashboard/CommitteeActivityFeed";
 import { TransactionTypeTracker, type TransactionRow } from "@/features/dashboard/TransactionTypeTracker";
 import { FinancialReports, type MonthlySummary } from "@/features/dashboard/FinancialReports";
@@ -339,20 +339,24 @@ async function SharedChat() {
 async function SharedCalendar() {
   const db = getDb();
   const now = new Date();
+  const role = await getCurrentRole();
+  const canManageCalendars = role === "admin" || role === "exec";
 
-  const [googleSources, upcomingEvents, upcomingMeetings, dueInitiatives, dueTasks] = await Promise.all([
-    getActiveCalendarSrcList(),
-    db.select({ id: events.id, title: events.title, startsAt: events.startsAt }).from(events).where(gte(events.startsAt, now)),
-    db
-      .select({ id: meetingMinutes.id, title: meetingMinutes.title, meetingDate: meetingMinutes.meetingDate })
-      .from(meetingMinutes)
-      .where(isNull(meetingMinutes.deletedAt)),
-    db
-      .select({ id: initiatives.id, title: initiatives.title, dueDate: initiatives.dueDate })
-      .from(initiatives)
-      .where(isNull(initiatives.deletedAt)),
-    db.select({ id: tasks.id, title: tasks.title, dueDate: tasks.dueDate }).from(tasks).where(isNull(tasks.deletedAt)),
-  ]);
+  const [googleSources, managedSources, upcomingEvents, upcomingMeetings, dueInitiatives, dueTasks] =
+    await Promise.all([
+      getActiveCalendarSrcList(),
+      canManageCalendars ? listGoogleCalendarSources() : Promise.resolve([]),
+      db.select({ id: events.id, title: events.title, startsAt: events.startsAt }).from(events).where(gte(events.startsAt, now)),
+      db
+        .select({ id: meetingMinutes.id, title: meetingMinutes.title, meetingDate: meetingMinutes.meetingDate })
+        .from(meetingMinutes)
+        .where(isNull(meetingMinutes.deletedAt)),
+      db
+        .select({ id: initiatives.id, title: initiatives.title, dueDate: initiatives.dueDate })
+        .from(initiatives)
+        .where(isNull(initiatives.deletedAt)),
+      db.select({ id: tasks.id, title: tasks.title, dueDate: tasks.dueDate }).from(tasks).where(isNull(tasks.deletedAt)),
+    ]);
 
   const entries: CalendarEntry[] = [
     ...upcomingEvents.map((e) => ({ id: e.id, title: e.title, date: e.startsAt.toISOString(), kind: "event" as const })),
@@ -363,7 +367,14 @@ async function SharedCalendar() {
     ...dueTasks.filter((t) => t.dueDate).map((t) => ({ id: t.id, title: t.title, date: t.dueDate!.toISOString(), kind: "task-due" as const })),
   ];
 
-  return <Calendar entries={entries} googleSources={googleSources} />;
+  return (
+    <Calendar
+      entries={entries}
+      googleSources={googleSources}
+      canManage={canManageCalendars}
+      managedSources={managedSources}
+    />
+  );
 }
 
 async function SharedCommitteeActivity() {
@@ -534,6 +545,7 @@ async function CorporateAffairsEventManager() {
   const rows = await db
     .select({
       id: events.id,
+      slug: events.slug,
       title: events.title,
       description: events.description,
       startsAt: events.startsAt,

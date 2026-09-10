@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { isKnownCommunitySlug } from "@/utils/get-community-slug";
 
+export const OTHER_CAMPUS_LABEL = "Other / External Institution";
+
 export const registrationStep1Schema = z.object({
   fullName: z
     .string()
@@ -20,6 +22,8 @@ export const registrationStep1Schema = z.object({
     .optional()
     .or(z.literal("")),
   bio: z.string().trim().max(300, "Keep your bio under 300 characters.").optional(),
+  /** Required when registering without an existing session (creates the account). */
+  password: z.string().max(72).optional().or(z.literal("")),
 });
 
 export const registrationStep2Schema = z.object({
@@ -30,6 +34,8 @@ export const registrationStep2Schema = z.object({
     .max(30, "Registration number is too long."),
   campus: z.string().trim().min(2, "Please select or specify your campus location."),
   isChiromo: z.boolean().default(true),
+  institutionName: z.string().trim().max(120).optional().or(z.literal("")),
+  department: z.string().trim().max(120).optional().or(z.literal("")),
   faculty: z.string().trim().optional(),
   course: z.string().trim().min(2, "Please enter your degree / course of study (e.g., BSc Computer Science)."),
   yearOfStudy: z.string().trim().min(1, "Please select your year of study."),
@@ -59,15 +65,46 @@ export const registrationStep4Schema = z.object({
     .or(z.literal("")),
 });
 
-export const fullRegistrationSchema = z.object({
-  ...registrationStep1Schema.shape,
-  ...registrationStep2Schema.shape,
-  ...registrationStep3Schema.shape,
-  ...registrationStep4Schema.shape,
-  agreedToCodeOfConduct: z.boolean().refine((val) => val === true, {
-    message: "You must agree to the Chiromo Tech Club constitution and code of conduct.",
-  }),
-});
+function refineOtherInstitution(
+  data: {
+    isChiromo: boolean;
+    campus: string;
+    institutionName?: string | null;
+    department?: string | null;
+  },
+  ctx: z.RefinementCtx,
+) {
+  const isOther =
+    !data.isChiromo &&
+    (data.campus === OTHER_CAMPUS_LABEL || data.campus.toLowerCase().includes("other"));
+  if (!isOther) return;
+  if (!data.institutionName || data.institutionName.trim().length < 2) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["institutionName"],
+      message: "Please enter the name of your institution.",
+    });
+  }
+  if (!data.department || data.department.trim().length < 2) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["department"],
+      message: "Please enter your faculty or department.",
+    });
+  }
+}
+
+export const fullRegistrationSchema = z
+  .object({
+    ...registrationStep1Schema.shape,
+    ...registrationStep2Schema.shape,
+    ...registrationStep3Schema.shape,
+    ...registrationStep4Schema.shape,
+    agreedToCodeOfConduct: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the Chiromo Tech Club constitution and code of conduct.",
+    }),
+  })
+  .superRefine(refineOtherInstitution);
 
 export type RegistrationStep1Input = z.infer<typeof registrationStep1Schema>;
 export type RegistrationStep2Input = z.infer<typeof registrationStep2Schema>;

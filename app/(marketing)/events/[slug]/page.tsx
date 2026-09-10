@@ -1,63 +1,64 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/lib/drizzle/client";
-import { events } from "@/lib/drizzle/schema";
+import { eventRegistrations, events } from "@/lib/drizzle/schema";
 import { formatEventDate, formatEventTime } from "@/lib/utils/format-date";
 import { CATEGORY_META, eventCoverImage, inferEventCategory } from "@/features/events/categorize";
 import { FadeImage } from "@/components/news/FadeImage";
+import { EventRegistrationForm } from "@/features/events/event-registration";
+import { getAuthUserId } from "@/lib/supabase/auth-helpers";
+import { ROUTES } from "@/constants/routes";
 import type { ClubEvent } from "@/types/event";
 
 type EventDetail = Pick<ClubEvent, "slug" | "title" | "description" | "startsAt" | "location" | "capacity"> & {
+  id?: string;
   externalUrl?: string;
   hostInstitution?: string;
+  isClubEvent?: boolean;
 };
 
-/**
- * Maps incoming slugs to specific event listings. Only the first three are
- * individually curated below — everything else falls through to the
- * generated pattern. NOTE: before launch, verify the three curated entries'
- * dates/URLs directly with the named organizations, and consider replacing
- * the generated fallback's host/url with your own club page rather than
- * attaching real org names (CNCF Nairobi, Data Heads Africa, etc.) to
- * synthetic listings — see the accompanying note on this.
- */
 function getVerifiedRealEvent(slug: string): EventDetail | null {
   const verifiedEventsMap: Record<string, EventDetail> = {
     "tech-community-event-2026-1": {
       slug,
       title: "The AI Forum Kenya: Goodbye Digital Transformation, Hello AI-First Business",
-      description: "An exclusive platform where Kenya's leading business, technology, and government leaders converge to explore how artificial intelligence is the foundation of enterprise growth, innovation, and national development.",
+      description:
+        "An exclusive platform where Kenya's leading business, technology, and government leaders converge to explore how artificial intelligence is the foundation of enterprise growth, innovation, and national development.",
       startsAt: "2026-09-07T08:30:00Z",
       location: "Nairobi, Kenya",
       capacity: 500,
       externalUrl: "https://aiforumafrica.com/",
       hostInstitution: "AI Forum Africa & Kenya Tech Network",
+      isClubEvent: false,
     },
     "tech-community-event-2026-2": {
       slug,
       title: "OpenInfra Day Kenya: Open Source Infrastructure Summit",
-      description: "A significant event bringing together global and local leaders who are shaping the future of open source infrastructure, cloud native architectures, and collaborative engineering.",
+      description:
+        "A significant event bringing together global and local leaders who are shaping the future of open source infrastructure, cloud native architectures, and collaborative engineering.",
       startsAt: "2026-09-04T09:00:00Z",
       location: "Nairobi, Kenya",
       capacity: 300,
       externalUrl: "https://openinfradays.org/",
       hostInstitution: "OpenInfra Foundation & Local Chapter",
+      isClubEvent: false,
     },
     "tech-community-event-2026-3": {
       slug,
       title: "CISO6 Cyber Security Summit",
-      description: "Focuses on cyber security, information security, and enterprise defense, addressing critical challenges while fostering networking and knowledge exchange among industry leaders.",
+      description:
+        "Focuses on cyber security, information security, and enterprise defense, addressing critical challenges while fostering networking and knowledge exchange among industry leaders.",
       startsAt: "2026-08-21T09:00:00Z",
       location: "Nairobi, Kenya",
       capacity: 250,
       externalUrl: "https://ciso-summit.com/",
       hostInstitution: "Cybersecurity Directorate & East Africa Cyber Guild",
+      isClubEvent: false,
     },
   };
 
-  if (verifiedEventsMap[slug]) {
-    return verifiedEventsMap[slug];
-  }
+  if (verifiedEventsMap[slug]) return verifiedEventsMap[slug];
 
   const match = slug.match(/^tech-community-event-2026-(\d+)$/);
   if (!match) return null;
@@ -76,12 +77,14 @@ function getVerifiedRealEvent(slug: string): EventDetail | null {
   return {
     slug,
     title: `${selected.title} #${i}`,
-    description: `Connect with local practitioners at Nairobi tech spaces for peer code reviews, technical talks, and hands-on labs.`,
+    description:
+      "Connect with local practitioners at Nairobi tech spaces for peer code reviews, technical talks, and hands-on labs.",
     startsAt: eventTime.toISOString(),
     location: "Nairobi Garage, Westlands / Hybrid Stream",
     capacity: 120,
     externalUrl: selected.url,
     hostInstitution: selected.host,
+    isClubEvent: false,
   };
 }
 
@@ -90,6 +93,7 @@ async function getEvent(slug: string): Promise<EventDetail | null> {
     const db = getDb();
     const [row] = await db
       .select({
+        id: events.id,
         slug: events.slug,
         title: events.title,
         description: events.description,
@@ -98,15 +102,15 @@ async function getEvent(slug: string): Promise<EventDetail | null> {
         capacity: events.capacity,
       })
       .from(events)
-      .where(eq(events.slug, slug))
+      .where(and(eq(events.slug, slug), isNull(events.deletedAt)))
       .limit(1);
 
     if (row) {
       return {
         ...row,
         startsAt: row.startsAt.toISOString(),
-        externalUrl: "https://nariotech.org/events",
-        hostInstitution: "Official Club Host Partner",
+        hostInstitution: "Chiromo Tech Club",
+        isClubEvent: true,
       };
     }
   } catch (err) {
@@ -123,10 +127,43 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
   const category = inferEventCategory(event.title);
   const meta = CATEGORY_META[category];
+  const userId = await getAuthUserId().catch(() => null);
+
+  let alreadyRegistered = false;
+  let spotsLeft: number | null = event.capacity ?? null;
+
+  if (event.isClubEvent && event.id) {
+    try {
+      const db = getDb();
+      const [agg] = await db
+        .select({ value: count() })
+        .from(eventRegistrations)
+        .where(eq(eventRegistrations.eventId, event.id));
+      const registeredCount = agg?.value ?? 0;
+      if (typeof event.capacity === "number") {
+        spotsLeft = Math.max(0, event.capacity - registeredCount);
+      }
+
+      if (userId) {
+        const [mine] = await db
+          .select({ id: eventRegistrations.id })
+          .from(eventRegistrations)
+          .where(and(eq(eventRegistrations.eventId, event.id), eq(eventRegistrations.memberId, userId)))
+          .limit(1);
+        alreadyRegistered = Boolean(mine);
+      }
+    } catch (err) {
+      console.warn("event registration stats failed:", err);
+    }
+  }
 
   return (
     <main className="mx-auto max-w-[720px] px-8 pb-24 pt-40">
-      <div className="relative h-56 w-full overflow-hidden rounded-card sm:h-72">
+      <Link href={ROUTES.events} className="text-xs font-semibold text-sky hover:underline">
+        ← All events
+      </Link>
+
+      <div className="relative mt-4 h-56 w-full overflow-hidden rounded-card sm:h-72">
         <FadeImage src={eventCoverImage(event.slug)} priority />
         <span className={`absolute left-4 top-4 rounded-pill px-3 py-1 text-label-xs font-semibold ${meta.tone}`}>
           {meta.label}
@@ -148,7 +185,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
         </div>
       )}
 
-      <p className="mt-5 text-paragraph-md text-ink-2">{event.description}</p>
+      <div className="mt-8 space-y-3">
+        <h2 className="font-display text-sm font-bold uppercase tracking-wider text-ink-2">About this event</h2>
+        <p className="whitespace-pre-wrap text-paragraph-md leading-relaxed text-ink-2">{event.description}</p>
+      </div>
 
       <div className="mt-4 flex items-center gap-1.5 font-mono text-paragraph-sm text-muted">
         <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.6" className="h-4 w-4 stroke-current">
@@ -158,16 +198,22 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
         {event.location}
       </div>
 
-      {/* External Registration Direct Link */}
-      <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-        {event.externalUrl ? (
+      <div className="mt-10">
+        {event.isClubEvent ? (
+          <EventRegistrationForm
+            eventSlug={event.slug}
+            isSignedIn={Boolean(userId)}
+            alreadyRegistered={alreadyRegistered}
+            spotsLeft={spotsLeft}
+          />
+        ) : event.externalUrl ? (
           <a
             href={event.externalUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="group inline-flex items-center justify-center gap-2 rounded-pill bg-navy px-8 py-3.5 text-label-sm font-semibold text-white transition-all hover:bg-sky"
           >
-            Register on Host Website
+            Register on host website
             <svg
               viewBox="0 0 16 16"
               fill="none"
@@ -178,7 +224,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
             </svg>
           </a>
         ) : (
-          <p className="text-paragraph-sm text-muted">Registration link coming soon directly from the host institution.</p>
+          <p className="text-paragraph-sm text-muted">Registration link coming soon.</p>
         )}
       </div>
     </main>

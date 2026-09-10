@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count, isNull } from "drizzle-orm";
 import { getDb } from "../lib/drizzle/client";
 import { events, eventRegistrations, members } from "../lib/drizzle/schema";
 import { getAuthUserId } from "../lib/supabase/auth-helpers";
@@ -18,10 +18,13 @@ export async function registerForEvent(eventSlug: string): Promise<ActionResult>
 
   const db = getDb();
 
-  const [event] = await db.select().from(events).where(eq(events.slug, eventSlug)).limit(1);
+  const [event] = await db
+    .select()
+    .from(events)
+    .where(and(eq(events.slug, eventSlug), isNull(events.deletedAt)))
+    .limit(1);
   if (!event) return { success: false, error: "Event not found." };
 
-  // members.id IS the Supabase auth user id now — a direct PK lookup.
   const [member] = await db.select().from(members).where(eq(members.id, userId)).limit(1);
   if (!member) return { success: false, error: "Complete your club profile before registering." };
 
@@ -37,11 +40,11 @@ export async function registerForEvent(eventSlug: string): Promise<ActionResult>
     }
 
     if (event.capacity) {
-      const [{ count }] = await db
-        .select({ count: eventRegistrations.id })
+      const [agg] = await db
+        .select({ value: count() })
         .from(eventRegistrations)
         .where(eq(eventRegistrations.eventId, event.id));
-      if (Number(count) >= event.capacity) {
+      if ((agg?.value ?? 0) >= event.capacity) {
         return { success: false, error: "This event is full." };
       }
     }
@@ -53,6 +56,7 @@ export async function registerForEvent(eventSlug: string): Promise<ActionResult>
     );
 
     revalidatePath(ROUTES.event(eventSlug));
+    revalidatePath(ROUTES.events);
     return { success: true };
   } catch (err) {
     console.error("registerForEvent failed:", err);

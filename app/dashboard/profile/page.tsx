@@ -7,7 +7,7 @@ export const metadata = { title: "Edit Profile — CTC" };
 
 export default async function DashboardProfilePage() {
   const member = await getCurrentMember();
-  if (!member) redirect(ROUTES.signIn);
+  if (!member) redirect(`${ROUTES.register}?complete=1`);
 
   return (
     <ProfileEditForm

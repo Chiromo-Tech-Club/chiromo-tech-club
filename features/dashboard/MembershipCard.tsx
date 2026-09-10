@@ -224,7 +224,10 @@ export function MembershipCard(props: MembershipCardProps) {
     membershipStatus: props.membershipStatus,
     isApproved: props.isApproved,
   });
-  const roleTitle = getCardRoleTitle(props.role, props.execTitle);
+  const roleTitle = getCardRoleTitle(props.role, props.execTitle, {
+    isChiromo: props.isChiromo,
+    campus: props.campus,
+  });
   const accessLevel = getCardAccessLevel(props.role, props.membershipStatus, props.execTitle);
   const cardExpiry = getCardExpiryLabel({
     role: props.role,

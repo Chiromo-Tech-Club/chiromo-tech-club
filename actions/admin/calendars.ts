@@ -30,9 +30,10 @@ const addSchema = z.object({
 });
 
 function revalidateCalendarPaths() {
-  revalidatePath(ROUTES.adminCalendars);
   revalidatePath(ROUTES.dashboard);
   revalidatePath("/dashboard/calendar");
+  revalidatePath("/dashboard/corporate_affairs/social-calendar");
+  revalidatePath("/dashboard/training_coordinator/workshop-calendar");
 }
 
 /**

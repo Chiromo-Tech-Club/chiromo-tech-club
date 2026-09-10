@@ -76,7 +76,7 @@ async function getOverviewData() {
 
 export default async function DashboardOverviewPage() {
   const member = await getCurrentMember();
-  if (!member) redirect(ROUTES.signIn);
+  if (!member) redirect(`${ROUTES.register}?complete=1`);
 
   const role = await getCurrentRole();
   if (role !== "exec" && role !== "admin") {

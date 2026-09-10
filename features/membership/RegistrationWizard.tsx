@@ -23,11 +23,12 @@ import {
 } from "lucide-react";
 import { COMMUNITIES } from "@/data/communities";
 import { submitClubRegistration } from "@/actions/registration";
-import { type FullRegistrationInput } from "@/lib/validations/registration";
+import { type FullRegistrationInput, OTHER_CAMPUS_LABEL } from "@/lib/validations/registration";
 import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
 import { ROUTES } from "@/constants/routes";
 import { SITE_CONFIG } from "@/config/site";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const CAMPUS_OPTIONS = [
   { id: "chiromo", label: "Chiromo Campus ( / Science Hub)", isChiromo: true },
@@ -36,19 +37,22 @@ const CAMPUS_OPTIONS = [
   { id: "upper_kabete", label: "Upper Kabete Campus (CAVS)", isChiromo: false },
   { id: "parklands", label: "Parklands Law Campus", isChiromo: false },
   { id: "kikuyu", label: "Kikuyu Campus (CEES)", isChiromo: false },
-  { id: "other", label: "Other / External Institution", isChiromo: false },
+  { id: "other", label: OTHER_CAMPUS_LABEL, isChiromo: false },
 ];
 
 const YEAR_OPTIONS = ["Year 1 (Freshman)", "Year 2 (Sophomore)", "Year 3 (Junior)", "Year 4 (Senior)", "Postgraduate / Masters", "Alumni / Professional"];
 
 export function RegistrationWizard({
   initialUser,
+  isSignedIn = false,
 }: {
   initialUser?: { fullName?: string; email?: string } | null;
+  isSignedIn?: boolean;
 }) {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<FullRegistrationInput>({
@@ -57,9 +61,12 @@ export function RegistrationWizard({
     phoneNumber: "",
     githubHandle: "",
     bio: "",
+    password: "",
     studentId: "",
     campus: "Chiromo Campus ( / Science Hub)",
     isChiromo: true,
+    institutionName: "",
+    department: "",
     faculty: "Faculty of Science & Technology",
     course: "",
     yearOfStudy: "Year 1 (Freshman)",
@@ -72,10 +79,14 @@ export function RegistrationWizard({
     agreedToCodeOfConduct: true,
   });
 
-  const [registrationResult, setRegistrationResult] = useState<{ isNewGuest?: boolean } | null>(null);
+  const [, setRegistrationResult] = useState<{
+    isNewGuest?: boolean;
+    needsClientSignIn?: boolean;
+  } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const totalSteps = 5;
+  const isOtherCampus = formData.campus === OTHER_CAMPUS_LABEL || (!formData.isChiromo && formData.campus.toLowerCase().includes("other"));
 
   const validateStep = (step: number): boolean => {
     const errors: Record<string, string> = {};
@@ -90,6 +101,12 @@ export function RegistrationWizard({
       if (!formData.phoneNumber.trim() || formData.phoneNumber.length < 9) {
         errors.phoneNumber = "Please enter a valid phone number.";
       }
+      if (!isSignedIn) {
+        const pw = formData.password?.trim() ?? "";
+        if (pw.length < 8) {
+          errors.password = "Create a password (min 8 characters) — this is your CTC login.";
+        }
+      }
     } else if (step === 2) {
       if (!formData.studentId.trim() || formData.studentId.length < 3) {
         errors.studentId = "Student / Registration ID is required (e.g. P15/12345/2024).";
@@ -99,6 +116,14 @@ export function RegistrationWizard({
       }
       if (!formData.campus.trim()) {
         errors.campus = "Please select your campus.";
+      }
+      if (isOtherCampus) {
+        if (!formData.institutionName?.trim() || formData.institutionName.trim().length < 2) {
+          errors.institutionName = "Please enter your institution name.";
+        }
+        if (!formData.department?.trim() || formData.department.trim().length < 2) {
+          errors.department = "Please enter your faculty or department.";
+        }
       }
     } else if (step === 3) {
       if (formData.communitySlugs.length === 0) {
@@ -144,6 +169,11 @@ export function RegistrationWizard({
       setFieldErrors({ agreedToCodeOfConduct: "You must accept the club code of conduct to proceed." });
       return;
     }
+    if (!isSignedIn && (!formData.password || formData.password.trim().length < 8)) {
+      setCurrentStep(1);
+      setFieldErrors({ password: "Create a password (min 8 characters) — this is your CTC login." });
+      return;
+    }
 
     setStatus("submitting");
     setErrorMessage(null);
@@ -151,6 +181,16 @@ export function RegistrationWizard({
     const res = await submitClubRegistration(formData);
 
     if (res.success) {
+      if (res.data?.needsClientSignIn && formData.password) {
+        const supabase = getSupabaseBrowserClient();
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+        if (signInError) {
+          console.warn("Auto sign-in after registration failed:", signInError.message);
+        }
+      }
       setRegistrationResult(res.data ?? null);
       setStatus("success");
     } else {
@@ -158,6 +198,67 @@ export function RegistrationWizard({
       setErrorMessage(res.error || "Failed to submit registration. Please verify your details.");
     }
   };
+
+  async function handleContinueWithGoogle() {
+    setGoogleLoading(true);
+    setErrorMessage(null);
+    const supabase = getSupabaseBrowserClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.register + "?complete=1")}`,
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    if (error) {
+      setErrorMessage(error.message);
+      setGoogleLoading(false);
+    }
+  }
+
+  async function handleFinishWithGoogle() {
+    setGoogleLoading(true);
+    const supabase = getSupabaseBrowserClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session) {
+      const { error } = await supabase.auth.linkIdentity({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.dashboard)}`,
+        },
+      });
+      if (error) {
+        // Fallback: full OAuth if linkIdentity unavailable
+        const { error: oauthError } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.dashboard)}`,
+            queryParams: { prompt: "select_account" },
+          },
+        });
+        if (oauthError) {
+          setErrorMessage(oauthError.message);
+          setGoogleLoading(false);
+        }
+      }
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.dashboard)}`,
+        queryParams: { prompt: "select_account" },
+      },
+    });
+    if (error) {
+      setErrorMessage(error.message);
+      setGoogleLoading(false);
+    }
+  }
 
   if (status === "success") {
     return (
@@ -175,8 +276,33 @@ export function RegistrationWizard({
         </h2>
 
         <p className="mt-4 text-base leading-relaxed text-ink-2">
-          Your official membership application for <span className="font-semibold text-ink">{formData.campus}</span> has been received and queued for leadership approval.
+          Your official membership application for{" "}
+          <span className="font-semibold text-ink">
+            {isOtherCampus ? formData.institutionName || formData.campus : formData.campus}
+          </span>{" "}
+          has been received and queued for leadership approval. Your CTC account is ready — no separate sign-up needed.
         </p>
+
+        <div className="mt-6 rounded-2xl border border-sky/30 bg-sky/5 p-5 text-left">
+          <h4 className="font-display text-sm font-bold text-ink">Optional: Finish joining with Google</h4>
+          <p className="mt-1 text-xs text-ink-2">
+            Link Google for one-tap dashboard access next time. You can skip this and use your email password.
+          </p>
+          <button
+            type="button"
+            onClick={handleFinishWithGoogle}
+            disabled={googleLoading}
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-cream-2 disabled:opacity-60 sm:w-auto"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+              <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.63h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.87c2.27-2.09 3.58-5.17 3.58-8.81Z" />
+              <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.94-2.92l-3.87-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.27v3.11A12 12 0 0 0 12 24Z" />
+              <path fill="#FBBC05" d="M5.27 14.27a7.2 7.2 0 0 1 0-4.54V6.62H1.27a12 12 0 0 0 0 10.76l4-3.11Z" />
+              <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.6 4.59 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.27 6.62l4 3.11C6.22 6.87 8.87 4.75 12 4.75Z" />
+            </svg>
+            {googleLoading ? "Opening Google…" : "Finish joining with Google"}
+          </button>
+        </div>
 
         {/* WhatsApp Official Community Link Callout */}
         <div className="mt-6 rounded-2xl border-2 border-green/40 bg-gradient-to-br from-green/10 via-surface to-surface p-6 text-left shadow-sm">
@@ -213,6 +339,18 @@ export function RegistrationWizard({
               <span className="text-xs text-muted">Course / Degree:</span>
               <p className="font-medium text-ink">{formData.course}</p>
             </div>
+            {isOtherCampus && (
+              <>
+                <div>
+                  <span className="text-xs text-muted">Institution:</span>
+                  <p className="font-medium text-ink">{formData.institutionName}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted">Department:</span>
+                  <p className="font-medium text-ink">{formData.department}</p>
+                </div>
+              </>
+            )}
             <div>
               <span className="text-xs text-muted">Payment Tier:</span>
               <p className="font-medium text-ink">
@@ -229,15 +367,9 @@ export function RegistrationWizard({
         </div>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          {registrationResult?.isNewGuest ? (
-            <Button asChild variant="primary" className="rounded-xl px-6 py-3 font-semibold">
-              <Link href="/sign-in">Login / Create Account to Link Badge</Link>
-            </Button>
-          ) : (
-            <Button asChild variant="primary" className="rounded-xl px-6 py-3 font-semibold">
-              <Link href={ROUTES.dashboard}>Go to Member Dashboard</Link>
-            </Button>
-          )}
+          <Button asChild variant="primary" className="rounded-xl px-6 py-3 font-semibold">
+            <Link href={ROUTES.dashboard}>Go to Member Dashboard</Link>
+          </Button>
           <Button asChild variant="ghost" className="rounded-xl px-6 py-3 font-semibold">
             <Link href={ROUTES.academy}>Start Interactive Academy</Link>
           </Button>
@@ -314,9 +446,40 @@ export function RegistrationWizard({
                 <User className="text-sky" size={20} /> Let&apos;s get to know you
               </h3>
               <p className="mt-1 text-xs text-text-2">
-                Enter your identity and how leadership and members can reach you.
+                This registration creates your CTC account — no separate join or sign-up page needed.
               </p>
             </div>
+
+            {!isSignedIn && (
+              <div className="rounded-2xl border border-line bg-cream/40 p-4">
+                <p className="mb-3 text-xs text-ink-2">
+                  Fastest path: start with Google, then finish the form. Or create an email password below.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleContinueWithGoogle}
+                  disabled={googleLoading}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:bg-cream-2 disabled:opacity-60"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+                    <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.63h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.87c2.27-2.09 3.58-5.17 3.58-8.81Z" />
+                    <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.94-2.92l-3.87-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.27v3.11A12 12 0 0 0 12 24Z" />
+                    <path fill="#FBBC05" d="M5.27 14.27a7.2 7.2 0 0 1 0-4.54V6.62H1.27a12 12 0 0 0 0 10.76l4-3.11Z" />
+                    <path fill="#EA4335" d="M12 4.75c1.76 0 3.34.6 4.59 1.79l3.44-3.44C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.27 6.62l4 3.11C6.22 6.87 8.87 4.75 12 4.75Z" />
+                  </svg>
+                  {googleLoading ? "Opening Google…" : "Continue with Google"}
+                </button>
+                <p className="mt-2 text-center text-[11px] text-muted">Already have an account?{" "}
+                  <Link href={ROUTES.signIn} className="font-semibold text-sky hover:underline">Sign in</Link>
+                </p>
+              </div>
+            )}
+
+            {isSignedIn && (
+              <p className="rounded-xl border border-green/30 bg-green/5 px-3 py-2 text-xs text-green">
+                Signed in — we&apos;ll attach this membership to your account.
+              </p>
+            )}
 
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-text-3">Full Name (Official)</label>
@@ -381,6 +544,26 @@ export function RegistrationWizard({
                 />
               </div>
             </div>
+
+            {!isSignedIn && (
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-text-3">
+                  Create CTC password
+                </label>
+                <Input
+                  type="password"
+                  value={formData.password ?? ""}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="At least 8 characters"
+                  className="rounded-xl"
+                  autoComplete="new-password"
+                />
+                <p className="mt-1 text-[11px] text-muted">
+                  Used to open your dashboard after registration. You can also link Google at the end.
+                </p>
+                {fieldErrors.password && <p className="mt-1 text-xs text-red-500">{fieldErrors.password}</p>}
+              </div>
+            )}
           </div>
         )}
 
@@ -459,6 +642,39 @@ export function RegistrationWizard({
               </div>
               {fieldErrors.campus && <p className="mt-1 text-xs text-red-500">{fieldErrors.campus}</p>}
             </div>
+
+            {isOtherCampus && (
+              <div className="grid grid-cols-1 gap-4 rounded-2xl border border-sky/25 bg-sky/5 p-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-text-3">
+                    Institution / University name
+                  </label>
+                  <Input
+                    value={formData.institutionName ?? ""}
+                    onChange={(e) => setFormData({ ...formData, institutionName: e.target.value })}
+                    placeholder="e.g. Kenyatta University, Strathmore…"
+                    className="rounded-xl"
+                  />
+                  {fieldErrors.institutionName && (
+                    <p className="mt-1 text-xs text-red-500">{fieldErrors.institutionName}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold text-text-3">
+                    Faculty / Department
+                  </label>
+                  <Input
+                    value={formData.department ?? ""}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    placeholder="e.g. School of Computing, Engineering…"
+                    className="rounded-xl"
+                  />
+                  {fieldErrors.department && (
+                    <p className="mt-1 text-xs text-red-500">{fieldErrors.department}</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-text-3">Year of Study</label>
@@ -712,8 +928,16 @@ export function RegistrationWizard({
                 </div>
                 <div>
                   <span className="text-xs text-muted">Campus</span>
-                  <p className="text-sm font-bold text-ink">{formData.campus}</p>
+                  <p className="text-sm font-bold text-ink">
+                    {isOtherCampus ? formData.institutionName || formData.campus : formData.campus}
+                  </p>
                 </div>
+                {isOtherCampus && (
+                  <div>
+                    <span className="text-xs text-muted">Department</span>
+                    <p className="text-sm font-bold text-ink">{formData.department}</p>
+                  </div>
+                )}
                 <div>
                   <span className="text-xs text-muted">Course & Year</span>
                   <p className="text-sm font-bold text-ink">{formData.course} ({formData.yearOfStudy})</p>

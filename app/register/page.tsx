@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { RegistrationWizard } from "@/features/membership/RegistrationWizard";
+import { getAuthUserId } from "@/lib/supabase/auth-helpers";
 import { getCurrentMember } from "@/lib/supabase/get-current-member";
 import { ROUTES } from "@/constants/routes";
 
@@ -18,7 +18,10 @@ function ArrowLeftIcon() {
 }
 
 export default async function RegisterPage() {
-  const currentMember = await getCurrentMember().catch(() => null);
+  const [userId, currentMember] = await Promise.all([
+    getAuthUserId().catch(() => null),
+    getCurrentMember().catch(() => null),
+  ]);
 
   const initialUser = currentMember
     ? {
@@ -45,7 +48,6 @@ export default async function RegisterPage() {
         </Link>
 
         <div className="flex items-center gap-2 self-start px-3.5 py-1 text-xs font-semibold text-ink">
-          {/* <span className="h-2 w-2 rounded-full bg-green animate-pulse" /> */}
           Official Academic Year Membership
         </div>
       </div>
@@ -56,12 +58,12 @@ export default async function RegisterPage() {
           Chiromo Tech Club Membership Portal
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-ink-2">
-          Step into the university&apos;s leading tech ecosystem. Complete your progressive registration below to receive your official digital membership and track placement.
+          Register once — this form creates your CTC account and membership application. Optional Google
+          link at the end for easier sign-in later.
         </p>
       </div>
 
-      {/* Progressive Disclosure Registration Wizard */}
-      <RegistrationWizard initialUser={initialUser} />
+      <RegistrationWizard initialUser={initialUser} isSignedIn={Boolean(userId)} />
     </main>
   );
 }

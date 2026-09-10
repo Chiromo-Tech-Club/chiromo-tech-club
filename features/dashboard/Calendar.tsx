@@ -1,7 +1,8 @@
 import { CalendarDays, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
-import { googleCalendarEmbedUrl } from "@/lib/calendar/sources";
+import { googleCalendarEmbedUrl, type GoogleCalendarSource } from "@/lib/calendar/sources";
 import { SITE_CONFIG } from "@/config/site";
+import { CalendarsManager } from "@/features/admin/CalendarsManager";
 
 export interface CalendarEntry {
   id: string;
@@ -20,10 +21,14 @@ const KIND_STYLES: Record<CalendarEntry["kind"], { label: string; className: str
 export function Calendar({
   entries,
   googleSources,
+  canManage = false,
+  managedSources = [],
 }: {
   entries: CalendarEntry[];
   /** Active Google Calendar emails/IDs combined into one embed. */
   googleSources?: string[];
+  canManage?: boolean;
+  managedSources?: GoogleCalendarSource[];
 }) {
   const sorted = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const sources =
@@ -52,8 +57,8 @@ export function Calendar({
           </a>
         </div>
         <p className="mb-2 text-xs text-muted">
-          Joint club calendars — combined embed, not tied to whoever signed in. Admins manage sources
-          under Admin → Calendars.
+          Joint club calendars — combined embed for everyone. Leadership manages sources on this Calendar
+          page (also under Corporate Affairs → Social Calendar).
         </p>
         <p className="mb-4 font-mono text-[11px] text-muted">
           {sources.length === 1 ? sources[0] : `${sources.length} calendars: ${sources.join(" · ")}`}
@@ -67,6 +72,13 @@ export function Calendar({
           />
         </div>
       </div>
+
+      {canManage && (
+        <div>
+          <h3 className="mb-3 font-display text-sm font-bold text-ink">Manage joint calendar emails</h3>
+          <CalendarsManager initial={managedSources} />
+        </div>
+      )}
 
       <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
         <div className="mb-4 flex items-center gap-2">

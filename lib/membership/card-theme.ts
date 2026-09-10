@@ -106,7 +106,11 @@ export function resolveCardTheme(value?: string | null): CardTheme {
 }
 
 /** Large role line on the card — prefers the named executive seat when set. */
-export function getCardRoleTitle(role?: string | null, execTitle?: string | null): string {
+export function getCardRoleTitle(
+  role?: string | null,
+  execTitle?: string | null,
+  opts?: { isChiromo?: boolean | null; campus?: string | null },
+): string {
   // Named leadership seat always wins (Vice Chairperson, Treasurer, …)
   if (execTitle && isExecTitle(execTitle)) {
     if (execTitle === "patron") return "PATRON";
@@ -120,7 +124,15 @@ export function getCardRoleTitle(role?: string | null, execTitle?: string | null
 
   if (role === "admin") return "ADMINISTRATOR";
   if (role === "exec") return "EXECUTIVE";
-  if (role === "member") return "MEMBER";
+
+  // Chiromo faculty / campus students are Associate Members on the card ID line
+  if (role === "member") {
+    const fromChiromo =
+      opts?.isChiromo === true ||
+      (opts?.campus ?? "").toLowerCase().includes("chiromo");
+    return fromChiromo ? "ASSOCIATE MEMBER" : "MEMBER";
+  }
+
   return "VISITOR";
 }
 
