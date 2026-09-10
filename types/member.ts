@@ -66,7 +66,7 @@ export interface ClubRegistrationInput {
   experienceLevel: "beginner" | "intermediate" | "advanced";
   learningGoals?: string;
   // Step 4: Fee & Payment Plan
-  paymentOption: "full_500" | "deposit_250" | "pay_later";
+  paymentOption: "full_500" | "deposit_250";
   mpesaReference?: string;
   mpesaPhoneNumber?: string;
   // Step 5: Terms

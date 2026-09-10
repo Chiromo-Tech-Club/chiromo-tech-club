@@ -105,8 +105,8 @@ export function RegistrationWizard({
         errors.communitySlugs = "Please select at least one community or technical track.";
       }
     } else if (step === 4) {
-      if (formData.paymentOption !== "pay_later" && (!formData.mpesaReference || formData.mpesaReference.trim().length < 4)) {
-        errors.mpesaReference = "Please provide the M-Pesa transaction code or select 'Pay Later / Installment'.";
+      if (!formData.mpesaReference || formData.mpesaReference.trim().length < 4) {
+        errors.mpesaReference = "Please provide the M-Pesa transaction code.";
       }
     }
 
@@ -216,11 +216,9 @@ export function RegistrationWizard({
             <div>
               <span className="text-xs text-muted">Payment Tier:</span>
               <p className="font-medium text-ink">
-                {formData.paymentOption === "full_500" 
-                  ? "500 KES (Full Membership)" 
-                  : formData.paymentOption === "deposit_250" 
-                  ? "250 KES (Deposit Plan)" 
-                  : "Pay Later / Flexible Plan"}
+                {formData.paymentOption === "full_500"
+                  ? "500 KES (Full Membership)"
+                  : "250 KES (Deposit Plan)"}
               </p>
             </div>
             <div>
@@ -575,7 +573,7 @@ export function RegistrationWizard({
             </div>
 
             {/* Pricing Options */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {[
                 {
                   id: "full_500",
@@ -590,13 +588,6 @@ export function RegistrationWizard({
                   title: "Initial Deposit",
                   amount: "KES 250",
                   desc: "Pay 250 deposit now, finish balance in flexible deposits later.",
-                },
-                {
-                  id: "pay_later",
-                  badge: "Installment",
-                  title: "Pay Later / Cash",
-                  amount: "Flexible",
-                  desc: "Register now and clear membership at the Chiromo lab desk or in installments.",
                 },
               ].map((tier) => {
                 const isSelected = formData.paymentOption === tier.id;
@@ -633,8 +624,7 @@ export function RegistrationWizard({
                 </div>
               </div> */}
 
-              {formData.paymentOption !== "pay_later" && (
-                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-text-3">
                       M-Pesa Transaction Code (10 digits)
@@ -660,7 +650,6 @@ export function RegistrationWizard({
                     />
                   </div>
                 </div>
-              )}
             </div>
           </div>
         )}
@@ -706,7 +695,7 @@ export function RegistrationWizard({
                 <div>
                   <span className="text-xs text-muted">Payment Tier</span>
                   <p className="text-sm font-bold text-ink">
-                    {formData.paymentOption === "full_500" ? "500 KES (Full Paid)" : formData.paymentOption === "deposit_250" ? "250 KES (Deposit Paid)" : "Pay Later / Flexible Plan"}
+                    {formData.paymentOption === "full_500" ? "500 KES (Full Paid)" : "250 KES (Deposit Paid)"}
                   </p>
                 </div>
                 {formData.mpesaReference && (

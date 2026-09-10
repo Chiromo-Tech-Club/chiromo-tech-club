@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { isNull, desc } from "drizzle-orm";
+import { ArrowLeft } from "lucide-react";
 import { getDb } from "@/lib/drizzle/client";
 import { members, memberCommunities } from "@/lib/drizzle/schema";
 import { getCurrentRole } from "@/lib/supabase/auth-helpers";
 import { MembersTable, type ExtendedMemberRow } from "@/features/admin/MembersTable";
 import type { MemberStatus } from "@/types/member-status";
+import { ROUTES } from "@/constants/routes";
 
 export const metadata = { title: "Admin — Members & Approvals" };
 
@@ -66,6 +69,13 @@ export default async function AdminMembersPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
       <div className="mb-6">
+        <Link
+          href={ROUTES.dashboard}
+          className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-sky hover:underline"
+        >
+          <ArrowLeft size={14} />
+          Back to Dashboard
+        </Link>
         <h1 className="font-display text-3xl font-extrabold text-ink">Member Approvals & Administration</h1>
         <p className="mt-2 max-w-2xl text-sm text-text-2">
           Review pending club registrations, track student ID & campus verification, manage membership fee deposits, and assign executive leadership seats.

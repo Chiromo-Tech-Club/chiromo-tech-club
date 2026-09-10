@@ -486,6 +486,27 @@ export const volunteerLogs = pgTable("volunteer_logs", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
+/**
+ * Google Calendar sources shown as a joint embed on the dashboard.
+ * Admins/execs can add any public calendar email or calendar ID;
+ * all active rows are combined via multiple `src` params on Google's embed.
+ */
+export const googleCalendars = pgTable(
+  "google_calendars",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    label: text("label").notNull(),
+    /** Google Calendar ID or email (e.g. ctc.uonbi@gmail.com). */
+    calendarSrc: text("calendar_src").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    addedById: uuid("added_by_id").references(() => members.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("google_calendars_src_idx").on(table.calendarSrc)],
+);
+
 /* ---------- Relations (for Drizzle's relational query API) ---------- */
 
 export const membersRelations = relations(members, ({ many }) => ({

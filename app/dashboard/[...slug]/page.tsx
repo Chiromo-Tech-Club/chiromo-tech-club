@@ -48,6 +48,7 @@ import { DocumentRepository, type DocumentItem } from "@/features/dashboard/Docu
 import { ExecChat } from "@/features/dashboard/ExecChat";
 import type { ChatMessageItem } from "@/actions/dashboard/chat";
 import { Calendar, type CalendarEntry } from "@/features/dashboard/Calendar";
+import { getActiveCalendarSrcList } from "@/lib/calendar/sources";
 import { CommitteeActivityFeed, type ActivityEntry } from "@/features/dashboard/CommitteeActivityFeed";
 import { TransactionTypeTracker, type TransactionRow } from "@/features/dashboard/TransactionTypeTracker";
 import { FinancialReports, type MonthlySummary } from "@/features/dashboard/FinancialReports";
@@ -339,7 +340,8 @@ async function SharedCalendar() {
   const db = getDb();
   const now = new Date();
 
-  const [upcomingEvents, upcomingMeetings, dueInitiatives, dueTasks] = await Promise.all([
+  const [googleSources, upcomingEvents, upcomingMeetings, dueInitiatives, dueTasks] = await Promise.all([
+    getActiveCalendarSrcList(),
     db.select({ id: events.id, title: events.title, startsAt: events.startsAt }).from(events).where(gte(events.startsAt, now)),
     db
       .select({ id: meetingMinutes.id, title: meetingMinutes.title, meetingDate: meetingMinutes.meetingDate })
@@ -361,7 +363,7 @@ async function SharedCalendar() {
     ...dueTasks.filter((t) => t.dueDate).map((t) => ({ id: t.id, title: t.title, date: t.dueDate!.toISOString(), kind: "task-due" as const })),
   ];
 
-  return <Calendar entries={entries} />;
+  return <Calendar entries={entries} googleSources={googleSources} />;
 }
 
 async function SharedCommitteeActivity() {

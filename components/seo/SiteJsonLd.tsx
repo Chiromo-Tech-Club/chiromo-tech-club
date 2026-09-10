@@ -16,7 +16,7 @@ export function SiteJsonLd() {
         logo: absoluteUrl("/images/image.svg"),
         description: SITE_CONFIG.description,
         slogan: SITE_CONFIG.tagline,
-        email: "chiromotechclub@gmail.com",
+        email: SITE_CONFIG.contactEmail,
         address: {
           "@type": "PostalAddress",
           addressLocality: "Chiromo",

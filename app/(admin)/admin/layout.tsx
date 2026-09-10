@@ -32,8 +32,10 @@ import { getCurrentRole } from "@/lib/supabase/auth-helpers";
 import { getAuthUserId } from "@/lib/supabase/auth-helpers";
 
 const ADMIN_NAV = [
+  { href: ROUTES.dashboard, label: "← Dashboard" },
   { href: ROUTES.admin, label: "Projects" },
   { href: ROUTES.adminMembers, label: "Members" },
+  { href: ROUTES.adminCalendars, label: "Calendars" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

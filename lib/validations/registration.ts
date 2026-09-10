@@ -45,13 +45,12 @@ export const registrationStep3Schema = z.object({
 });
 
 export const registrationStep4Schema = z.object({
-  paymentOption: z.enum(["full_500", "deposit_250", "pay_later"]),
+  paymentOption: z.enum(["full_500", "deposit_250"]),
   mpesaReference: z
     .string()
     .trim()
-    .max(20, "M-Pesa code should be under 20 characters.")
-    .optional()
-    .or(z.literal("")),
+    .min(4, "Please provide the M-Pesa transaction code.")
+    .max(20, "M-Pesa code should be under 20 characters."),
   mpesaPhoneNumber: z
     .string()
     .trim()

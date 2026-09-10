@@ -6,6 +6,13 @@ export const SITE_CONFIG = {
     "Chiromo Tech Club (CTC) is a student-led technology community at the University of Nairobi Chiromo Campus — AI, software engineering, cloud, cybersecurity, robotics, data science, and design.",
   url: "https://chiromo-tech-club.vercel.app",
   locale: "en_KE",
+  /** Club contact / reply-to for EmailJS (not a personal login). */
+  contactEmail: "ctc.uonbi@gmail.com",
+  /**
+   * Default Google Calendar when no joint sources are saved in Admin → Calendars.
+   * Override with NEXT_PUBLIC_GOOGLE_CALENDAR_SRC (comma-separated for multiple).
+   */
+  googleCalendarSrc: "ctc.uonbi@gmail.com",
   keywords: [
     "Chiromo Tech Club",
     "CTC",
@@ -27,6 +34,4 @@ export const SITE_CONFIG = {
   socials: {
     github: "https://github.com/chiromo-tech-club",
     instagram: "https://instagram.com/chiromotechclub",
-    linkedin: "https://linkedin.com/company/chiromo-tech-club",
-  },
-} as const;
+    linkedin: "
