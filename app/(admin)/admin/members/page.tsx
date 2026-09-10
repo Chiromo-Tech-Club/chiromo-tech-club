@@ -67,18 +67,21 @@ export default async function AdminMembersPage() {
   const memberRows = await getMembers();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <div className="mb-6">
+    <div className="mx-auto w-full max-w-7xl px-3 py-6 sm:px-6 sm:py-8">
+      <div className="mb-5 sm:mb-6">
         <Link
           href={ROUTES.dashboard}
-          className="mb-4 inline-flex items-center gap-1.5 text-xs font-bold text-sky hover:underline"
+          className="mb-3 inline-flex items-center gap-1.5 text-xs font-bold text-sky hover:underline sm:mb-4"
         >
           <ArrowLeft size={14} />
           Back to Dashboard
         </Link>
-        <h1 className="font-display text-3xl font-extrabold text-ink">Member Approvals & Administration</h1>
+        <h1 className="font-display text-2xl font-extrabold leading-tight text-ink sm:text-3xl">
+          Member Approvals &amp; Administration
+        </h1>
         <p className="mt-2 max-w-2xl text-sm text-text-2">
-          Review pending club registrations, track student ID & campus verification, manage membership fee deposits, and assign executive leadership seats.
+          Review pending club registrations, track student ID &amp; campus verification, manage
+          membership fee deposits, and assign executive leadership seats.
         </p>
       </div>
 

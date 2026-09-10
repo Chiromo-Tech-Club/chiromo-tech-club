@@ -3,33 +3,11 @@
 // block in root middleware.ts). Reads the role straight off your existing
 // `members` table (see db/schema.ts) — no separate `profiles` table
 // needed since members already serves that purpose.
-//
-// Run once in the Supabase SQL editor (creates a member row automatically
-// on every new Google sign-up, keyed by the same id as auth.users):
-//
-// create or replace function public.handle_new_user()
-// returns trigger as $$
-// begin
-//   insert into public.members (id, full_name, email, avatar_url)
-//   values (
-//     new.id,
-//     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
-//     new.email,
-//     new.raw_user_meta_data->>'avatar_url'
-//   );
-//   return new;
-// end;
-// $$ language plpgsql security definer;
-//
-// create trigger on_auth_user_created
-//   after insert on auth.users
-//   for each row execute procedure public.handle_new_user();
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ROUTES } from "@/constants/routes";
-import { getCurrentRole } from "@/lib/supabase/auth-helpers";
-import { getAuthUserId } from "@/lib/supabase/auth-helpers";
+import { getCurrentRole, getAuthUserId } from "@/lib/supabase/auth-helpers";
 
 const ADMIN_NAV = [
   { href: ROUTES.dashboard, label: "← Dashboard" },
@@ -48,21 +26,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div>
-      <div className="fixed inset-x-0 top-20 z-40 border-b border-line bg-cream/95 backdrop-blur-sm">
-        <nav className="mx-auto flex max-w-[1280px] gap-1 px-8 py-2.5">
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-cream">
+      <div className="sticky top-0 z-40 border-b border-line bg-cream/95 backdrop-blur-sm">
+        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-3 py-2.5 sm:px-6 md:px-8 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {ADMIN_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-4 py-1.5 text-sm font-medium text-ink-2 transition-colors hover:bg-cream-2 hover:text-ink"
+              className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-ink-2 transition-colors hover:bg-cream-2 hover:text-ink sm:px-4 sm:text-sm"
             >
               {item.label}
             </Link>
           ))}
         </nav>
       </div>
-      {children}
+      <div className="w-full">{children}</div>
     </div>
   );
 }

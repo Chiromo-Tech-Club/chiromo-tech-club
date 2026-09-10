@@ -21,10 +21,7 @@ import {
   Search, 
   GraduationCap, 
   Building2, 
-  Phone, 
   CreditCard, 
-  ShieldCheck, 
-  Sparkles,
   DollarSign,
   Users
 } from "lucide-react";
@@ -142,65 +139,66 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Top Metrics Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <div className="rounded-2xl border border-line/70 bg-surface/90 p-4 shadow-sm backdrop-blur-md">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted">Pending Review</span>
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 text-xs font-bold">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
+        <div className="rounded-2xl border border-line/70 bg-surface/90 p-3 shadow-sm backdrop-blur-md sm:p-4">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-semibold text-muted sm:text-xs">Pending Review</span>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-[10px] font-bold text-amber-600 sm:h-6 sm:w-6 sm:text-xs">
               !
             </span>
           </div>
-          <p className="mt-2 font-display text-2xl font-extrabold text-ink">{pendingCount}</p>
-          <span className="text-[11px] text-muted">Awaiting admin sign-off</span>
+          <p className="mt-1.5 font-display text-xl font-extrabold text-ink sm:mt-2 sm:text-2xl">{pendingCount}</p>
+          <span className="text-[10px] text-muted sm:text-[11px]">Awaiting admin sign-off</span>
         </div>
 
-        <div className="rounded-2xl border border-line/70 bg-surface/90 p-4 shadow-sm backdrop-blur-md">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted">Chiromo ()</span>
-            <Building2 size={16} className="text-sky" />
+        <div className="rounded-2xl border border-line/70 bg-surface/90 p-3 shadow-sm backdrop-blur-md sm:p-4">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-semibold text-muted sm:text-xs">Chiromo</span>
+            <Building2 size={14} className="shrink-0 text-sky sm:h-4 sm:w-4" />
           </div>
-          <p className="mt-2 font-display text-2xl font-extrabold text-ink">{chiromoCount}</p>
-          <span className="text-[11px] text-muted">Science Campus Members</span>
+          <p className="mt-1.5 font-display text-xl font-extrabold text-ink sm:mt-2 sm:text-2xl">{chiromoCount}</p>
+          <span className="text-[10px] text-muted sm:text-[11px]">Science Campus</span>
         </div>
 
-        <div className="rounded-2xl border border-line/70 bg-surface/90 p-4 shadow-sm backdrop-blur-md">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted">Verified & Active</span>
-            <CheckCircle2 size={16} className="text-green" />
+        <div className="rounded-2xl border border-line/70 bg-surface/90 p-3 shadow-sm backdrop-blur-md sm:p-4">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-semibold text-muted sm:text-xs">Verified</span>
+            <CheckCircle2 size={14} className="shrink-0 text-green sm:h-4 sm:w-4" />
           </div>
-          <p className="mt-2 font-display text-2xl font-extrabold text-ink">{approvedCount}</p>
-          <span className="text-[11px] text-muted">Fully approved members</span>
+          <p className="mt-1.5 font-display text-xl font-extrabold text-ink sm:mt-2 sm:text-2xl">{approvedCount}</p>
+          <span className="text-[10px] text-muted sm:text-[11px]">Fully approved</span>
         </div>
 
-        <div className="rounded-2xl border border-line/70 bg-surface/90 p-4 shadow-sm backdrop-blur-md">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-muted">Fees & Deposits</span>
-            <DollarSign size={16} className="text-green" />
+        <div className="rounded-2xl border border-line/70 bg-surface/90 p-3 shadow-sm backdrop-blur-md sm:p-4">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[10px] font-semibold text-muted sm:text-xs">Fees</span>
+            <DollarSign size={14} className="shrink-0 text-green sm:h-4 sm:w-4" />
           </div>
-          <p className="mt-2 font-display text-2xl font-extrabold text-green font-mono">
+          <p className="mt-1.5 font-display text-lg font-extrabold font-mono text-green sm:mt-2 sm:text-2xl">
             KES {totalRevenue.toLocaleString()}
           </p>
-          <span className="text-[11px] text-muted">{googleCount} Google signups</span>
+          <span className="text-[10px] text-muted sm:text-[11px]">{googleCount} Google signups</span>
         </div>
       </div>
 
-      {/* Tabs & Controls */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-line pb-4">
-        <div className="flex items-center gap-2">
+      {/* Tabs & Search */}
+      <div className="flex flex-col gap-3 border-b border-line pb-4">
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <button
             type="button"
             onClick={() => setActiveTab("pending")}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+            className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold transition-all sm:w-auto sm:justify-start sm:px-4 ${
               activeTab === "pending"
                 ? "bg-navy text-white shadow-sm"
                 : "bg-surface text-ink-2 hover:bg-cream-2 hover:text-ink"
             }`}
           >
-            <span>Pending Approvals Queue</span>
+            <span className="sm:hidden">Pending Queue</span>
+            <span className="hidden sm:inline">Pending Approvals Queue</span>
             {pendingCount > 0 && (
-              <span className="rounded-full bg-amber-400 px-1.5 py-0.2 text-[10px] font-extrabold text-navy-deep">
+              <span className="rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-extrabold text-navy-deep">
                 {pendingCount}
               </span>
             )}
@@ -209,50 +207,48 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
           <button
             type="button"
             onClick={() => setActiveTab("all")}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+            className={`flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-bold transition-all sm:w-auto sm:justify-start sm:px-4 ${
               activeTab === "all"
                 ? "bg-navy text-white shadow-sm"
                 : "bg-surface text-ink-2 hover:bg-cream-2 hover:text-ink"
             }`}
           >
-            <Users size={14} />
-            <span>All Members & Exec Seats</span>
+            <Users size={14} className="shrink-0" />
+            <span className="sm:hidden">All Members</span>
+            <span className="hidden sm:inline">All Members &amp; Exec Seats</span>
             <span className="text-[11px] opacity-70">({members.length})</span>
           </button>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative w-full sm:w-72">
+        <div className="relative w-full sm:max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search by name, ID, course..."
-            className="pl-9 pr-3 rounded-xl text-xs"
+            className="rounded-xl pl-9 pr-3 text-xs"
           />
         </div>
       </div>
 
-      {/* Filter Badges Bar */}
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-xs font-semibold text-muted mr-1">Filter:</span>
-        
-        {/* Campus */}
+      {/* Filters — full-width stacked on mobile */}
+      <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
+        <span className="hidden text-xs font-semibold text-muted sm:mr-1 sm:inline">Filter:</span>
+
         <select
           value={campusFilter}
-          onChange={(e) => setCampusFilter(e.target.value as any)}
-          className="rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-ink"
+          onChange={(e) => setCampusFilter(e.target.value as typeof campusFilter)}
+          className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs text-ink sm:w-auto sm:rounded-lg sm:px-2.5 sm:py-1.5"
         >
           <option value="all">All Campuses</option>
-          <option value="chiromo">Chiromo () Only</option>
+          <option value="chiromo">Chiromo Only</option>
           <option value="other">Other Campuses</option>
         </select>
 
-        {/* Payment */}
         <select
           value={paymentFilter}
-          onChange={(e) => setPaymentFilter(e.target.value as any)}
-          className="rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-ink"
+          onChange={(e) => setPaymentFilter(e.target.value as typeof paymentFilter)}
+          className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs text-ink sm:w-auto sm:rounded-lg sm:px-2.5 sm:py-1.5"
         >
           <option value="all">All Payment Statuses</option>
           <option value="fully_paid">Fully Paid (500 KES)</option>
@@ -260,11 +256,10 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
           <option value="unpaid">Unpaid / Pay Later</option>
         </select>
 
-        {/* Auth Provider */}
         <select
           value={authFilter}
-          onChange={(e) => setAuthFilter(e.target.value as any)}
-          className="rounded-lg border border-line bg-surface px-2.5 py-1 text-xs text-ink"
+          onChange={(e) => setAuthFilter(e.target.value as typeof authFilter)}
+          className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs text-ink sm:w-auto sm:rounded-lg sm:px-2.5 sm:py-1.5"
         >
           <option value="all">All Auth Types</option>
           <option value="google">Google Auth</option>
@@ -272,41 +267,38 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
         </select>
       </div>
 
-      {/* Membership Applications & Roster Cards/Table */}
+      {/* Membership Applications & Roster */}
       {filteredMembers.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-line bg-surface/50 p-12 text-center">
+        <div className="rounded-2xl border border-dashed border-line bg-surface/50 p-8 text-center sm:p-12">
           <p className="text-sm font-semibold text-ink">No members found matching your filters.</p>
           <p className="mt-1 text-xs text-muted">Try clearing your search term or filters.</p>
         </div>
       ) : activeTab === "pending" ? (
-        /* PENDING APPROVALS QUEUE (Rich Cards) */
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4">
           {filteredMembers.map((m) => (
             <div
               key={m.id}
-              className="relative overflow-hidden rounded-2xl border border-line/80 bg-surface p-5 shadow-sm transition-all hover:border-sky/40 sm:p-6"
+              className="relative overflow-hidden rounded-2xl border border-line/80 bg-surface p-4 shadow-sm transition-all hover:border-sky/40 sm:p-6"
             >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                
-                {/* Applicant Profile */}
-                <div className="space-y-2">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-display text-base font-bold text-ink">{m.fullName}</h3>
+                    <h3 className="break-words font-display text-base font-bold text-ink">{m.fullName}</h3>
                     {m.authProvider === "google" ? <GoogleBadge /> : <EmailBadge />}
                     <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
                       Pending Approval
                     </span>
                   </div>
 
-                  <p className="text-xs text-muted flex items-center gap-1">
-                    <span>{m.email}</span>
-                    {m.phoneNumber && <span>• {m.phoneNumber}</span>}
+                  <p className="flex flex-col gap-0.5 text-xs text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-1">
+                    <span className="break-all">{m.email}</span>
+                    {m.phoneNumber && <span className="sm:before:content-['•_']">{m.phoneNumber}</span>}
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-ink-2">
+                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-ink-2 sm:gap-3">
                     {m.studentId && (
-                      <span className="flex items-center gap-1 font-mono font-medium text-ink bg-cream-2 px-2 py-0.5 rounded-md">
-                        <GraduationCap size={13} className="text-sky" /> {m.studentId}
+                      <span className="flex items-center gap-1 rounded-md bg-cream-2 px-2 py-0.5 font-mono font-medium text-ink">
+                        <GraduationCap size={13} className="shrink-0 text-sky" /> {m.studentId}
                       </span>
                     )}
 
@@ -317,28 +309,35 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
                     )}
 
                     <span className="flex items-center gap-1 text-xs">
-                      <Building2 size={13} className="text-muted" />
-                      <strong className={m.isChiromo || m.campus?.toLowerCase().includes("chiromo") ? "text-green" : "text-ink-2"}>
+                      <Building2 size={13} className="shrink-0 text-muted" />
+                      <strong
+                        className={
+                          m.isChiromo || m.campus?.toLowerCase().includes("chiromo")
+                            ? "text-green"
+                            : "text-ink-2"
+                        }
+                      >
                         {m.campus ?? "Chiromo Campus"}
                       </strong>
                     </span>
                   </div>
 
-                  {/* Payment & Tracks */}
                   <div className="flex flex-wrap items-center gap-2 pt-2">
-                    <span className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold ${
-                      m.membershipFeeStatus === "fully_paid"
-                        ? "bg-green/10 text-green"
-                        : m.membershipFeeStatus === "deposit_paid"
-                        ? "bg-sky/15 text-sky"
-                        : "bg-cream-2 text-ink-2"
-                    }`}>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold ${
+                        m.membershipFeeStatus === "fully_paid"
+                          ? "bg-green/10 text-green"
+                          : m.membershipFeeStatus === "deposit_paid"
+                            ? "bg-sky/15 text-sky"
+                            : "bg-cream-2 text-ink-2"
+                      }`}
+                    >
                       <CreditCard size={12} />
                       {m.membershipFeeStatus === "fully_paid"
                         ? "Paid KES 500 (Full)"
                         : m.membershipFeeStatus === "deposit_paid"
-                        ? "Paid KES 250 (Deposit)"
-                        : "Unpaid / Pay Later"}
+                          ? "Paid KES 250 (Deposit)"
+                          : "Unpaid / Pay Later"}
                     </span>
 
                     {m.mpesaReference && (
@@ -350,7 +349,10 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
                     {m.communitySlugs && m.communitySlugs.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {m.communitySlugs.map((slug) => (
-                          <span key={slug} className="rounded-md bg-cream px-2 py-0.5 text-[10px] text-ink-2 capitalize">
+                          <span
+                            key={slug}
+                            className="rounded-md bg-cream px-2 py-0.5 text-[10px] capitalize text-ink-2"
+                          >
                             {slug.replace(/-/g, " ")}
                           </span>
                         ))}
@@ -359,9 +361,7 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
                   </div>
                 </div>
 
-                {/* Approval Actions */}
-                <div className="flex flex-wrap items-center gap-2 border-t border-line/60 pt-4 lg:border-t-0 lg:pt-0">
-                  {/* Mark as Deposit / Full Pay if pending payment */}
+                <div className="flex w-full flex-col gap-2 border-t border-line/60 pt-4 sm:flex-row sm:flex-wrap lg:w-auto lg:border-t-0 lg:pt-0">
                   {m.membershipFeeStatus !== "fully_paid" && (
                     <>
                       {m.membershipFeeStatus !== "deposit_paid" && (
@@ -369,7 +369,7 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
                           type="button"
                           disabled={actionInProgress === m.id}
                           onClick={() => handlePaymentUpdate(m.id, "deposit_paid", 250)}
-                          className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:bg-cream-2"
+                          className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-semibold text-ink hover:bg-cream-2 sm:w-auto sm:py-1.5"
                         >
                           Record KES 250 Deposit
                         </button>
@@ -378,7 +378,7 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
                         type="button"
                         disabled={actionInProgress === m.id}
                         onClick={() => handlePaymentUpdate(m.id, "fully_paid", 500)}
-                        className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:bg-cream-2"
+                        className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-semibold text-ink hover:bg-cream-2 sm:w-auto sm:py-1.5"
                       >
                         Record KES 500 Paid
                       </button>
@@ -390,7 +390,7 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
                     size="sm"
                     disabled={actionInProgress === m.id}
                     onClick={() => handleReject(m.id)}
-                    className="flex items-center gap-1 rounded-xl text-red-600 border-red-200 hover:bg-red-50 text-xs"
+                    className="flex w-full items-center justify-center gap-1 rounded-xl border-red-200 text-xs text-red-600 hover:bg-red-50 sm:w-auto"
                   >
                     <XCircle size={14} /> Reject
                   </Button>
@@ -400,44 +400,54 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
                     size="sm"
                     disabled={actionInProgress === m.id}
                     onClick={() => handleApprove(m.id)}
-                    className="flex items-center gap-1.5 rounded-xl bg-green px-4 py-2 font-bold text-white shadow-sm hover:bg-green/90 text-xs"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-green px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-green/90 sm:w-auto sm:py-2"
                   >
                     <CheckCircle2 size={15} /> Approve Membership
                   </Button>
                 </div>
-
               </div>
             </div>
           ))}
         </div>
       ) : (
-        /* ALL MEMBERS — WHO IS WHO */
         <div className="space-y-3">
           <div className="rounded-2xl border border-sky/20 bg-sky/5 px-4 py-3">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky">Who is who</p>
-            <p className="mt-1 text-sm font-semibold text-ink">Assign each person&apos;s club role and executive seat</p>
+            <p className="mt-1 text-sm font-semibold text-ink">
+              Assign each person&apos;s club role and executive seat
+            </p>
             <p className="mt-0.5 text-xs text-muted">
-              Set Club Role to Executive (or Administrator) and pick their seat — Chairperson, Vice Chairperson, Treasurer, etc. That seat title is what appears on their membership card.
+              Set Club Role to Executive (or Administrator) and pick their seat — that title appears on
+              their membership card.
             </p>
           </div>
-          <div className="overflow-x-auto rounded-2xl border border-line bg-surface">
-          <table className="w-full border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-line bg-cream/40 text-xs uppercase tracking-wide text-muted">
-                <th className="py-3 px-4 font-semibold">Member</th>
-                <th className="py-3 px-4 font-semibold">Auth / Campus</th>
-                <th className="py-3 px-4 font-semibold">Status</th>
-                <th className="py-3 px-4 font-semibold">Club Role</th>
-                <th className="py-3 px-4 font-semibold">Exec Seat</th>
-                <th className="py-3 px-4 text-right font-semibold">Save</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMembers.map((m) => (
-                <MemberRowItem key={m.id} member={m} />
-              ))}
-            </tbody>
-          </table>
+
+          {/* Mobile: stacked cards */}
+          <div className="space-y-3 md:hidden">
+            {filteredMembers.map((m) => (
+              <MemberMobileCard key={m.id} member={m} />
+            ))}
+          </div>
+
+          {/* Desktop: table */}
+          <div className="hidden overflow-x-auto rounded-2xl border border-line bg-surface md:block">
+            <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-line bg-cream/40 text-xs uppercase tracking-wide text-muted">
+                  <th className="px-4 py-3 font-semibold">Member</th>
+                  <th className="px-4 py-3 font-semibold">Auth / Campus</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Club Role</th>
+                  <th className="px-4 py-3 font-semibold">Exec Seat</th>
+                  <th className="px-4 py-3 text-right font-semibold">Save</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.map((m) => (
+                  <MemberRowItem key={m.id} member={m} />
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -445,7 +455,7 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
   );
 }
 
-function MemberRowItem({ member }: { member: ExtendedMemberRow }) {
+function useMemberRoleEditor(member: ExtendedMemberRow) {
   const [role, setRole] = useState<Role>(member.role);
   const [execTitle, setExecTitle] = useState<ExecTitle | null>(member.execTitle);
   const [isPending, startTransition] = useTransition();
@@ -467,24 +477,110 @@ function MemberRowItem({ member }: { member: ExtendedMemberRow }) {
     });
   }
 
+  return { role, setRole, execTitle, setExecTitle, isPending, saved, dirty, save };
+}
+
+function MemberMobileCard({ member }: { member: ExtendedMemberRow }) {
+  const { role, setRole, execTitle, setExecTitle, isPending, saved, dirty, save } =
+    useMemberRoleEditor(member);
+
+  return (
+    <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
+      <div className="min-w-0 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="break-words font-display text-sm font-bold text-ink">{member.fullName}</h3>
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-0.5 text-[10px] font-bold",
+              member.status === "approved" && "bg-green/10 text-green",
+              member.status === "pending" && "bg-amber-500/10 text-amber-700",
+              member.status === "rejected" && "bg-red-500/10 text-red-600",
+            )}
+          >
+            {MEMBER_STATUS_LABELS[member.status] ?? member.status}
+          </span>
+        </div>
+        <p className="break-all text-xs text-muted">{member.email}</p>
+        {member.studentId && (
+          <p className="font-mono text-[11px] text-ink-2">{member.studentId}</p>
+        )}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {member.authProvider === "google" ? <GoogleBadge /> : <EmailBadge />}
+          <span className="text-xs text-muted">{member.campus ?? "Chiromo Campus"}</span>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-2">
+        <label className="space-y-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted">Club Role</span>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as Role)}
+            className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-medium text-ink"
+          >
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABELS[r]}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {(role === "exec" || role === "admin") && (
+          <label className="space-y-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted">Exec Seat</span>
+            <select
+              value={execTitle ?? ""}
+              onChange={(e) => setExecTitle(isExecTitle(e.target.value) ? e.target.value : null)}
+              className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-medium text-ink"
+            >
+              <option value="" disabled={role === "exec"}>
+                {role === "exec" ? "Select executive seat…" : "Optional seat…"}
+              </option>
+              {role === "admin" ? <option value="">No seat — Administrator only</option> : null}
+              {EXEC_TITLES.map((t) => (
+                <option key={t} value={t}>
+                  {EXEC_TITLE_LABELS[t]}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <Button
+          variant="primary"
+          size="sm"
+          disabled={!dirty || isPending || (role === "exec" && !execTitle)}
+          onClick={save}
+          className="mt-1 w-full rounded-xl text-xs"
+        >
+          {isPending ? "Saving…" : saved ? "Saved" : "Save Role"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function MemberRowItem({ member }: { member: ExtendedMemberRow }) {
+  const { role, setRole, execTitle, setExecTitle, isPending, saved, dirty, save } =
+    useMemberRoleEditor(member);
+
   return (
     <tr className="border-b border-line hover:bg-cream/20">
-      <td className="py-3 px-4">
+      <td className="px-4 py-3">
         <div className="text-sm font-bold text-ink">{member.fullName}</div>
         <div className="text-xs text-muted">{member.email}</div>
         {member.studentId && (
           <div className="font-mono text-[11px] text-ink-2">{member.studentId}</div>
         )}
       </td>
-      <td className="py-3 px-4">
+      <td className="px-4 py-3">
         <div className="space-y-1">
           {member.authProvider === "google" ? <GoogleBadge /> : <EmailBadge />}
-          <div className="text-xs text-muted font-medium">
-            {member.campus ?? "Chiromo Campus"}
-          </div>
+          <div className="text-xs font-medium text-muted">{member.campus ?? "Chiromo Campus"}</div>
         </div>
       </td>
-      <td className="py-3 px-4">
+      <td className="px-4 py-3">
         <span
           className={cn(
             "rounded-full px-2.5 py-1 text-[11px] font-bold",
@@ -496,11 +592,11 @@ function MemberRowItem({ member }: { member: ExtendedMemberRow }) {
           {MEMBER_STATUS_LABELS[member.status] ?? member.status}
         </span>
       </td>
-      <td className="py-3 px-4">
+      <td className="px-4 py-3">
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as Role)}
-          className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs text-ink font-medium"
+          className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink"
         >
           {ROLES.map((r) => (
             <option key={r} value={r}>
@@ -509,12 +605,12 @@ function MemberRowItem({ member }: { member: ExtendedMemberRow }) {
           ))}
         </select>
       </td>
-      <td className="py-3 px-4">
+      <td className="px-4 py-3">
         {role === "exec" || role === "admin" ? (
           <select
             value={execTitle ?? ""}
             onChange={(e) => setExecTitle(isExecTitle(e.target.value) ? e.target.value : null)}
-            className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs text-ink font-medium"
+            className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink"
           >
             <option value="" disabled={role === "exec"}>
               {role === "exec" ? "Select executive seat…" : "Optional seat (optional)…"}
@@ -530,7 +626,7 @@ function MemberRowItem({ member }: { member: ExtendedMemberRow }) {
           <span className="text-xs text-muted">—</span>
         )}
       </td>
-      <td className="py-3 px-4 text-right">
+      <td className="px-4 py-3 text-right">
         <Button
           variant="primary"
           size="sm"
