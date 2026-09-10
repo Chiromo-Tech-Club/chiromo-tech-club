@@ -700,9 +700,20 @@ async function TreasurerFinancialCharts() {
 }
 
 async function CorporateAffairsGuestSpeakers() {
+  const { ensureGuestSpeakersSchema } = await import("@/lib/drizzle/ensure-guest-speakers");
+  await ensureGuestSpeakersSchema();
+
   const db = getDb();
   const rows = await db
-    .select({ id: guestSpeakers.id, name: guestSpeakers.name, topic: guestSpeakers.topic, contactEmail: guestSpeakers.contactEmail, status: guestSpeakers.status, notes: guestSpeakers.notes })
+    .select({
+      id: guestSpeakers.id,
+      name: guestSpeakers.name,
+      topic: guestSpeakers.topic,
+      contactEmail: guestSpeakers.contactEmail,
+      contactPhone: guestSpeakers.contactPhone,
+      status: guestSpeakers.status,
+      notes: guestSpeakers.notes,
+    })
     .from(guestSpeakers)
     .where(isNull(guestSpeakers.deletedAt))
     .orderBy(desc(guestSpeakers.createdAt));

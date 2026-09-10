@@ -34,7 +34,13 @@ export const initiativeStatusEnum = pgEnum("initiative_status", ["planned", "in_
 export const taskStatusEnum = pgEnum("task_status", ["todo", "in_progress", "done"]);
 export const invoiceStatusEnum = pgEnum("invoice_status", ["unpaid", "paid", "overdue"]);
 export const grantStatusEnum = pgEnum("grant_status", ["draft", "submitted", "awarded", "rejected"]);
-export const speakerStatusEnum = pgEnum("speaker_status", ["invited", "confirmed", "declined"]);
+export const speakerStatusEnum = pgEnum("speaker_status", [
+  "invited",
+  "confirmed",
+  "declined",
+  "rescheduled",
+  "cancelled",
+]);
 export const campaignStatusEnum = pgEnum("campaign_status", ["planned", "active", "completed"]);
 export const mentorshipStatusEnum = pgEnum("mentorship_status", ["active", "completed"]);
 export const riskSeverityEnum = pgEnum("risk_severity", ["low", "medium", "high"]);
@@ -378,6 +384,7 @@ export const guestSpeakers = pgTable("guest_speakers", {
   name: text("name").notNull(),
   topic: text("topic").notNull(),
   contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
   status: speakerStatusEnum("status").notNull().default("invited"),
   notes: text("notes"),
   addedById: uuid("added_by_id")
