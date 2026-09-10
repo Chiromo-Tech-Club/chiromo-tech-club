@@ -16,7 +16,6 @@ import {
   Mail, 
   ShieldCheck,
   AlertCircle,
-  QrCode,
   Check,
   MessageCircle,
   ExternalLink,
@@ -28,6 +27,7 @@ import { type FullRegistrationInput } from "@/lib/validations/registration";
 import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
 import { ROUTES } from "@/constants/routes";
+import { SITE_CONFIG } from "@/config/site";
 
 const CAMPUS_OPTIONS = [
   { id: "chiromo", label: "Chiromo Campus ( / Science Hub)", isChiromo: true },
@@ -612,44 +612,74 @@ export function RegistrationWizard({
               })}
             </div>
 
-            {/* M-Pesa Instructions Card */}
-            <div className="rounded-2xl border border-line bg-gradient-to-br from-green/5 via-surface to-surface p-5">
-              {/* <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green/10 text-green font-bold">
-                  <QrCode size={22} />
+            {/* Pochi la Biashara payment steps */}
+            <div className="rounded-2xl border border-green/30 bg-gradient-to-br from-green/5 via-surface to-surface p-5">
+              <div className="flex flex-wrap items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green/10 text-green">
+                  <Phone size={20} />
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-green">M-Pesa Payment Details</h4>
-                  <p className="text-xs text-ink-2">Paybill: <strong className="text-ink">522522</strong> | Account: <strong className="text-ink">CTC-{formData.fullName.split(" ")[0]?.toUpperCase() || "MEMBER"}</strong></p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-green">
+                    How to pay — {SITE_CONFIG.payment.method}
+                  </h4>
+                  <p className="mt-1 text-sm text-ink">
+                    Send{" "}
+                    <strong className="font-mono">
+                      KES {formData.paymentOption === "deposit_250" ? SITE_CONFIG.payment.depositKes : SITE_CONFIG.payment.fullFeeKes}
+                    </strong>{" "}
+                    to:
+                  </p>
+                  <p className="mt-1 font-mono text-2xl font-extrabold tracking-wide text-ink">
+                    {SITE_CONFIG.payment.tillOrPhone}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted">Pochi la Biashara · Chiromo Tech Club (CTC)</p>
                 </div>
-              </div> */}
+              </div>
+
+              <ol className="mt-4 space-y-2.5 border-t border-line pt-4">
+                {[
+                  "Open M-Pesa on your phone",
+                  "Choose Lipa na M-Pesa → Pochi la Biashara",
+                  `Enter number ${SITE_CONFIG.payment.tillOrPhone}`,
+                  `Enter amount (KES ${formData.paymentOption === "deposit_250" ? SITE_CONFIG.payment.depositKes : SITE_CONFIG.payment.fullFeeKes})`,
+                  "Enter your M-Pesa PIN and confirm",
+                  "Copy the M-Pesa confirmation code (SMS) into the form below",
+                ].map((step, i) => (
+                  <li key={step} className="flex gap-3 text-sm text-ink-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green/15 text-[11px] font-bold text-green">
+                      {i + 1}
+                    </span>
+                    <span className="pt-0.5">{step}</span>
+                  </li>
+                ))}
+              </ol>
 
               <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-text-3">
-                      M-Pesa Transaction Code (10 digits)
-                    </label>
-                    <Input
-                      value={formData.mpesaReference ?? ""}
-                      onChange={(e) => setFormData({ ...formData, mpesaReference: e.target.value.toUpperCase() })}
-                      placeholder="e.g. SLK82910XZ"
-                      className="rounded-xl uppercase font-mono"
-                    />
-                    {fieldErrors.mpesaReference && <p className="mt-1 text-xs text-red-500">{fieldErrors.mpesaReference}</p>}
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-text-3">
-                      Phone Number Paid From
-                    </label>
-                    <Input
-                      value={formData.mpesaPhoneNumber ?? ""}
-                      onChange={(e) => setFormData({ ...formData, mpesaPhoneNumber: e.target.value })}
-                      placeholder="07XX XXX XXX"
-                      className="rounded-xl"
-                    />
-                  </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-text-3">
+                    M-Pesa Transaction Code
+                  </label>
+                  <Input
+                    value={formData.mpesaReference ?? ""}
+                    onChange={(e) => setFormData({ ...formData, mpesaReference: e.target.value.toUpperCase() })}
+                    placeholder="e.g. SLK82910XZ"
+                    className="rounded-xl uppercase font-mono"
+                  />
+                  {fieldErrors.mpesaReference && <p className="mt-1 text-xs text-red-500">{fieldErrors.mpesaReference}</p>}
                 </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-text-3">
+                    Phone Number Paid From
+                  </label>
+                  <Input
+                    value={formData.mpesaPhoneNumber ?? ""}
+                    onChange={(e) => setFormData({ ...formData, mpesaPhoneNumber: e.target.value })}
+                    placeholder="07XX XXX XXX"
+                    className="rounded-xl"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -696,6 +726,13 @@ export function RegistrationWizard({
                   <span className="text-xs text-muted">Payment Tier</span>
                   <p className="text-sm font-bold text-ink">
                     {formData.paymentOption === "full_500" ? "500 KES (Full Paid)" : "250 KES (Deposit Paid)"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted">Paid via</span>
+                  <p className="text-sm font-bold text-ink">
+                    {SITE_CONFIG.payment.method} ·{" "}
+                    <span className="font-mono">{SITE_CONFIG.payment.tillOrPhone}</span>
                   </p>
                 </div>
                 {formData.mpesaReference && (

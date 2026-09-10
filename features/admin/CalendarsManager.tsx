@@ -27,7 +27,7 @@ export function CalendarsManager({ initial }: { initial: GoogleCalendarSource[] 
         calendarSrc,
       });
       if (!res.success) {
-        setError(res.error);
+        setError(res.error ?? "Could not save.");
         return;
       }
       setLabel("");
@@ -41,7 +41,7 @@ export function CalendarsManager({ initial }: { initial: GoogleCalendarSource[] 
     setError(null);
     startTransition(async () => {
       const res = await setGoogleCalendarActive(id, isActive);
-      if (!res.success) setError(res.error);
+      if (!res.success) setError(res.error ?? "Update failed.");
       setPendingId(null);
     });
   }
@@ -51,7 +51,7 @@ export function CalendarsManager({ initial }: { initial: GoogleCalendarSource[] 
     setError(null);
     startTransition(async () => {
       const res = await removeGoogleCalendar(id);
-      if (!res.success) setError(res.error);
+      if (!res.success) setError(res.error ?? "Remove failed.");
       setPendingId(null);
     });
   }

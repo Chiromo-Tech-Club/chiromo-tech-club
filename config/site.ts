@@ -13,6 +13,13 @@ export const SITE_CONFIG = {
    * Override with NEXT_PUBLIC_GOOGLE_CALENDAR_SRC (comma-separated for multiple).
    */
   googleCalendarSrc: "ctc.uonbi@gmail.com",
+  /** Membership fee payment (M-Pesa Pochi la Biashara). */
+  payment: {
+    method: "Pochi la Biashara",
+    tillOrPhone: "0143184616",
+    fullFeeKes: 500,
+    depositKes: 250,
+  },
   keywords: [
     "Chiromo Tech Club",
     "CTC",
@@ -34,4 +41,6 @@ export const SITE_CONFIG = {
   socials: {
     github: "https://github.com/chiromo-tech-club",
     instagram: "https://instagram.com/chiromotechclub",
-    linkedin: "
+    linkedin: "https://linkedin.com/company/chiromo-tech-club",
+  },
+} as const;
