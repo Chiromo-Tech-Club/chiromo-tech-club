@@ -110,7 +110,11 @@ export default async function DashboardOverviewPage() {
         isChiromo={(member as { isChiromo?: boolean | null }).isChiromo}
         course={(member as { course?: string | null }).course}
         yearOfStudy={(member as { yearOfStudy?: string | null }).yearOfStudy}
-        createdAt={member.createdAt}
+        createdAt={
+          member.createdAt instanceof Date
+            ? member.createdAt.toISOString()
+            : String(member.createdAt ?? "")
+        }
         membershipStatus={(member as { membershipStatus?: string | null }).membershipStatus ?? "approved"}
         isApproved
         role={member.role}

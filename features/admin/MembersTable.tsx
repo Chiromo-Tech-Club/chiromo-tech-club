@@ -363,14 +363,26 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
                 <div className="flex flex-wrap items-center gap-2 border-t border-line/60 pt-4 lg:border-t-0 lg:pt-0">
                   {/* Mark as Deposit / Full Pay if pending payment */}
                   {m.membershipFeeStatus !== "fully_paid" && (
-                    <button
-                      type="button"
-                      disabled={actionInProgress === m.id}
-                      onClick={() => handlePaymentUpdate(m.id, "fully_paid", 500)}
-                      className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:bg-cream-2"
-                    >
-                      Record KES 500 Paid
-                    </button>
+                    <>
+                      {m.membershipFeeStatus !== "deposit_paid" && (
+                        <button
+                          type="button"
+                          disabled={actionInProgress === m.id}
+                          onClick={() => handlePaymentUpdate(m.id, "deposit_paid", 250)}
+                          className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:bg-cream-2"
+                        >
+                          Record KES 250 Deposit
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        disabled={actionInProgress === m.id}
+                        onClick={() => handlePaymentUpdate(m.id, "fully_paid", 500)}
+                        className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:bg-cream-2"
+                      >
+                        Record KES 500 Paid
+                      </button>
+                    </>
                   )}
 
                   <Button

@@ -5,6 +5,10 @@ import { ensureMembersColumns } from "@/lib/drizzle/ensure-members-columns";
 import { getAuthUserId } from "@/lib/supabase/auth-helpers";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
+export type CurrentMember = typeof members.$inferSelect & {
+  communitySlugs: string[];
+};
+
 /**
  * Fetches the full `members` row for the logged-in user, WITH
  * communitySlugs attached.
@@ -13,7 +17,9 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
  *   for brand-new auth users. Pass false on /register so we don't invent a
  *   row and then treat them as "already registered".
  */
-export async function getCurrentMember(opts?: { createIfMissing?: boolean }) {
+export async function getCurrentMember(opts?: {
+  createIfMissing?: boolean;
+}): Promise<CurrentMember | null> {
   const createIfMissing = opts?.createIfMissing !== false;
   const userId = await getAuthUserId();
   if (!userId) return null;
@@ -26,7 +32,9 @@ export async function getCurrentMember(opts?: { createIfMissing?: boolean }) {
 
   const db = getDb();
 
-  async function withCommunitySlugs(member: Record<string, unknown> & { id: string }) {
+  async function withCommunitySlugs(
+    member: typeof members.$inferSelect,
+  ): Promise<CurrentMember> {
     try {
       const rows = await db
         .select({ communitySlug: memberCommunities.communitySlug })
@@ -34,7 +42,7 @@ export async function getCurrentMember(opts?: { createIfMissing?: boolean }) {
         .where(eq(memberCommunities.memberId, member.id));
       return { ...member, communitySlugs: rows.map((r) => r.communitySlug) };
     } catch {
-      return { ...member, communitySlugs: [] as string[] };
+      return { ...member, communitySlugs: [] };
     }
   }
 
