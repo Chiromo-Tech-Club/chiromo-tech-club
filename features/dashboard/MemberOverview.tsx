@@ -264,11 +264,19 @@ export async function MemberOverview({ member }: { member: Member }) {
             </span>
           </div>
         </div>
-        {!profile?.studentId && (
+        {!profile?.studentId && member.role === "visitor" && (
           <div className="flex items-center justify-between rounded-xl border border-sky/20 bg-sky/5 p-3">
             <span className="text-xs font-medium text-sky">Complete registration so your card shows student ID & programme</span>
             <Link href={ROUTES.register} className="flex items-center gap-1 text-xs font-bold text-sky hover:underline">
               Register Now <ArrowRight size={13} />
+            </Link>
+          </div>
+        )}
+        {!profile?.studentId && member.role !== "visitor" && (
+          <div className="flex items-center justify-between rounded-xl border border-sky/20 bg-sky/5 p-3">
+            <span className="text-xs font-medium text-sky">Add your student ID on your profile for the membership card</span>
+            <Link href={ROUTES.dashboardProfile} className="flex items-center gap-1 text-xs font-bold text-sky hover:underline">
+              Edit profile <ArrowRight size={13} />
             </Link>
           </div>
         )}

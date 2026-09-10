@@ -65,9 +65,9 @@ export async function GET(request: Request) {
     return rejectAndCleanup(user.id, origin, "no_account");
   }
 
-  // Open signup & registration — no referral lock.
+  // Open signup & registration — land on dashboard (no forced /register bounce).
   if (intent === "signup" || intent === "register") {
-    const destination = next || ROUTES.register;
+    const destination = next || ROUTES.dashboard;
     return NextResponse.redirect(`${origin}${destination}`);
   }
 

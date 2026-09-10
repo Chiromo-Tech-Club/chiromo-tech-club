@@ -342,29 +342,69 @@ async function SharedCalendar() {
   const role = await getCurrentRole();
   const canManageCalendars = role === "admin" || role === "exec";
 
-  const [googleSources, managedSources, upcomingEvents, upcomingMeetings, dueInitiatives, dueTasks] =
-    await Promise.all([
-      getActiveCalendarSrcList(),
-      canManageCalendars ? listGoogleCalendarSources() : Promise.resolve([]),
-      db.select({ id: events.id, title: events.title, startsAt: events.startsAt }).from(events).where(gte(events.startsAt, now)),
-      db
-        .select({ id: meetingMinutes.id, title: meetingMinutes.title, meetingDate: meetingMinutes.meetingDate })
-        .from(meetingMinutes)
-        .where(isNull(meetingMinutes.deletedAt)),
-      db
-        .select({ id: initiatives.id, title: initiatives.title, dueDate: initiatives.dueDate })
-        .from(initiatives)
-        .where(isNull(initiatives.deletedAt)),
-      db.select({ id: tasks.id, title: tasks.title, dueDate: tasks.dueDate }).from(tasks).where(isNull(tasks.deletedAt)),
-    ]);
+  const settled = await Promise.allSettled([
+    getActiveCalendarSrcList(),
+    canManageCalendars ? listGoogleCalendarSources() : Promise.resolve([]),
+    db
+      .select({ id: events.id, title: events.title, startsAt: events.startsAt })
+      .from(events)
+      .where(and(isNull(events.deletedAt), gte(events.startsAt, now))),
+    db
+      .select({ id: meetingMinutes.id, title: meetingMinutes.title, meetingDate: meetingMinutes.meetingDate })
+      .from(meetingMinutes)
+      .where(isNull(meetingMinutes.deletedAt)),
+    db
+      .select({ id: initiatives.id, title: initiatives.title, dueDate: initiatives.dueDate })
+      .from(initiatives)
+      .where(isNull(initiatives.deletedAt)),
+    db
+      .select({ id: tasks.id, title: tasks.title, dueDate: tasks.dueDate })
+      .from(tasks)
+      .where(isNull(tasks.deletedAt)),
+  ]);
+
+  const googleSources = settled[0].status === "fulfilled" ? settled[0].value : [];
+  const managedSources = settled[1].status === "fulfilled" ? settled[1].value : [];
+  const upcomingEvents = settled[2].status === "fulfilled" ? settled[2].value : [];
+  const upcomingMeetings = settled[3].status === "fulfilled" ? settled[3].value : [];
+  const dueInitiatives = settled[4].status === "fulfilled" ? settled[4].value : [];
+  const dueTasks = settled[5].status === "fulfilled" ? settled[5].value : [];
+
+  for (const [i, result] of settled.entries()) {
+    if (result.status === "rejected") {
+      console.error(`[SharedCalendar] query ${i} failed`, result.reason);
+    }
+  }
 
   const entries: CalendarEntry[] = [
-    ...upcomingEvents.map((e) => ({ id: e.id, title: e.title, date: e.startsAt.toISOString(), kind: "event" as const })),
-    ...upcomingMeetings.map((m) => ({ id: m.id, title: m.title, date: m.meetingDate.toISOString(), kind: "meeting" as const })),
+    ...upcomingEvents.map((e) => ({
+      id: e.id,
+      title: e.title,
+      date: e.startsAt.toISOString(),
+      kind: "event" as const,
+    })),
+    ...upcomingMeetings.map((m) => ({
+      id: m.id,
+      title: m.title,
+      date: m.meetingDate.toISOString(),
+      kind: "meeting" as const,
+    })),
     ...dueInitiatives
       .filter((i) => i.dueDate)
-      .map((i) => ({ id: i.id, title: i.title, date: i.dueDate!.toISOString(), kind: "initiative-due" as const })),
-    ...dueTasks.filter((t) => t.dueDate).map((t) => ({ id: t.id, title: t.title, date: t.dueDate!.toISOString(), kind: "task-due" as const })),
+      .map((i) => ({
+        id: i.id,
+        title: i.title,
+        date: i.dueDate!.toISOString(),
+        kind: "initiative-due" as const,
+      })),
+    ...dueTasks
+      .filter((t) => t.dueDate)
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        date: t.dueDate!.toISOString(),
+        kind: "task-due" as const,
+      })),
   ];
 
   return (

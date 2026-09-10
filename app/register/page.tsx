@@ -6,7 +6,8 @@ import { ROUTES } from "@/constants/routes";
 
 export const metadata = {
   title: "Register for Club Membership | Chiromo Tech Club",
-  description: "Official student membership registration for Chiromo Tech Club (University of Nairobi). Step-by-step onboarding with progressive disclosure.",
+  description:
+    "Official student membership registration for Chiromo Tech Club (University of Nairobi).",
 };
 
 function ArrowLeftIcon() {
@@ -20,22 +21,17 @@ function ArrowLeftIcon() {
 export default async function RegisterPage() {
   const [userId, currentMember] = await Promise.all([
     getAuthUserId().catch(() => null),
-    getCurrentMember().catch(() => null),
+    getCurrentMember({ createIfMissing: false }).catch(() => null),
   ]);
 
   const initialUser = currentMember
-    ? {
-        fullName: currentMember.fullName,
-        email: currentMember.email,
-      }
+    ? { fullName: currentMember.fullName, email: currentMember.email }
     : null;
 
   return (
-    <main className="relative min-h-screen max-w-5xl mx-auto px-4 pb-24 pt-12 sm:px-6 lg:px-8">
-      {/* Background Subtle Gradient */}
-      <div className="fixed inset-0 -z-10 bg-gradient-to-b from-cream via-cream/80 to-surface pointer-events-none" />
+    <main className="relative mx-auto min-h-screen max-w-5xl px-4 pb-24 pt-12 sm:px-6 lg:px-8">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-gradient-to-b from-cream via-cream/80 to-surface" />
 
-      {/* Header Bar */}
       <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <Link
           href={ROUTES.home}
@@ -47,19 +43,19 @@ export default async function RegisterPage() {
           Back to Home
         </Link>
 
-        <div className="flex items-center gap-2 self-start px-3.5 py-1 text-xs font-semibold text-ink">
-          Official Academic Year Membership
-        </div>
+        {userId && (
+          <Link href={ROUTES.dashboard} className="text-xs font-bold text-sky hover:underline">
+            Go to dashboard →
+          </Link>
+        )}
       </div>
 
-      {/* Page Title & Intro */}
       <div className="mb-10 text-center">
         <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
           Chiromo Tech Club Membership Portal
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-ink-2">
-          Register once — this form creates your CTC account and membership application. Optional Google
-          link at the end for easier sign-in later.
+          Complete your membership application below.
         </p>
       </div>
 

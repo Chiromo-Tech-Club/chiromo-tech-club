@@ -90,7 +90,7 @@ export default function SignUpPage() {
       password,
       options: {
         data: { full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback?intent=signup&next=${encodeURIComponent(ROUTES.register)}`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?intent=signup&next=${encodeURIComponent(ROUTES.dashboard)}`,
       },
     });
 
@@ -106,8 +106,7 @@ export default function SignUpPage() {
     }
 
     if (data.session) {
-      // Account created — finish membership application (dashboard waits for approval)
-      router.push(ROUTES.register);
+      router.push(ROUTES.dashboard);
       router.refresh();
     } else {
       setConfirmationSent(true);
@@ -122,7 +121,7 @@ export default function SignUpPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?intent=signup&next=${encodeURIComponent(ROUTES.register)}`,
+        redirectTo: `${window.location.origin}/auth/callback?intent=signup&next=${encodeURIComponent(ROUTES.dashboard)}`,
         queryParams: { prompt: "select_account" },
       },
     });
@@ -158,7 +157,7 @@ export default function SignUpPage() {
           <div className="mb-6">
             <h1 className="font-display text-title-h5 font-medium text-ink sm:text-title-h4">Create your account</h1>
             <p className="mt-1.5 text-paragraph-sm text-ink-2">
-              Sign up freely, then complete membership registration. Dashboard access opens after leadership approval.
+              Create your CTC account, then open the dashboard.
             </p>
           </div>
 
@@ -168,10 +167,10 @@ export default function SignUpPage() {
                 <p className="text-label-sm font-semibold text-ink">Check your email</p>
                 <p className="mt-1.5 text-paragraph-sm text-ink-2">
                   We sent a confirmation link to <span className="font-semibold text-ink">{email}</span>.
-                  After confirming, finish your membership at Register.
+                  After confirming, open your dashboard.
                 </p>
-                <Link href={ROUTES.register} className="mt-4 inline-block text-label-xs font-semibold text-ink hover:underline">
-                  Go to membership registration
+                <Link href={ROUTES.dashboard} className="mt-4 inline-block text-label-xs font-semibold text-ink hover:underline">
+                  Go to dashboard
                 </Link>
               </div>
             ) : (

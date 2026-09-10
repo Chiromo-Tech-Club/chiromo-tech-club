@@ -206,7 +206,7 @@ export function RegistrationWizard({
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.register + "?complete=1")}`,
+        redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.dashboard)}`,
         queryParams: { prompt: "select_account" },
       },
     });

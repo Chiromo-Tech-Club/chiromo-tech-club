@@ -41,9 +41,8 @@ const INPUT_CLASS_ERROR =
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   no_account:
-    "No CTC account found for that Google login. Sign up or complete registration at /register first, then sign in.",
-  signup_locked:
-    "Sign-up is open — try again from the Sign up page, or register at /register.",
+    "No CTC account found for that Google login. Sign up first, then come back here to sign in.",
+  signup_locked: "Sign-up is open — try again from the Sign up page.",
   auth_failed: "Authentication failed. Please try again.",
 };
 
@@ -111,7 +110,6 @@ function SignInForm() {
     setGoogleLoading(true);
     setGoogleError(null);
     const supabase = getSupabaseBrowserClient();
-    // intent=signin tells the callback to reject brand-new OAuth users
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -184,24 +182,19 @@ function SignInForm() {
         </TextField>
 
         {formError && (
-          <p className="flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-label-xs text-red-600">
-            <AlertCircle size={14} className="flex-none" /> {formError}
+          <p className="flex items-center gap-1 text-label-2xs text-red-500">
+            <AlertCircle size={12} /> {formError}
           </p>
         )}
 
-        <Button
-          type="submit"
-          variant="primary"
-          isDisabled={formLoading}
-          className="flex w-full items-center justify-center gap-2 rounded-md bg-navy py-2.5 text-label-sm font-semibold text-white"
-        >
+        <Button type="submit" isDisabled={formLoading} className="mt-1 w-full rounded-full bg-navy text-white">
           {formLoading ? <Spinner size="sm" color="current" /> : "Sign in"}
         </Button>
       </form>
 
       <div className="my-5 flex items-center gap-3">
         <div className="h-px flex-1 bg-line" />
-        <span className="text-label-xs text-ink-2">or</span>
+        <span className="text-label-2xs text-muted">or</span>
         <div className="h-px flex-1 bg-line" />
       </div>
 
@@ -209,26 +202,28 @@ function SignInForm() {
         type="button"
         onClick={handleGoogleSignIn}
         disabled={googleLoading}
-        className="flex w-full items-center justify-center gap-3 rounded-md border border-line bg-surface py-2.5 text-label-sm font-semibold text-ink transition-colors hover:bg-cream-2 disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2 rounded-full border border-line bg-white px-4 py-2.5 text-label-sm font-semibold text-ink hover:bg-cream-2 disabled:opacity-60"
       >
         <GoogleIcon />
-        {googleLoading ? "Redirecting…" : "Continue with Google"}
+        {googleLoading ? "Opening Google…" : "Continue with Google"}
       </button>
 
       {googleError && (
-        <p className="mt-3 flex items-start gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-label-xs text-red-600">
-          <AlertCircle size={14} className="mt-0.5 flex-none" /> {googleError}
+        <p className="mt-2 flex items-center gap-1 text-label-2xs text-red-500">
+          <AlertCircle size={12} /> {googleError}
         </p>
       )}
 
       <p className="mt-6 text-center text-label-xs text-ink-2">
         Don&apos;t have an account?{" "}
-        <Link href={ROUTES.signUp} className="font-semibold text-ink hover:underline">
-          Sign up (referral code required)
+        <Link href={ROUTES.signUp} className="font-semibold text-sky hover:underline">
+          Sign up
         </Link>
-        {" · "}
-        <Link href={ROUTES.register} className="font-semibold text-green hover:underline">
-          Register for club
+      </p>
+      <p className="mt-2 text-center text-label-2xs text-muted">
+        Prefer the full membership form?{" "}
+        <Link href={ROUTES.register} className="font-semibold text-ink hover:underline">
+          Register for CTC
         </Link>
       </p>
     </div>
@@ -262,8 +257,7 @@ export default function SignInPage() {
           <div className="mb-6">
             <h1 className="font-display text-title-h5 font-medium text-ink sm:text-title-h4">Welcome back</h1>
             <p className="mt-1.5 text-paragraph-sm text-ink-2">
-              Sign in to access your tech track workspace and member projects. New accounts are not created from this
-              page.
+              Sign in to open your CTC dashboard. New here? Create an account on Sign up.
             </p>
           </div>
 
@@ -272,43 +266,12 @@ export default function SignInPage() {
           </Suspense>
         </div>
 
-        <div className="pt-4 text-label-xs text-muted">
-          <p>© {new Date().getFullYear()} Chiromo Tech Club. Secure Access Portal.</p>
-        </div>
+        <p className="text-label-2xs text-muted">Chiromo Tech Club · University of Nairobi</p>
       </div>
 
-      <div className="relative hidden bg-navy-deep lg:col-span-6 lg:flex lg:flex-col lg:justify-between lg:p-16 xl:col-span-7">
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <Image
-            src="/images/shadow.jpg"
-            alt="Chiromo Tech Club Portal"
-            fill
-            className="scale-105 object-cover object-center opacity-40 mix-blend-luminosity"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-navy-deep via-navy-deep/60 to-transparent" />
-        </div>
-
-        <div className="relative z-10 flex justify-end">
-          <span className="inline-flex items-center gap-2 rounded-pill border border-white/15 bg-white/10 px-4 py-1.5 text-label-xs font-semibold text-white backdrop-blur-md">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-sky" />
-            Member Portal
-          </span>
-        </div>
-
-        <div className="relative z-10 mt-auto max-w-xl">
-          <div className="rounded-card border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
-            <div className="inline-block rounded-md bg-sky/20 px-3 py-1 font-mono text-label-2xs text-sky">
-              MEMBER_SYSTEM
-            </div>
-            <h2 className="mt-4 font-display text-title-h5 font-bold text-white sm:text-title-h4">
-              &quot;Code is read much more often than it is written.&quot;
-            </h2>
-            <p className="mt-2 text-paragraph-sm text-white/70">
-              Access your club dashboard, collaborate on active repositories, and track upcoming hackathons.
-            </p>
-          </div>
-        </div>
+      <div className="relative hidden lg:col-span-6 lg:block xl:col-span-7">
+        <Image src="/images/spider.jpeg" alt="" fill className="object-cover" priority />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
       </div>
     </div>
   );

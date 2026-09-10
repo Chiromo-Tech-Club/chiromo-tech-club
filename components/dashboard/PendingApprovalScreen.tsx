@@ -6,9 +6,15 @@ import { ROUTES } from "@/constants/routes";
 export function PendingApprovalScreen({
   fullName,
   email,
+  title = "Membership pending approval",
+  message,
+  alreadyApplied = true,
 }: {
   fullName: string;
   email: string;
+  title?: string;
+  message?: string;
+  alreadyApplied?: boolean;
 }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-cream px-4 py-16">
@@ -16,10 +22,12 @@ export function PendingApprovalScreen({
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky/10 text-sky">
           <Clock3 size={28} />
         </div>
-        <h1 className="font-display text-2xl font-extrabold text-ink">Membership pending approval</h1>
+        <h1 className="font-display text-2xl font-extrabold text-ink">{title}</h1>
         <p className="mt-3 text-sm leading-relaxed text-ink-2">
-          Hi {fullName.split(" ")[0] || "there"} — your registration ({email}) is in. The member dashboard
-          opens after leadership approves your application. You don&apos;t need to register again.
+          {message ??
+            (alreadyApplied
+              ? `Hi ${fullName.split(" ")[0] || "there"} — your registration (${email}) is in. The member dashboard opens after leadership approves your application. You don't need to register again.`
+              : `Hi ${fullName.split(" ")[0] || "there"} — finish your CTC membership application so leadership can review it.`)}
         </p>
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
@@ -37,12 +45,22 @@ export function PendingApprovalScreen({
           </Link>
         </div>
 
-        <p className="mt-6 text-[11px] text-muted">
-          Need to correct a detail?{" "}
-          <Link href={ROUTES.register} className="font-semibold text-sky hover:underline">
-            Update your application
-          </Link>
-        </p>
+        {!alreadyApplied && (
+          <p className="mt-6 text-[11px] text-muted">
+            <Link href={ROUTES.register} className="font-semibold text-sky hover:underline">
+              Complete your membership application
+            </Link>
+          </p>
+        )}
+
+        {alreadyApplied && (
+          <p className="mt-6 text-[11px] text-muted">
+            Need a correction?{" "}
+            <Link href={ROUTES.register} className="font-semibold text-sky hover:underline">
+              Update application
+            </Link>
+          </p>
+        )}
 
         <div className="mt-4">
           <Link href={ROUTES.signIn} className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-ink">

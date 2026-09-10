@@ -55,42 +55,51 @@ export function googleCalendarEmbedUrl(sources: string[]): string {
   return `https://calendar.google.com/calendar/embed?${params.toString()}`;
 }
 
+function fallbackSourcesAsRows(): GoogleCalendarSource[] {
+  return envFallbackSources().map((calendarSrc, i) => ({
+    id: `fallback-${i}`,
+    label: i === 0 ? "Club calendar" : `Calendar ${i + 1}`,
+    calendarSrc,
+    sortOrder: i,
+    isActive: true,
+    addedById: null,
+  }));
+}
+
 export async function listGoogleCalendarSources(opts?: {
   activeOnly?: boolean;
 }): Promise<GoogleCalendarSource[]> {
-  await ensureGoogleCalendarsTable();
-  const db = getDb();
+  try {
+    await ensureGoogleCalendarsTable();
+    const db = getDb();
 
-  const rows = opts?.activeOnly
-    ? await db
-        .select()
-        .from(googleCalendars)
-        .where(eq(googleCalendars.isActive, true))
-        .orderBy(asc(googleCalendars.sortOrder), asc(googleCalendars.createdAt))
-    : await db
-        .select()
-        .from(googleCalendars)
-        .orderBy(asc(googleCalendars.sortOrder), asc(googleCalendars.createdAt));
+    const rows = opts?.activeOnly
+      ? await db
+          .select()
+          .from(googleCalendars)
+          .where(eq(googleCalendars.isActive, true))
+          .orderBy(asc(googleCalendars.sortOrder), asc(googleCalendars.createdAt))
+      : await db
+          .select()
+          .from(googleCalendars)
+          .orderBy(asc(googleCalendars.sortOrder), asc(googleCalendars.createdAt));
 
-  if (rows.length === 0 && opts?.activeOnly) {
-    return envFallbackSources().map((calendarSrc, i) => ({
-      id: `fallback-${i}`,
-      label: i === 0 ? "Club calendar" : `Calendar ${i + 1}`,
-      calendarSrc,
-      sortOrder: i,
-      isActive: true,
-      addedById: null,
+    if (rows.length === 0) {
+      return opts?.activeOnly ? fallbackSourcesAsRows() : [];
+    }
+
+    return rows.map((r) => ({
+      id: r.id,
+      label: r.label,
+      calendarSrc: r.calendarSrc,
+      sortOrder: r.sortOrder,
+      isActive: r.isActive,
+      addedById: r.addedById,
     }));
+  } catch (err) {
+    console.error("[listGoogleCalendarSources]", err);
+    return opts?.activeOnly === false ? [] : fallbackSourcesAsRows();
   }
-
-  return rows.map((r) => ({
-    id: r.id,
-    label: r.label,
-    calendarSrc: r.calendarSrc,
-    sortOrder: r.sortOrder,
-    isActive: r.isActive,
-    addedById: r.addedById,
-  }));
 }
 
 export async function getActiveCalendarSrcList(): Promise<string[]> {
