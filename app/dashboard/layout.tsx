@@ -1,8 +1,5 @@
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
 import Link from "next/link";
-import { getDb } from "@/lib/drizzle/client";
-import { memberCommunities } from "@/lib/drizzle/schema";
 import { getCurrentRole, getCurrentExecTitle } from "@/lib/supabase/auth-helpers";
 import { getCurrentMember } from "@/lib/supabase/get-current-member";
 import { UserMenu } from "@/components/dashboard/UserMenu";
@@ -23,6 +20,25 @@ function hasDashboardAccess(member: {
   return status === "approved";
 }
 
+/** True once the person has submitted club registration (not a bare auth-only row). */
+function hasSubmittedRegistration(member: {
+  role: string;
+  membershipStatus?: string | null;
+  studentId?: string | null;
+  mpesaReference?: string | null;
+  communitySlugs?: string[];
+  feeAmountPaid?: number | null;
+}): boolean {
+  if (member.role === "member" || member.role === "exec" || member.role === "admin") return true;
+  if (member.membershipStatus === "approved" || member.membershipStatus === "rejected") return true;
+  // Real application markers — not just a default pending row from first sign-in
+  if (member.studentId?.trim()) return true;
+  if (member.mpesaReference?.trim()) return true;
+  if ((member.feeAmountPaid ?? 0) > 0) return true;
+  if ((member.communitySlugs?.length ?? 0) > 0) return true;
+  return false;
+}
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const role = await getCurrentRole();
   const isExecOrAdmin = role === "exec" || role === "admin";
@@ -31,26 +47,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const member = await getCurrentMember();
 
   if (!member) {
+    if (isExecOrAdmin) redirect(ROUTES.signIn);
     redirect(`${ROUTES.register}?complete=1`);
   }
 
-  // Membership must be approved before the dashboard (and its links) are usable.
+  // Already applied / approved members must never be bounced back to /register
+  // just because a community row is missing.
+  if (!isExecOrAdmin && !hasSubmittedRegistration(member)) {
+    redirect(`${ROUTES.register}?complete=1`);
+  }
+
+  // Membership must be approved before the full dashboard is usable.
   if (!hasDashboardAccess(member)) {
     return <PendingApprovalScreen fullName={member.fullName} email={member.email} />;
   }
 
   if (!isExecOrAdmin) {
-    const db = getDb();
-    const [communityRow] = await db
-      .select({ id: memberCommunities.id })
-      .from(memberCommunities)
-      .where(eq(memberCommunities.memberId, member.id))
-      .limit(1);
-
-    if (!communityRow) {
-      redirect(`${ROUTES.register}?complete=1`);
-    }
-
     return (
       <div className="min-h-screen bg-cream">
         <header className="flex items-center justify-between gap-3 border-b border-line bg-surface px-4 py-3 sm:px-6 md:px-8 md:py-4">

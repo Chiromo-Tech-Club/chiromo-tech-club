@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ShieldCheck, Users, X } from "lucide-react";
+import { LayoutDashboard, ShieldCheck, X } from "lucide-react";
 import { SHARED_NAV_ITEMS, EXEC_NAV } from "@/config/dashboard-nav";
 import { EXEC_TITLE_LABELS, type ExecTitle } from "@/types/exec-title";
 import { ROUTES } from "@/constants/routes";
@@ -117,23 +117,33 @@ export function DashboardSidebar({ execTitle, isAdmin, mobileOpen, onClose }: Da
         </nav>
       </div>
 
-      {execSectionsToShow.map((title) => (
-        <div key={title} className="mb-6">
-          <h4 className="mb-2 px-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
-            {EXEC_TITLE_LABELS[title]}
-          </h4>
-          <nav className="flex flex-col gap-1">
-            {EXEC_NAV[title].map((item) => (
-              <NavLink
-                key={item.slug}
-                href={ROUTES.dashboardSection(title, item.slug)}
-                label={item.label}
-                onClick={onClose}
-              />
-            ))}
-          </nav>
-        </div>
-      ))}
+      {execSectionsToShow.map((title) => {
+        // Admins already have Member Approvals under Administration — hide
+        // duplicate registration-request links when browsing all seats.
+        const items = EXEC_NAV[title].filter((item) => {
+          if (!isAdmin || execTitle) return true;
+          return item.slug !== "registration-requests" && item.slug !== "approval-queue";
+        });
+        if (items.length === 0) return null;
+
+        return (
+          <div key={title} className="mb-6">
+            <h4 className="mb-2 px-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
+              {EXEC_TITLE_LABELS[title]}
+            </h4>
+            <nav className="flex flex-col gap-1">
+              {items.map((item) => (
+                <NavLink
+                  key={item.slug}
+                  href={ROUTES.dashboardSection(title, item.slug)}
+                  label={item.label}
+                  onClick={onClose}
+                />
+              ))}
+            </nav>
+          </div>
+        );
+      })}
     </>
   );
 

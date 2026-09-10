@@ -10,7 +10,6 @@ import { UpcomingEventsWidget, type UpcomingEventItem } from "@/features/dashboa
 import { AnnouncementsWidget, type AnnouncementItem } from "@/features/dashboard/AnnouncementsWidget";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
 import { MemberOverview } from "@/features/dashboard/MemberOverview";
-import { MembershipCard } from "@/features/dashboard/MembershipCard";
 import { redirect } from "next/navigation";
 import { ROUTES } from "@/constants/routes";
 
@@ -76,9 +75,13 @@ async function getOverviewData() {
 
 export default async function DashboardOverviewPage() {
   const member = await getCurrentMember();
-  if (!member) redirect(`${ROUTES.register}?complete=1`);
-
   const role = await getCurrentRole();
+
+  if (!member) {
+    if (role === "admin" || role === "exec") redirect(ROUTES.signIn);
+    redirect(`${ROUTES.register}?complete=1`);
+  }
+
   if (role !== "exec" && role !== "admin") {
     return <MemberOverview member={member as any} />;
   }
@@ -88,25 +91,6 @@ export default async function DashboardOverviewPage() {
   return (
     <div className="flex w-full flex-col gap-4 sm:gap-6">
       <WelcomeCard fullName={member?.fullName ?? "there"} execTitle={member?.execTitle ?? null} />
-
-      <MembershipCard
-        memberId={member.id}
-        fullName={member.fullName}
-        email={member.email}
-        avatarUrl={member.avatarUrl}
-        username={(member as { username?: string | null }).username}
-        studentId={(member as { studentId?: string | null }).studentId}
-        campus={(member as { campus?: string | null }).campus}
-        isChiromo={(member as { isChiromo?: boolean | null }).isChiromo}
-        course={(member as { course?: string | null }).course}
-        yearOfStudy={(member as { yearOfStudy?: string | null }).yearOfStudy}
-        createdAt={member.createdAt}
-        membershipStatus={(member as { membershipStatus?: string | null }).membershipStatus ?? "approved"}
-        isApproved
-        role={member.role}
-        execTitle={member.execTitle}
-        cardTheme={(member as { cardTheme?: string | null }).cardTheme}
-      />
 
       {/* Stats grid: 1 col on phones, 2 on tablets, 4 on desktop */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">

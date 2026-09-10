@@ -13,5 +13,11 @@ export const COMMAND_ITEMS: CommandItem[] = [
   { id: "projects", label: "Projects", href: ROUTES.projects },
   { id: "events", label: "Events", href: ROUTES.events },
   { id: "leadership", label: "Leadership", href: ROUTES.leadership },
-  { id: "join", label: "Join the Club", href: ROUTES.join },
+  { id: "dashboard", label: "Dashboard", href: ROUTES.dashboard },
+];
+
+/** Public marketing jump targets — omit Join/Register on signed-in dashboard use. */
+export const PUBLIC_COMMAND_ITEMS: CommandItem[] = [
+  ...COMMAND_ITEMS,
+  { id: "join", label: "Join the Club", href: ROUTES.register },
 ];
