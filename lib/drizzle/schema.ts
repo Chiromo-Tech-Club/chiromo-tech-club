@@ -82,6 +82,12 @@ export const members = pgTable(
     yearOfStudy: text("year_of_study"),
     phoneNumber: text("phone_number"),
     authProvider: text("auth_provider").default("email_password"), // 'google' | 'email_password'
+    /** Registration step 3 — beginner | intermediate | advanced */
+    experienceLevel: text("experience_level"),
+    /** Registration step 3 — free-text learning goals */
+    learningGoals: text("learning_goals"),
+    /** M-Pesa phone used for the membership fee payment (may differ from contact phone). */
+    mpesaPhoneNumber: text("mpesa_phone_number"),
     // ── Membership Approval & Fee Status ──
     membershipStatus: text("membership_status").default("pending"), // 'pending' | 'approved' | 'rejected'
     membershipFeeStatus: text("membership_fee_status").default("unpaid"), // 'unpaid' | 'deposit_paid' | 'fully_paid'
@@ -191,6 +197,8 @@ export const transactions = pgTable("transactions", {
   id: uuid("id").primaryKey().defaultRandom(),
   type: transactionTypeEnum("type").notNull(),
   category: text("category").notNull(),
+  /** Payer (income) or payee/vendor (expense) name. */
+  partyName: text("party_name"),
   description: text("description").notNull(),
   amountCents: integer("amount_cents").notNull(),
   occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
@@ -243,6 +251,11 @@ export const sponsors = pgTable("sponsors", {
   name: text("name").notNull(),
   contactName: text("contact_name"),
   contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  contactEmailSecondary: text("contact_email_secondary"),
+  contactPhoneSecondary: text("contact_phone_secondary"),
+  contactEmailTertiary: text("contact_email_tertiary"),
+  contactPhoneTertiary: text("contact_phone_tertiary"),
   status: sponsorStatusEnum("status").notNull().default("prospect"),
   notes: text("notes"),
   addedById: uuid("added_by_id")

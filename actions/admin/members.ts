@@ -149,15 +149,24 @@ export async function updateMemberPaymentStatus(
 
   const db = getDb();
   try {
-    await db
-      .update(members)
-      .set({
-        membershipFeeStatus: feeStatus,
-        feeAmountPaid: amountPaid,
-        mpesaReference: mpesaRef || null,
-        updatedAt: new Date(),
-      })
-      .where(eq(members.id, memberId));
+    const patch: {
+      membershipFeeStatus: string;
+      feeAmountPaid: number;
+      updatedAt: Date;
+      mpesaReference?: string | null;
+    } = {
+      membershipFeeStatus: feeStatus,
+      feeAmountPaid: amountPaid,
+      updatedAt: new Date(),
+    };
+
+    // Only overwrite M-Pesa code when a new value is explicitly provided
+    if (typeof mpesaRef === "string") {
+      const trimmed = mpesaRef.trim().toUpperCase();
+      patch.mpesaReference = trimmed || null;
+    }
+
+    await db.update(members).set(patch).where(eq(members.id, memberId));
 
     revalidatePath(ROUTES.adminMembers);
     revalidatePath(ROUTES.dashboard);

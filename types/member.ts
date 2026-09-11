@@ -25,11 +25,14 @@ export interface Member {
   course?: string | null;
   yearOfStudy?: string | null;
   phoneNumber?: string | null;
+  experienceLevel?: string | null;
+  learningGoals?: string | null;
   authProvider?: AuthProviderType | string;
   membershipStatus?: MemberStatus;
   membershipFeeStatus?: MembershipFeeStatus;
   feeAmountPaid?: number;
   mpesaReference?: string | null;
+  mpesaPhoneNumber?: string | null;
   reviewedById?: string | null;
   reviewedAt?: string | null;
   reviewNotes?: string | null;

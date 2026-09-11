@@ -19,7 +19,9 @@ export const metadata = {
     "Upcoming and past Chiromo Tech Club events at the University of Nairobi: workshops, hackathons, tech talks, and community meetups at Chiromo Campus.",
 };
 
-type RawEvent = Pick<ClubEvent, "slug" | "title" | "description" | "startsAt" | "location">;
+type RawEvent = Pick<ClubEvent, "slug" | "title" | "description" | "startsAt" | "location"> & {
+  coverImageUrl?: string | null;
+};
 type EventListItem = RawEvent & { category: EventCategory; coverImage: string };
 type Scope = "upcoming" | "past";
 
@@ -92,6 +94,7 @@ async function fetchRawEvents(scope: Scope): Promise<RawEvent[]> {
         description: events.description,
         startsAt: events.startsAt,
         location: events.location,
+        coverImageUrl: events.coverImageUrl,
       })
       .from(events)
       .where(
@@ -105,7 +108,11 @@ async function fetchRawEvents(scope: Scope): Promise<RawEvent[]> {
 
     if (rows.length === 0 && scope === "upcoming") return MASSIVE_EVENTS_SEED;
 
-    return rows.map((row) => ({ ...row, startsAt: row.startsAt.toISOString() }));
+    return rows.map((row) => ({
+      ...row,
+      startsAt: row.startsAt.toISOString(),
+      coverImageUrl: row.coverImageUrl,
+    }));
   } catch (err) {
     console.error(`fetchRawEvents(${scope}): falling back to generated seed data —`, err);
     return scope === "upcoming" ? MASSIVE_EVENTS_SEED : [];
@@ -117,7 +124,7 @@ async function getEvents(scope: Scope): Promise<EventListItem[]> {
   return raw.map((e) => ({
     ...e,
     category: inferEventCategory(e.title),
-    coverImage: eventCoverImage(e.slug),
+    coverImage: e.coverImageUrl || eventCoverImage(e.slug),
   }));
 }
 

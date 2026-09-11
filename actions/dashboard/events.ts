@@ -7,19 +7,16 @@ import { getDb } from "@/lib/drizzle/client";
 import { events } from "@/lib/drizzle/schema";
 import { canAccessExecSection } from "@/lib/supabase/auth-helpers";
 import { slugify } from "@/lib/utils/slugify";
+import { uploadEventCover } from "@/services/upload";
 import { ROUTES } from "@/constants/routes";
 import type { ActionResult } from "@/actions/membership";
 
-const createSchema = z.object({
+const fieldsSchema = z.object({
   title: z.string().min(3).max(160),
   description: z.string().min(3).max(4000),
   startsAt: z.string().datetime(),
   location: z.string().min(2).max(200),
   capacity: z.number().int().positive().optional().nullable(),
-});
-
-const updateSchema = createSchema.extend({
-  id: z.string().uuid(),
 });
 
 function revalidateEventPaths(slug?: string) {
@@ -29,15 +26,46 @@ function revalidateEventPaths(slug?: string) {
   if (slug) revalidatePath(ROUTES.event(slug));
 }
 
-export async function createEvent(input: z.infer<typeof createSchema>): Promise<ActionResult> {
+function parseEventFields(formData: FormData) {
+  const capacityRaw = String(formData.get("capacity") ?? "").trim();
+  return fieldsSchema.safeParse({
+    title: String(formData.get("title") ?? ""),
+    description: String(formData.get("description") ?? ""),
+    startsAt: String(formData.get("startsAt") ?? ""),
+    location: String(formData.get("location") ?? ""),
+    capacity: capacityRaw ? Number(capacityRaw) : null,
+  });
+}
+
+async function maybeUploadPoster(slug: string, formData: FormData): Promise<string | null | undefined> {
+  const poster = formData.get("poster");
+  if (!(poster instanceof File) || poster.size <= 0) return undefined;
+  const uploaded = await uploadEventCover(slug, poster);
+  return uploaded.publicUrl;
+}
+
+export async function createEvent(formData: FormData): Promise<ActionResult> {
   const allowed = await canAccessExecSection("corporate_affairs");
   if (!allowed) return { success: false, error: "Corporate Affairs access required." };
 
-  const parsed = createSchema.safeParse(input);
+  const parsed = parseEventFields(formData);
   if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
 
   try {
     const slug = `${slugify(parsed.data.title)}-${Date.now().toString(36)}`;
+    let coverImageUrl: string | null = null;
+    try {
+      const uploaded = await maybeUploadPoster(slug, formData);
+      if (uploaded) coverImageUrl = uploaded;
+    } catch (err) {
+      console.error("Event poster upload failed:", err);
+      return {
+        success: false,
+        error:
+          'Could not upload the poster. Create a public Supabase Storage bucket named "event-covers", then try again.',
+      };
+    }
+
     await getDb()
       .insert(events)
       .values({
@@ -47,6 +75,7 @@ export async function createEvent(input: z.infer<typeof createSchema>): Promise<
         startsAt: new Date(parsed.data.startsAt),
         location: parsed.data.location,
         capacity: parsed.data.capacity || null,
+        coverImageUrl,
       });
     revalidateEventPaths(slug);
     return { success: true };
@@ -56,15 +85,42 @@ export async function createEvent(input: z.infer<typeof createSchema>): Promise<
   }
 }
 
-export async function updateEvent(input: z.infer<typeof updateSchema>): Promise<ActionResult> {
+export async function updateEvent(formData: FormData): Promise<ActionResult> {
   const allowed = await canAccessExecSection("corporate_affairs");
   if (!allowed) return { success: false, error: "Corporate Affairs access required." };
 
-  const parsed = updateSchema.safeParse(input);
+  const id = String(formData.get("id") ?? "");
+  if (!z.string().uuid().safeParse(id).success) {
+    return { success: false, error: "Invalid event." };
+  }
+
+  const parsed = parseEventFields(formData);
   if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
 
   try {
-    const [updated] = await getDb()
+    const db = getDb();
+    const [existing] = await db
+      .select({ slug: events.slug, coverImageUrl: events.coverImageUrl })
+      .from(events)
+      .where(eq(events.id, id))
+      .limit(1);
+
+    if (!existing) return { success: false, error: "Event not found." };
+
+    let coverImageUrl = existing.coverImageUrl;
+    try {
+      const uploaded = await maybeUploadPoster(existing.slug, formData);
+      if (uploaded) coverImageUrl = uploaded;
+    } catch (err) {
+      console.error("Event poster upload failed:", err);
+      return {
+        success: false,
+        error:
+          'Could not upload the poster. Create a public Supabase Storage bucket named "event-covers", then try again.',
+      };
+    }
+
+    const [updated] = await db
       .update(events)
       .set({
         title: parsed.data.title,
@@ -72,9 +128,10 @@ export async function updateEvent(input: z.infer<typeof updateSchema>): Promise<
         startsAt: new Date(parsed.data.startsAt),
         location: parsed.data.location,
         capacity: parsed.data.capacity || null,
+        coverImageUrl,
         updatedAt: new Date(),
       })
-      .where(eq(events.id, parsed.data.id))
+      .where(eq(events.id, id))
       .returning({ slug: events.slug });
 
     revalidateEventPaths(updated?.slug);

@@ -316,7 +316,7 @@ export function RegistrationWizard({
                 Connect directly with fellow student builders, track leads, hackathon teams, and receive real-time workshop announcements.
               </p>
               <a
-                href="https://chat.whatsapp.com/Hueh8XfmT03EiYmRrTtAOX"
+                href={SITE_CONFIG.socials.whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-4 inline-flex items-center gap-2 rounded-xl bg-green px-5 py-2.5 text-xs font-bold text-white shadow-md transition-all hover:bg-green/90 active:scale-95"

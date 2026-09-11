@@ -29,6 +29,12 @@ export const profileUpdateSchema = z.object({
     .max(18)
     .optional()
     .or(z.literal("")),
+  studentId: z
+    .string()
+    .trim()
+    .max(30, "Registration number is too long.")
+    .optional()
+    .or(z.literal("")),
   course: z.string().trim().max(120).optional().or(z.literal("")),
   yearOfStudy: z.string().trim().max(60).optional().or(z.literal("")),
   campus: z.string().trim().max(120).optional().or(z.literal("")),

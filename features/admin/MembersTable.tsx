@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { 
-  updateMemberRole, 
-  approveMember, 
-  rejectMember, 
-  updateMemberPaymentStatus 
+import {
+  updateMemberRole,
+  approveMember,
+  rejectMember,
+  updateMemberPaymentStatus,
 } from "@/actions/admin/members";
 import { ROLES, ROLE_LABELS } from "@/constants/roles";
 import { EXEC_TITLES, EXEC_TITLE_LABELS, isExecTitle, type ExecTitle } from "@/types/exec-title";
@@ -15,36 +15,78 @@ import type { MemberStatus } from "@/types/member-status";
 import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
 import { cn } from "@/lib/utils/cn";
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Search, 
-  GraduationCap, 
-  Building2, 
-  CreditCard, 
+import { MembershipCard } from "@/features/dashboard/MembershipCard";
+import { getCommunityBySlug } from "@/utils/get-community-slug";
+import {
+  CheckCircle2,
+  XCircle,
+  Search,
+  GraduationCap,
+  Building2,
+  CreditCard,
   DollarSign,
-  Users
+  Phone,
+  Mail,
+  Github,
+  Layers,
+  IdCard,
+  Users,
 } from "lucide-react";
 
 export interface ExtendedMemberRow {
   id: string;
   fullName: string;
   email: string;
+  username?: string | null;
   role: Role;
   execTitle: ExecTitle | null;
   status: MemberStatus;
+  avatarUrl?: string | null;
+  bio?: string | null;
+  githubHandle?: string | null;
   studentId?: string | null;
   campus?: string | null;
   isChiromo?: boolean;
+  institutionName?: string | null;
+  department?: string | null;
   course?: string | null;
   yearOfStudy?: string | null;
   phoneNumber?: string | null;
-  authProvider?: string | null; // 'google' | 'email_password'
+  experienceLevel?: string | null;
+  learningGoals?: string | null;
+  authProvider?: string | null;
   membershipFeeStatus?: "unpaid" | "deposit_paid" | "fully_paid" | string | null;
   feeAmountPaid?: number;
   mpesaReference?: string | null;
+  mpesaPhoneNumber?: string | null;
+  cardTheme?: string | null;
   communitySlugs?: string[];
   createdAt?: string;
+}
+
+type PaymentStatus = "fully_paid" | "deposit_paid";
+
+function trackLabel(slug: string): string {
+  return getCommunityBySlug(slug)?.name ?? slug.replace(/-/g, " ");
+}
+
+function TrackChips({ slugs, emptyLabel = "No tracks selected" }: { slugs?: string[]; emptyLabel?: string }) {
+  if (!slugs?.length) {
+    return <p className="text-[11px] text-muted">{emptyLabel}</p>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {slugs.map((slug) => (
+        <span
+          key={slug}
+          className="inline-flex items-center gap-1 rounded-lg border border-sky/20 bg-sky/5 px-2.5 py-1 text-[11px] font-semibold text-sky"
+        >
+          <Layers size={11} />
+          {trackLabel(slug)}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function GoogleBadge() {
@@ -69,17 +111,288 @@ function EmailBadge() {
   );
 }
 
+function DetailRow({
+  label,
+  value,
+  alwaysShow = false,
+}: {
+  label: string;
+  value?: string | null;
+  alwaysShow?: boolean;
+}) {
+  if (!value?.trim() && !alwaysShow) return null;
+  return (
+    <div className="min-w-0">
+      <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">{label}</dt>
+      <dd className={cn("mt-0.5 break-words text-sm font-medium", value?.trim() ? "text-ink" : "text-muted")}>
+        {value?.trim() || "Not provided"}
+      </dd>
+    </div>
+  );
+}
+
+function feeLabel(m: ExtendedMemberRow): string {
+  if (m.membershipFeeStatus === "fully_paid") return `Paid KES ${m.feeAmountPaid || 500} (Full)`;
+  if (m.membershipFeeStatus === "deposit_paid") return `Paid KES ${m.feeAmountPaid || 250} (Deposit)`;
+  return "Unpaid / Pay Later";
+}
+
+function experienceLabel(level?: string | null) {
+  if (!level) return null;
+  const map: Record<string, string> = {
+    beginner: "Beginner",
+    intermediate: "Intermediate",
+    advanced: "Advanced",
+  };
+  return map[level] ?? level;
+}
+
+function MemberProfileDetails({ m }: { m: ExtendedMemberRow }) {
+  return (
+    <div className="min-w-0 flex-1 space-y-4">
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-line bg-cream-2">
+          {m.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={m.avatarUrl} alt={m.fullName} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center font-display text-lg font-extrabold text-ink/40">
+              {m.fullName
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((p) => p[0]?.toUpperCase() ?? "")
+                .join("")}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="break-words font-display text-base font-bold text-ink sm:text-lg">{m.fullName}</h3>
+            {m.authProvider === "google" ? <GoogleBadge /> : <EmailBadge />}
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-0.5 text-[10px] font-bold",
+                m.status === "approved" && "bg-green/10 text-green",
+                m.status === "pending" && "bg-amber-500/10 text-amber-700",
+                m.status === "rejected" && "bg-red-500/10 text-red-600",
+              )}
+            >
+              {MEMBER_STATUS_LABELS[m.status] ?? m.status}
+            </span>
+          </div>
+          {m.username && <p className="font-mono text-xs text-muted">@{m.username}</p>}
+          {m.bio ? (
+            <p className="max-w-2xl text-xs leading-relaxed text-ink-2">{m.bio}</p>
+          ) : (
+            <p className="text-xs text-muted">No bio submitted.</p>
+          )}
+        </div>
+      </div>
+
+      <dl className="grid grid-cols-1 gap-3 rounded-2xl border border-line/70 bg-cream/40 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
+        <div className="min-w-0">
+          <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">Email</dt>
+          <dd className="mt-0.5">
+            <a
+              href={`mailto:${m.email}`}
+              className="inline-flex items-center gap-1.5 break-all text-sm font-medium text-sky hover:underline"
+            >
+              <Mail size={13} className="shrink-0" /> {m.email}
+            </a>
+          </dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">Phone</dt>
+          <dd className="mt-0.5">
+            {m.phoneNumber ? (
+              <a
+                href={`tel:${m.phoneNumber}`}
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-sky hover:underline"
+              >
+                <Phone size={13} className="shrink-0" /> {m.phoneNumber}
+              </a>
+            ) : (
+              <span className="text-sm text-muted">Not provided</span>
+            )}
+          </dd>
+        </div>
+        <DetailRow label="Student / Reg ID" value={m.studentId} alwaysShow />
+        <DetailRow label="Course / Programme" value={m.course} alwaysShow />
+        <DetailRow label="Year of study" value={m.yearOfStudy} alwaysShow />
+        <div className="min-w-0">
+          <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">Campus</dt>
+          <dd className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm font-medium">
+            <Building2 size={13} className="shrink-0 text-muted" />
+            <span className={m.isChiromo || m.campus?.toLowerCase().includes("chiromo") ? "text-green" : "text-ink"}>
+              {m.campus ?? "Chiromo Campus"}
+            </span>
+            <span className="text-[10px] font-semibold text-muted">({m.isChiromo ? "Chiromo" : "External"})</span>
+          </dd>
+        </div>
+        <DetailRow label="Institution" value={m.institutionName} alwaysShow={!m.isChiromo} />
+        <DetailRow label="Department / Faculty" value={m.department} alwaysShow />
+        <DetailRow label="Experience level" value={experienceLabel(m.experienceLevel)} alwaysShow />
+        <div className="min-w-0 sm:col-span-2 lg:col-span-3">
+          <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">Learning goals</dt>
+          <dd className={cn("mt-0.5 text-sm", m.learningGoals?.trim() ? "text-ink" : "text-muted")}>
+            {m.learningGoals?.trim() || "Not provided"}
+          </dd>
+        </div>
+        {m.githubHandle ? (
+          <div className="min-w-0">
+            <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">GitHub</dt>
+            <dd className="mt-0.5">
+              <a
+                href={`https://github.com/${m.githubHandle}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-sky hover:underline"
+              >
+                <Github size={13} /> {m.githubHandle}
+              </a>
+            </dd>
+          </div>
+        ) : (
+          <DetailRow label="GitHub" value={null} alwaysShow />
+        )}
+        <DetailRow
+          label="Registered"
+          value={
+            m.createdAt
+              ? new Date(m.createdAt).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" })
+              : null
+          }
+          alwaysShow
+        />
+      </dl>
+
+      <div className="space-y-2">
+        <p className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-muted">
+          <Layers size={12} /> Technical tracks
+        </p>
+        <TrackChips slugs={m.communitySlugs} emptyLabel="No tracks selected during registration." />
+      </div>
+
+      <div className="rounded-2xl border border-amber-200/70 bg-amber-50/60 p-3 sm:p-4">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-amber-800">Payment details (from registration)</p>
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">M-Pesa code</p>
+            {m.mpesaReference ? (
+              <p className="mt-0.5 font-mono text-base font-extrabold tracking-wide text-ink">{m.mpesaReference}</p>
+            ) : (
+              <p className="mt-0.5 text-sm text-muted">No M-Pesa code submitted.</p>
+            )}
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">M-Pesa phone</p>
+            {m.mpesaPhoneNumber ? (
+              <a
+                href={`tel:${m.mpesaPhoneNumber}`}
+                className="mt-0.5 inline-flex items-center gap-1 text-sm font-medium text-sky"
+              >
+                <Phone size={12} /> {m.mpesaPhoneNumber}
+              </a>
+            ) : (
+              <p className="mt-0.5 text-sm text-muted">Not provided</p>
+            )}
+          </div>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold",
+              m.membershipFeeStatus === "fully_paid" && "bg-green/10 text-green",
+              m.membershipFeeStatus === "deposit_paid" && "bg-sky/15 text-sky",
+              m.membershipFeeStatus !== "fully_paid" &&
+                m.membershipFeeStatus !== "deposit_paid" &&
+                "bg-cream-2 text-ink-2",
+            )}
+          >
+            <CreditCard size={12} />
+            {feeLabel(m)}
+          </span>
+          {m.studentId && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-cream-2 px-2 py-0.5 font-mono text-[11px] font-medium text-ink">
+              <GraduationCap size={12} className="text-sky" /> {m.studentId}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PaymentControls({
+  member: m,
+  busy,
+  onPayment,
+}: {
+  member: ExtendedMemberRow;
+  busy: boolean;
+  onPayment: (status: PaymentStatus, amount: number, mpesaRef?: string) => void;
+}) {
+  const [mpesaCode, setMpesaCode] = useState(m.mpesaReference ?? "");
+
+  return (
+    <div className="space-y-2 rounded-xl border border-line/70 bg-cream/30 p-3">
+      <label className="block space-y-1">
+        <span className="text-[10px] font-bold uppercase tracking-wide text-muted">Update / save M-Pesa code</span>
+        <Input
+          value={mpesaCode}
+          onChange={(e) => setMpesaCode(e.target.value.toUpperCase())}
+          placeholder="e.g. QH7X9K2L3M"
+          className="rounded-xl font-mono text-xs uppercase"
+          maxLength={20}
+        />
+      </label>
+      {m.membershipFeeStatus !== "fully_paid" && (
+        <div className="flex flex-col gap-2">
+          {m.membershipFeeStatus !== "deposit_paid" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onPayment("deposit_paid", 250, mpesaCode)}
+              className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-semibold text-ink hover:bg-cream-2"
+            >
+              Record KES 250 Deposit
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onPayment("fully_paid", 500, mpesaCode)}
+            className="w-full rounded-xl border border-green/30 bg-green/10 px-3 py-2.5 text-xs font-bold text-green hover:bg-green/15"
+          >
+            {m.membershipFeeStatus === "deposit_paid" ? "Upgrade to KES 500 Fully Paid" : "Record KES 500 Fully Paid"}
+          </button>
+        </div>
+      )}
+      {m.membershipFeeStatus === "fully_paid" && mpesaCode.trim() && mpesaCode.trim() !== (m.mpesaReference ?? "") && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onPayment("fully_paid", m.feeAmountPaid || 500, mpesaCode)}
+          className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink hover:bg-cream-2"
+        >
+          Save M-Pesa code
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
   const [activeTab, setActiveTab] = useState<"pending" | "all">("pending");
   const [searchTerm, setSearchTerm] = useState("");
   const [campusFilter, setCampusFilter] = useState<"all" | "chiromo" | "other">("all");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "fully_paid" | "deposit_paid" | "unpaid">("all");
   const [authFilter, setAuthFilter] = useState<"all" | "google" | "email">("all");
-  
+
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  // Metrics
   const pendingCount = members.filter((m) => m.status === "pending").length;
   const approvedCount = members.filter((m) => m.status === "approved").length;
   const chiromoCount = members.filter((m) => m.isChiromo || (m.campus && m.campus.toLowerCase().includes("chiromo"))).length;
@@ -87,27 +400,27 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
   const googleCount = members.filter((m) => m.authProvider === "google").length;
 
   const filteredMembers = members.filter((m) => {
-    // Tab filter
     if (activeTab === "pending" && m.status !== "pending") return false;
 
-    // Search filter
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       const matchName = m.fullName.toLowerCase().includes(q);
       const matchEmail = m.email.toLowerCase().includes(q);
       const matchId = m.studentId?.toLowerCase().includes(q);
       const matchCourse = m.course?.toLowerCase().includes(q);
-      if (!matchName && !matchEmail && !matchId && !matchCourse) return false;
+      const matchPhone = m.phoneNumber?.toLowerCase().includes(q);
+      const matchMpesa = m.mpesaReference?.toLowerCase().includes(q);
+      const matchTrack = m.communitySlugs?.some(
+        (slug) => trackLabel(slug).toLowerCase().includes(q) || slug.includes(q),
+      );
+      if (!matchName && !matchEmail && !matchId && !matchCourse && !matchPhone && !matchMpesa && !matchTrack) {
+        return false;
+      }
     }
 
-    // Campus filter
     if (campusFilter === "chiromo" && !(m.isChiromo || m.campus?.toLowerCase().includes("chiromo"))) return false;
     if (campusFilter === "other" && (m.isChiromo || m.campus?.toLowerCase().includes("chiromo"))) return false;
-
-    // Payment filter
     if (paymentFilter !== "all" && m.membershipFeeStatus !== paymentFilter) return false;
-
-    // Auth filter
     if (authFilter === "google" && m.authProvider !== "google") return false;
     if (authFilter === "email" && m.authProvider === "google") return false;
 
@@ -130,17 +443,21 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
     });
   };
 
-  const handlePaymentUpdate = (memberId: string, status: "fully_paid" | "deposit_paid", amount: number) => {
+  const handlePaymentUpdate = (
+    memberId: string,
+    status: PaymentStatus,
+    amount: number,
+    mpesaRef?: string,
+  ) => {
     setActionInProgress(memberId);
     startTransition(async () => {
-      await updateMemberPaymentStatus(memberId, status, amount);
+      await updateMemberPaymentStatus(memberId, status, amount, mpesaRef);
       setActionInProgress(null);
     });
   };
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      {/* Top Metrics Cards */}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-4">
         <div className="rounded-2xl border border-line/70 bg-surface/90 p-3 shadow-sm backdrop-blur-md sm:p-4">
           <div className="flex items-center justify-between gap-1">
@@ -183,7 +500,6 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
         </div>
       </div>
 
-      {/* Tabs & Search */}
       <div className="flex flex-col gap-3 border-b border-line pb-4">
         <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
           <button
@@ -215,7 +531,7 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
           >
             <Users size={14} className="shrink-0" />
             <span className="sm:hidden">All Members</span>
-            <span className="hidden sm:inline">All Members &amp; Exec Seats</span>
+            <span className="hidden sm:inline">All Members &amp; Fee Updates</span>
             <span className="text-[11px] opacity-70">({members.length})</span>
           </button>
         </div>
@@ -225,16 +541,14 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name, ID, course..."
+            placeholder="Search name, phone, M-Pesa, ID, track…"
             className="rounded-xl pl-9 pr-3 text-xs"
           />
         </div>
       </div>
 
-      {/* Filters — full-width stacked on mobile */}
       <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
         <span className="hidden text-xs font-semibold text-muted sm:mr-1 sm:inline">Filter:</span>
-
         <select
           value={campusFilter}
           onChange={(e) => setCampusFilter(e.target.value as typeof campusFilter)}
@@ -244,7 +558,6 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
           <option value="chiromo">Chiromo Only</option>
           <option value="other">Other Campuses</option>
         </select>
-
         <select
           value={paymentFilter}
           onChange={(e) => setPaymentFilter(e.target.value as typeof paymentFilter)}
@@ -255,7 +568,6 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
           <option value="deposit_paid">Deposit Paid (250 KES)</option>
           <option value="unpaid">Unpaid / Pay Later</option>
         </select>
-
         <select
           value={authFilter}
           onChange={(e) => setAuthFilter(e.target.value as typeof authFilter)}
@@ -267,190 +579,122 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
         </select>
       </div>
 
-      {/* Membership Applications & Roster */}
       {filteredMembers.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-line bg-surface/50 p-8 text-center sm:p-12">
           <p className="text-sm font-semibold text-ink">No members found matching your filters.</p>
           <p className="mt-1 text-xs text-muted">Try clearing your search term or filters.</p>
         </div>
       ) : activeTab === "pending" ? (
-        <div className="grid grid-cols-1 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5">
           {filteredMembers.map((m) => (
-            <div
+            <PendingApprovalCard
               key={m.id}
-              className="relative overflow-hidden rounded-2xl border border-line/80 bg-surface p-4 shadow-sm transition-all hover:border-sky/40 sm:p-6"
-            >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div className="min-w-0 flex-1 space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="break-words font-display text-base font-bold text-ink">{m.fullName}</h3>
-                    {m.authProvider === "google" ? <GoogleBadge /> : <EmailBadge />}
-                    <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-700">
-                      Pending Approval
-                    </span>
-                  </div>
-
-                  <p className="flex flex-col gap-0.5 text-xs text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-1">
-                    <span className="break-all">{m.email}</span>
-                    {m.phoneNumber && <span className="sm:before:content-['•_']">{m.phoneNumber}</span>}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-ink-2 sm:gap-3">
-                    {m.studentId && (
-                      <span className="flex items-center gap-1 rounded-md bg-cream-2 px-2 py-0.5 font-mono font-medium text-ink">
-                        <GraduationCap size={13} className="shrink-0 text-sky" /> {m.studentId}
-                      </span>
-                    )}
-
-                    {m.course && (
-                      <span className="font-medium text-ink">
-                        {m.course} {m.yearOfStudy ? `(${m.yearOfStudy})` : ""}
-                      </span>
-                    )}
-
-                    <span className="flex items-center gap-1 text-xs">
-                      <Building2 size={13} className="shrink-0 text-muted" />
-                      <strong
-                        className={
-                          m.isChiromo || m.campus?.toLowerCase().includes("chiromo")
-                            ? "text-green"
-                            : "text-ink-2"
-                        }
-                      >
-                        {m.campus ?? "Chiromo Campus"}
-                      </strong>
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 pt-2">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-bold ${
-                        m.membershipFeeStatus === "fully_paid"
-                          ? "bg-green/10 text-green"
-                          : m.membershipFeeStatus === "deposit_paid"
-                            ? "bg-sky/15 text-sky"
-                            : "bg-cream-2 text-ink-2"
-                      }`}
-                    >
-                      <CreditCard size={12} />
-                      {m.membershipFeeStatus === "fully_paid"
-                        ? "Paid KES 500 (Full)"
-                        : m.membershipFeeStatus === "deposit_paid"
-                          ? "Paid KES 250 (Deposit)"
-                          : "Unpaid / Pay Later"}
-                    </span>
-
-                    {m.mpesaReference && (
-                      <span className="font-mono text-[11px] text-muted">
-                        M-Pesa: <strong>{m.mpesaReference}</strong>
-                      </span>
-                    )}
-
-                    {m.communitySlugs && m.communitySlugs.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {m.communitySlugs.map((slug) => (
-                          <span
-                            key={slug}
-                            className="rounded-md bg-cream px-2 py-0.5 text-[10px] capitalize text-ink-2"
-                          >
-                            {slug.replace(/-/g, " ")}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex w-full flex-col gap-2 border-t border-line/60 pt-4 sm:flex-row sm:flex-wrap lg:w-auto lg:border-t-0 lg:pt-0">
-                  {m.membershipFeeStatus !== "fully_paid" && (
-                    <>
-                      {m.membershipFeeStatus !== "deposit_paid" && (
-                        <button
-                          type="button"
-                          disabled={actionInProgress === m.id}
-                          onClick={() => handlePaymentUpdate(m.id, "deposit_paid", 250)}
-                          className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-semibold text-ink hover:bg-cream-2 sm:w-auto sm:py-1.5"
-                        >
-                          Record KES 250 Deposit
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        disabled={actionInProgress === m.id}
-                        onClick={() => handlePaymentUpdate(m.id, "fully_paid", 500)}
-                        className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-semibold text-ink hover:bg-cream-2 sm:w-auto sm:py-1.5"
-                      >
-                        Record KES 500 Paid
-                      </button>
-                    </>
-                  )}
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={actionInProgress === m.id}
-                    onClick={() => handleReject(m.id)}
-                    className="flex w-full items-center justify-center gap-1 rounded-xl border-red-200 text-xs text-red-600 hover:bg-red-50 sm:w-auto"
-                  >
-                    <XCircle size={14} /> Reject
-                  </Button>
-
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    disabled={actionInProgress === m.id}
-                    onClick={() => handleApprove(m.id)}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-green px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-green/90 sm:w-auto sm:py-2"
-                  >
-                    <CheckCircle2 size={15} /> Approve Membership
-                  </Button>
-                </div>
-              </div>
-            </div>
+              member={m}
+              busy={actionInProgress === m.id}
+              onApprove={() => handleApprove(m.id)}
+              onReject={() => handleReject(m.id)}
+              onPayment={(status, amount, mpesa) => handlePaymentUpdate(m.id, status, amount, mpesa)}
+            />
           ))}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="rounded-2xl border border-sky/20 bg-sky/5 px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky">Who is who</p>
-            <p className="mt-1 text-sm font-semibold text-ink">
-              Assign each person&apos;s club role and executive seat
-            </p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky">Member roster</p>
+            <p className="mt-1 text-sm font-semibold text-ink">Full details, M-Pesa codes, fee upgrades &amp; exec seats</p>
             <p className="mt-0.5 text-xs text-muted">
-              Set Club Role to Executive (or Administrator) and pick their seat — that title appears on
-              their membership card.
+              For deposit (KES 250) members, use <span className="font-semibold text-ink">Upgrade to KES 500 Fully Paid</span> when the balance clears.
             </p>
           </div>
-
-          {/* Mobile: stacked cards */}
-          <div className="space-y-3 md:hidden">
+          <div className="grid grid-cols-1 gap-4 sm:gap-5">
             {filteredMembers.map((m) => (
-              <MemberMobileCard key={m.id} member={m} />
+              <RosterMemberCard
+                key={m.id}
+                member={m}
+                busy={actionInProgress === m.id}
+                onPayment={(status, amount, mpesa) => handlePaymentUpdate(m.id, status, amount, mpesa)}
+              />
             ))}
-          </div>
-
-          {/* Desktop: table */}
-          <div className="hidden overflow-x-auto rounded-2xl border border-line bg-surface md:block">
-            <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-line bg-cream/40 text-xs uppercase tracking-wide text-muted">
-                  <th className="px-4 py-3 font-semibold">Member</th>
-                  <th className="px-4 py-3 font-semibold">Auth / Campus</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Club Role</th>
-                  <th className="px-4 py-3 font-semibold">Exec Seat</th>
-                  <th className="px-4 py-3 text-right font-semibold">Save</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredMembers.map((m) => (
-                  <MemberRowItem key={m.id} member={m} />
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function PendingApprovalCard({
+  member: m,
+  busy,
+  onApprove,
+  onReject,
+  onPayment,
+}: {
+  member: ExtendedMemberRow;
+  busy: boolean;
+  onApprove: () => void;
+  onReject: () => void;
+  onPayment: (status: PaymentStatus, amount: number, mpesaRef?: string) => void;
+}) {
+  const [showCard, setShowCard] = useState(true);
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-line/80 bg-surface p-4 shadow-sm transition-all hover:border-sky/40 sm:p-6">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <MemberProfileDetails m={m} />
+          <div className="flex w-full flex-col gap-2 border-t border-line/60 pt-4 lg:w-64 lg:shrink-0 lg:border-t-0 lg:pt-0">
+            <PaymentControls member={m} busy={busy} onPayment={onPayment} />
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={busy}
+              onClick={onReject}
+              className="flex w-full items-center justify-center gap-1 rounded-xl border-red-200 text-xs text-red-600 hover:bg-red-50"
+            >
+              <XCircle size={14} /> Reject
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={busy}
+              onClick={onApprove}
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-green px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-green/90"
+            >
+              <CheckCircle2 size={15} /> Approve Membership
+            </Button>
+            <button
+              type="button"
+              onClick={() => setShowCard((v) => !v)}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-line px-3 py-2 text-xs font-semibold text-ink-2 hover:bg-cream-2"
+            >
+              <IdCard size={14} /> {showCard ? "Hide membership card" : "Show membership card"}
+            </button>
+          </div>
+        </div>
+        {showCard && (
+          <div className="rounded-2xl border border-line/70 bg-cream/30 p-3 sm:p-4">
+            <MembershipCard
+              preview
+              memberId={m.id}
+              fullName={m.fullName}
+              email={m.email}
+              avatarUrl={m.avatarUrl}
+              username={m.username}
+              studentId={m.studentId}
+              campus={m.campus}
+              isChiromo={m.isChiromo}
+              course={m.course}
+              yearOfStudy={m.yearOfStudy}
+              createdAt={m.createdAt}
+              membershipStatus={m.status}
+              isApproved={false}
+              role={m.role}
+              execTitle={m.execTitle}
+              cardTheme={m.cardTheme}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -480,163 +724,101 @@ function useMemberRoleEditor(member: ExtendedMemberRow) {
   return { role, setRole, execTitle, setExecTitle, isPending, saved, dirty, save };
 }
 
-function MemberMobileCard({ member }: { member: ExtendedMemberRow }) {
-  const { role, setRole, execTitle, setExecTitle, isPending, saved, dirty, save } =
-    useMemberRoleEditor(member);
+function RosterMemberCard({
+  member: m,
+  busy,
+  onPayment,
+}: {
+  member: ExtendedMemberRow;
+  busy: boolean;
+  onPayment: (status: PaymentStatus, amount: number, mpesaRef?: string) => void;
+}) {
+  const { role, setRole, execTitle, setExecTitle, isPending, saved, dirty, save } = useMemberRoleEditor(m);
+  const [showCard, setShowCard] = useState(false);
 
   return (
-    <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
-      <div className="min-w-0 space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="break-words font-display text-sm font-bold text-ink">{member.fullName}</h3>
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-0.5 text-[10px] font-bold",
-              member.status === "approved" && "bg-green/10 text-green",
-              member.status === "pending" && "bg-amber-500/10 text-amber-700",
-              member.status === "rejected" && "bg-red-500/10 text-red-600",
-            )}
-          >
-            {MEMBER_STATUS_LABELS[member.status] ?? member.status}
-          </span>
-        </div>
-        <p className="break-all text-xs text-muted">{member.email}</p>
-        {member.studentId && (
-          <p className="font-mono text-[11px] text-ink-2">{member.studentId}</p>
-        )}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {member.authProvider === "google" ? <GoogleBadge /> : <EmailBadge />}
-          <span className="text-xs text-muted">{member.campus ?? "Chiromo Campus"}</span>
-        </div>
-      </div>
+    <div className="relative overflow-hidden rounded-2xl border border-line/80 bg-surface p-4 shadow-sm sm:p-6">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <MemberProfileDetails m={m} />
+          <div className="flex w-full flex-col gap-3 border-t border-line/60 pt-4 lg:w-72 lg:shrink-0 lg:border-t-0 lg:pt-0">
+            <PaymentControls member={m} busy={busy || isPending} onPayment={onPayment} />
 
-      <div className="mt-3 grid grid-cols-1 gap-2">
-        <label className="space-y-1">
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted">Club Role</span>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as Role)}
-            className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-medium text-ink"
-          >
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABELS[r]}
-              </option>
-            ))}
-          </select>
-        </label>
+            <div className="space-y-2 rounded-xl border border-line/70 bg-cream/30 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wide text-muted">Club role &amp; exec seat</p>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value as Role)}
+                className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-medium text-ink"
+              >
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_LABELS[r]}
+                  </option>
+                ))}
+              </select>
+              {(role === "exec" || role === "admin") && (
+                <select
+                  value={execTitle ?? ""}
+                  onChange={(e) => setExecTitle(isExecTitle(e.target.value) ? e.target.value : null)}
+                  className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-medium text-ink"
+                >
+                  <option value="" disabled={role === "exec"}>
+                    {role === "exec" ? "Select executive seat…" : "Optional seat…"}
+                  </option>
+                  {role === "admin" ? <option value="">No seat — Administrator only</option> : null}
+                  {EXEC_TITLES.map((t) => (
+                    <option key={t} value={t}>
+                      {EXEC_TITLE_LABELS[t]}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={!dirty || isPending || (role === "exec" && !execTitle)}
+                onClick={save}
+                className="w-full rounded-xl text-xs"
+              >
+                {isPending ? "Saving…" : saved ? "Saved" : "Save Role"}
+              </Button>
+            </div>
 
-        {(role === "exec" || role === "admin") && (
-          <label className="space-y-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted">Exec Seat</span>
-            <select
-              value={execTitle ?? ""}
-              onChange={(e) => setExecTitle(isExecTitle(e.target.value) ? e.target.value : null)}
-              className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-medium text-ink"
+            <button
+              type="button"
+              onClick={() => setShowCard((v) => !v)}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-line px-3 py-2 text-xs font-semibold text-ink-2 hover:bg-cream-2"
             >
-              <option value="" disabled={role === "exec"}>
-                {role === "exec" ? "Select executive seat…" : "Optional seat…"}
-              </option>
-              {role === "admin" ? <option value="">No seat — Administrator only</option> : null}
-              {EXEC_TITLES.map((t) => (
-                <option key={t} value={t}>
-                  {EXEC_TITLE_LABELS[t]}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+              <IdCard size={14} /> {showCard ? "Hide membership card" : "Show membership card"}
+            </button>
+          </div>
+        </div>
 
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={!dirty || isPending || (role === "exec" && !execTitle)}
-          onClick={save}
-          className="mt-1 w-full rounded-xl text-xs"
-        >
-          {isPending ? "Saving…" : saved ? "Saved" : "Save Role"}
-        </Button>
+        {showCard && (
+          <div className="rounded-2xl border border-line/70 bg-cream/30 p-3 sm:p-4">
+            <MembershipCard
+              preview
+              memberId={m.id}
+              fullName={m.fullName}
+              email={m.email}
+              avatarUrl={m.avatarUrl}
+              username={m.username}
+              studentId={m.studentId}
+              campus={m.campus}
+              isChiromo={m.isChiromo}
+              course={m.course}
+              yearOfStudy={m.yearOfStudy}
+              createdAt={m.createdAt}
+              membershipStatus={m.status}
+              isApproved={m.status === "approved"}
+              role={m.role}
+              execTitle={m.execTitle}
+              cardTheme={m.cardTheme}
+            />
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-
-function MemberRowItem({ member }: { member: ExtendedMemberRow }) {
-  const { role, setRole, execTitle, setExecTitle, isPending, saved, dirty, save } =
-    useMemberRoleEditor(member);
-
-  return (
-    <tr className="border-b border-line hover:bg-cream/20">
-      <td className="px-4 py-3">
-        <div className="text-sm font-bold text-ink">{member.fullName}</div>
-        <div className="text-xs text-muted">{member.email}</div>
-        {member.studentId && (
-          <div className="font-mono text-[11px] text-ink-2">{member.studentId}</div>
-        )}
-      </td>
-      <td className="px-4 py-3">
-        <div className="space-y-1">
-          {member.authProvider === "google" ? <GoogleBadge /> : <EmailBadge />}
-          <div className="text-xs font-medium text-muted">{member.campus ?? "Chiromo Campus"}</div>
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <span
-          className={cn(
-            "rounded-full px-2.5 py-1 text-[11px] font-bold",
-            member.status === "approved" && "bg-green/10 text-green",
-            member.status === "pending" && "bg-amber-500/10 text-amber-700",
-            member.status === "rejected" && "bg-red-500/10 text-red-600",
-          )}
-        >
-          {MEMBER_STATUS_LABELS[member.status] ?? member.status}
-        </span>
-      </td>
-      <td className="px-4 py-3">
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value as Role)}
-          className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink"
-        >
-          {ROLES.map((r) => (
-            <option key={r} value={r}>
-              {ROLE_LABELS[r]}
-            </option>
-          ))}
-        </select>
-      </td>
-      <td className="px-4 py-3">
-        {role === "exec" || role === "admin" ? (
-          <select
-            value={execTitle ?? ""}
-            onChange={(e) => setExecTitle(isExecTitle(e.target.value) ? e.target.value : null)}
-            className="rounded-lg border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-ink"
-          >
-            <option value="" disabled={role === "exec"}>
-              {role === "exec" ? "Select executive seat…" : "Optional seat (optional)…"}
-            </option>
-            {role === "admin" ? <option value="">No seat — Administrator only</option> : null}
-            {EXEC_TITLES.map((t) => (
-              <option key={t} value={t}>
-                {EXEC_TITLE_LABELS[t]}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <span className="text-xs text-muted">—</span>
-        )}
-      </td>
-      <td className="px-4 py-3 text-right">
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={!dirty || isPending || (role === "exec" && !execTitle)}
-          onClick={save}
-          className="rounded-lg text-xs"
-        >
-          {isPending ? "Saving…" : saved ? "Saved" : "Save Role"}
-        </Button>
-      </td>
-    </tr>
   );
 }

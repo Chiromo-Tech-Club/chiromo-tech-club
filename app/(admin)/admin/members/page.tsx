@@ -11,6 +11,13 @@ import { ROUTES } from "@/constants/routes";
 export const metadata = { title: "Admin — Members & Approvals" };
 
 async function getMembers(): Promise<ExtendedMemberRow[]> {
+  const { ensureMembersColumns } = await import("@/lib/drizzle/ensure-members-columns");
+  try {
+    await ensureMembersColumns();
+  } catch (err) {
+    console.warn("ensureMembersColumns failed:", err);
+  }
+
   const db = getDb();
 
   const rows = await db
@@ -18,19 +25,29 @@ async function getMembers(): Promise<ExtendedMemberRow[]> {
       id: members.id,
       fullName: members.fullName,
       email: members.email,
+      username: members.username,
       role: members.role,
       execTitle: members.execTitle,
+      avatarUrl: members.avatarUrl,
+      bio: members.bio,
+      githubHandle: members.githubHandle,
       studentId: members.studentId,
       campus: members.campus,
       isChiromo: members.isChiromo,
+      institutionName: members.institutionName,
+      department: members.department,
       course: members.course,
       yearOfStudy: members.yearOfStudy,
       phoneNumber: members.phoneNumber,
+      experienceLevel: members.experienceLevel,
+      learningGoals: members.learningGoals,
       authProvider: members.authProvider,
       membershipStatus: members.membershipStatus,
       membershipFeeStatus: members.membershipFeeStatus,
       feeAmountPaid: members.feeAmountPaid,
       mpesaReference: members.mpesaReference,
+      mpesaPhoneNumber: members.mpesaPhoneNumber,
+      cardTheme: members.cardTheme,
       createdAt: members.createdAt,
     })
     .from(members)
@@ -80,8 +97,8 @@ export default async function AdminMembersPage() {
           Member Approvals &amp; Administration
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-text-2">
-          Review pending club registrations, track student ID &amp; campus verification, manage
-          membership fee deposits, and assign executive leadership seats.
+          Review full applicant details (phone, tracks, academic info), preview each membership card,
+          manage fee deposits, then approve or assign executive seats.
         </p>
       </div>
 

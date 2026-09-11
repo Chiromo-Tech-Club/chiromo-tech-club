@@ -40,6 +40,8 @@ export interface MembershipCardProps {
   execTitle?: string | null;
   /** Persisted theme id from members.card_theme */
   cardTheme?: string | null;
+  /** Admin / review mode: show card without theme save controls. */
+  preview?: boolean;
 }
 
 function CircuitBg({ className, color }: { className?: string; color: string }) {
@@ -249,6 +251,10 @@ export function MembershipCard(props: MembershipCardProps) {
     .join("");
 
   function handleThemePick(next: CardThemeId) {
+    if (props.preview) {
+      setThemeId(next);
+      return;
+    }
     setThemeId(next);
     setThemeMessage(null);
     startThemeTransition(async () => {
@@ -412,26 +418,33 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;margin:0}
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky">Official membership</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky">
+            {props.preview ? "Applicant membership card" : "Official membership"}
+          </p>
           <h3 className="mt-1 font-display text-xl font-extrabold tracking-tight text-ink sm:text-2xl">
-            Your CTC Membership Card
+            {props.preview ? `${props.fullName.split(" ")[0] || "Member"}'s CTC Card` : "Your CTC Membership Card"}
           </h3>
           <p className="mt-1 max-w-md text-xs text-muted">
-            Role-based front · academic back. Recolor anytime. Print each side on its own page.
+            {props.preview
+              ? "Preview of how this member's card will look once approved."
+              : "Role-based front · academic back. Recolor anytime. Print each side on its own page."}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void handleDownloadPrint()}
-          disabled={isPreparingPrint}
-          className="group inline-flex items-center gap-2 rounded-2xl bg-navy px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-navy/25 transition-all hover:bg-navy-dark active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
-        >
-          {isPreparingPrint ? <Download size={15} className="animate-pulse" /> : <Printer size={15} />}
-          {isPreparingPrint ? "Preparing…" : "Download / Print Card"}
-        </button>
+        {!props.preview && (
+          <button
+            type="button"
+            onClick={() => void handleDownloadPrint()}
+            disabled={isPreparingPrint}
+            className="group inline-flex items-center gap-2 rounded-2xl bg-navy px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-navy/25 transition-all hover:bg-navy-dark active:scale-[0.98] disabled:cursor-wait disabled:opacity-70"
+          >
+            {isPreparingPrint ? <Download size={15} className="animate-pulse" /> : <Printer size={15} />}
+            {isPreparingPrint ? "Preparing…" : "Download / Print Card"}
+          </button>
+        )}
       </div>
 
-      {/* Recolor */}
+      {/* Recolor — owner only (preview still allows local theme peek without saving) */}
+      {!props.preview && (
       <div className="rounded-2xl border border-line bg-surface/80 p-3 sm:p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -469,6 +482,7 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;margin:0}
           })}
         </div>
       </div>
+      )}
 
       <div className="mx-auto grid w-full max-w-3xl gap-6">
         {/* FRONT */}

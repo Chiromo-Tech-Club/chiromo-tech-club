@@ -11,6 +11,7 @@ import { AnnouncementsWidget, type AnnouncementItem } from "@/features/dashboard
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
 import { MemberOverview } from "@/features/dashboard/MemberOverview";
 import { MembershipCard } from "@/features/dashboard/MembershipCard";
+import { MemberQuickActions } from "@/features/dashboard/MemberQuickActions";
 import { ROUTES } from "@/constants/routes";
 
 async function getOverviewData() {
@@ -138,7 +139,7 @@ export default async function DashboardOverviewPage() {
 
       {/* Secondary widgets: stack on mobile, 3 columns on lg+ */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
-        <ComingSoon label="Quick Actions" />
+        <MemberQuickActions />
         <ComingSoon label="Task List" />
         <ComingSoon label="Committee Activity Feed" />
       </div>

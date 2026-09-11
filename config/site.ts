@@ -42,5 +42,7 @@ export const SITE_CONFIG = {
     github: "https://github.com/chiromo-tech-club",
     instagram: "https://instagram.com/chiromotechclub",
     linkedin: "https://linkedin.com/company/chiromo-tech-club",
+    /** Official CTC WhatsApp community invite. */
+    whatsapp: "https://chat.whatsapp.com/Hueh8XfmT03EiYmRrTtAOX",
   },
 } as const;

@@ -19,6 +19,7 @@ export default async function DashboardProfilePage() {
         bio: member.bio,
         githubHandle: member.githubHandle,
         phoneNumber: member.phoneNumber,
+        studentId: member.studentId ?? null,
         course: member.course,
         yearOfStudy: member.yearOfStudy,
         campus: member.campus,

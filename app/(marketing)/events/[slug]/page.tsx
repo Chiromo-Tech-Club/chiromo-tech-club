@@ -13,6 +13,7 @@ import type { ClubEvent } from "@/types/event";
 
 type EventDetail = Pick<ClubEvent, "slug" | "title" | "description" | "startsAt" | "location" | "capacity"> & {
   id?: string;
+  coverImageUrl?: string | null;
   externalUrl?: string;
   hostInstitution?: string;
   isClubEvent?: boolean;
@@ -100,6 +101,7 @@ async function getEvent(slug: string): Promise<EventDetail | null> {
         startsAt: events.startsAt,
         location: events.location,
         capacity: events.capacity,
+        coverImageUrl: events.coverImageUrl,
       })
       .from(events)
       .where(and(eq(events.slug, slug), isNull(events.deletedAt)))
@@ -164,7 +166,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
       </Link>
 
       <div className="relative mt-4 h-56 w-full overflow-hidden rounded-card sm:h-72">
-        <FadeImage src={eventCoverImage(event.slug)} priority />
+        <FadeImage src={event.coverImageUrl || eventCoverImage(event.slug)} priority />
         <span className={`absolute left-4 top-4 rounded-pill px-3 py-1 text-label-xs font-semibold ${meta.tone}`}>
           {meta.label}
         </span>

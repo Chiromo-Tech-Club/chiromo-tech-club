@@ -161,6 +161,9 @@ async function TreasurerBudget() {
 }
 
 async function CorporateAffairsSponsors() {
+  const { ensureFinanceColumns } = await import("@/lib/drizzle/ensure-finance-columns");
+  await ensureFinanceColumns();
+
   const db = getDb();
   const rows = await db
     .select({
@@ -168,6 +171,11 @@ async function CorporateAffairsSponsors() {
       name: sponsors.name,
       contactName: sponsors.contactName,
       contactEmail: sponsors.contactEmail,
+      contactPhone: sponsors.contactPhone,
+      contactEmailSecondary: sponsors.contactEmailSecondary,
+      contactPhoneSecondary: sponsors.contactPhoneSecondary,
+      contactEmailTertiary: sponsors.contactEmailTertiary,
+      contactPhoneTertiary: sponsors.contactPhoneTertiary,
       status: sponsors.status,
       notes: sponsors.notes,
     })
@@ -472,11 +480,15 @@ async function SharedCommitteeActivity() {
 }
 
 async function TreasurerIncomeTracker() {
+  const { ensureFinanceColumns } = await import("@/lib/drizzle/ensure-finance-columns");
+  await ensureFinanceColumns();
+
   const db = getDb();
   const incomeRows = await db
     .select({
       id: transactions.id,
       category: transactions.category,
+      partyName: transactions.partyName,
       description: transactions.description,
       amountCents: transactions.amountCents,
       occurredAt: transactions.occurredAt,
@@ -492,11 +504,15 @@ async function TreasurerIncomeTracker() {
 }
 
 async function TreasurerExpenseTracker() {
+  const { ensureFinanceColumns } = await import("@/lib/drizzle/ensure-finance-columns");
+  await ensureFinanceColumns();
+
   const db = getDb();
   const rows = await db
     .select({
       id: transactions.id,
       category: transactions.category,
+      partyName: transactions.partyName,
       description: transactions.description,
       amountCents: transactions.amountCents,
       occurredAt: transactions.occurredAt,
@@ -512,11 +528,24 @@ async function TreasurerExpenseTracker() {
 }
 
 async function TreasurerFinancialReports() {
+  const { ensureFinanceColumns } = await import("@/lib/drizzle/ensure-finance-columns");
+  await ensureFinanceColumns();
+
   const db = getDb();
   const rows = await db
-    .select({ type: transactions.type, amountCents: transactions.amountCents, occurredAt: transactions.occurredAt })
+    .select({
+      type: transactions.type,
+      amountCents: transactions.amountCents,
+      occurredAt: transactions.occurredAt,
+      partyName: transactions.partyName,
+      category: transactions.category,
+      description: transactions.description,
+      recordedByName: members.fullName,
+    })
     .from(transactions)
-    .where(isNull(transactions.deletedAt));
+    .innerJoin(members, eq(transactions.recordedById, members.id))
+    .where(isNull(transactions.deletedAt))
+    .orderBy(desc(transactions.occurredAt));
 
   const byMonth = new Map<string, { incomeCents: number; expenseCents: number }>();
   for (const r of rows) {
@@ -528,7 +557,17 @@ async function TreasurerFinancialReports() {
   }
 
   const summaries: MonthlySummary[] = Array.from(byMonth.entries()).map(([month, totals]) => ({ month, ...totals }));
-  return <FinancialReports summaries={summaries} />;
+  const lines = rows.map((r) => ({
+    occurredAt: r.occurredAt.toISOString(),
+    type: r.type as "income" | "expense",
+    partyName: r.partyName,
+    category: r.category,
+    description: r.description,
+    amountCents: r.amountCents,
+    recordedByName: r.recordedByName,
+  }));
+
+  return <FinancialReports summaries={summaries} lines={lines} />;
 }
 
 async function SecretaryGeneralDecisionLog({ statusFilter }: { statusFilter?: "proposed" | "approved" | "rejected" } = {}) {
@@ -591,6 +630,7 @@ async function CorporateAffairsEventManager() {
       startsAt: events.startsAt,
       location: events.location,
       capacity: events.capacity,
+      coverImageUrl: events.coverImageUrl,
     })
     .from(events)
     .where(isNull(events.deletedAt))

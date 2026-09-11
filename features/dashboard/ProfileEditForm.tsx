@@ -16,6 +16,7 @@ export interface ProfileFormMember {
   bio?: string | null;
   githubHandle?: string | null;
   phoneNumber?: string | null;
+  studentId?: string | null;
   course?: string | null;
   yearOfStudy?: string | null;
   campus?: string | null;
@@ -38,6 +39,7 @@ export function ProfileEditForm({ member }: { member: ProfileFormMember }) {
   const [bio, setBio] = useState(member.bio ?? "");
   const [githubHandle, setGithubHandle] = useState(member.githubHandle ?? "");
   const [phoneNumber, setPhoneNumber] = useState(member.phoneNumber ?? "");
+  const [studentId, setStudentId] = useState(member.studentId ?? "");
   const [course, setCourse] = useState(member.course ?? "");
   const [yearOfStudy, setYearOfStudy] = useState(member.yearOfStudy ?? "");
   const [campus, setCampus] = useState(member.campus ?? "");
@@ -80,6 +82,7 @@ export function ProfileEditForm({ member }: { member: ProfileFormMember }) {
     formData.set("bio", bio);
     formData.set("githubHandle", githubHandle);
     formData.set("phoneNumber", phoneNumber);
+    formData.set("studentId", studentId);
     formData.set("course", course);
     formData.set("yearOfStudy", yearOfStudy);
     formData.set("campus", campus);
@@ -233,6 +236,18 @@ export function ProfileEditForm({ member }: { member: ProfileFormMember }) {
       <div className="space-y-4 rounded-3xl border border-line bg-surface p-6 shadow-sm">
         <h2 className="font-display text-sm font-bold text-ink">Academic details</h2>
         <p className="text-xs text-muted">These feed your membership card expiry and campus line.</p>
+
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-ink-2">Student / Registration ID</label>
+          <Input
+            value={studentId}
+            onChange={(e) => setStudentId(e.target.value)}
+            placeholder="e.g. P15/12345/2024"
+            className="rounded-xl font-mono text-sm"
+            maxLength={30}
+          />
+          <p className="text-[11px] text-muted">Shown on your membership card as Student Reg.</p>
+        </div>
 
         <div className="space-y-1.5">
           <label className="text-xs font-semibold text-ink-2">Campus / University</label>

@@ -59,10 +59,13 @@ type MemberProfileValues = {
   department: string | null;
   course: string;
   yearOfStudy: string;
+  experienceLevel: string | null;
+  learningGoals: string | null;
   authProvider: string;
   membershipFeeStatus: string;
   feeAmountPaid: number;
   mpesaReference: string | null;
+  mpesaPhoneNumber: string | null;
 };
 
 async function upsertMemberProfile(
@@ -212,10 +215,13 @@ export async function submitClubRegistration(
       department,
       course: data.course,
       yearOfStudy: data.yearOfStudy,
+      experienceLevel: data.experienceLevel || null,
+      learningGoals: data.learningGoals?.trim() || null,
       authProvider,
       membershipFeeStatus: feeStatus,
       feeAmountPaid,
       mpesaReference: data.mpesaReference || null,
+      mpesaPhoneNumber: data.mpesaPhoneNumber?.trim() || null,
     };
 
     const savedMember = await upsertMemberProfile(userId, profile, data.communitySlugs, true);
