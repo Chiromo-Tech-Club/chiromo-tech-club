@@ -15,7 +15,6 @@ import type { MemberStatus } from "@/types/member-status";
 import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
 import { cn } from "@/lib/utils/cn";
-import { MembershipCard } from "@/features/dashboard/MembershipCard";
 import { getCommunityBySlug } from "@/utils/get-community-slug";
 import {
   CheckCircle2,
@@ -29,7 +28,6 @@ import {
   Mail,
   Code2,
   Layers,
-  IdCard,
   Users,
 } from "lucide-react";
 
@@ -635,65 +633,31 @@ function PendingApprovalCard({
   onReject: () => void;
   onPayment: (status: PaymentStatus, amount: number, mpesaRef?: string) => void;
 }) {
-  const [showCard, setShowCard] = useState(true);
-
   return (
     <div className="relative overflow-hidden rounded-2xl border border-line/80 bg-surface p-4 shadow-sm transition-all hover:border-sky/40 sm:p-6">
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <MemberProfileDetails m={m} />
-          <div className="flex w-full flex-col gap-2 border-t border-line/60 pt-4 lg:w-64 lg:shrink-0 lg:border-t-0 lg:pt-0">
-            <PaymentControls member={m} busy={busy} onPayment={onPayment} />
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={busy}
-              onClick={onReject}
-              className="flex w-full items-center justify-center gap-1 rounded-xl border-red-200 text-xs text-red-600 hover:bg-red-50"
-            >
-              <XCircle size={14} /> Reject
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={busy}
-              onClick={onApprove}
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-green px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-green/90"
-            >
-              <CheckCircle2 size={15} /> Approve Membership
-            </Button>
-            <button
-              type="button"
-              onClick={() => setShowCard((v) => !v)}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-line px-3 py-2 text-xs font-semibold text-ink-2 hover:bg-cream-2"
-            >
-              <IdCard size={14} /> {showCard ? "Hide membership card" : "Show membership card"}
-            </button>
-          </div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <MemberProfileDetails m={m} />
+        <div className="flex w-full flex-col gap-2 border-t border-line/60 pt-4 lg:w-64 lg:shrink-0 lg:border-t-0 lg:pt-0">
+          <PaymentControls member={m} busy={busy} onPayment={onPayment} />
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={busy}
+            onClick={onReject}
+            className="flex w-full items-center justify-center gap-1 rounded-xl border-red-200 text-xs text-red-600 hover:bg-red-50"
+          >
+            <XCircle size={14} /> Reject
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            disabled={busy}
+            onClick={onApprove}
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-green px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-green/90"
+          >
+            <CheckCircle2 size={15} /> Approve Membership
+          </Button>
         </div>
-        {showCard && (
-          <div className="rounded-2xl border border-line/70 bg-cream/30 p-3 sm:p-4">
-            <MembershipCard
-              preview
-              memberId={m.id}
-              fullName={m.fullName}
-              email={m.email}
-              avatarUrl={m.avatarUrl}
-              username={m.username}
-              studentId={m.studentId}
-              campus={m.campus}
-              isChiromo={m.isChiromo}
-              course={m.course}
-              yearOfStudy={m.yearOfStudy}
-              createdAt={m.createdAt}
-              membershipStatus={m.status}
-              isApproved={false}
-              role={m.role}
-              execTitle={m.execTitle}
-              cardTheme={m.cardTheme}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
@@ -734,90 +698,55 @@ function RosterMemberCard({
   onPayment: (status: PaymentStatus, amount: number, mpesaRef?: string) => void;
 }) {
   const { role, setRole, execTitle, setExecTitle, isPending, saved, dirty, save } = useMemberRoleEditor(m);
-  const [showCard, setShowCard] = useState(false);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-line/80 bg-surface p-4 shadow-sm sm:p-6">
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <MemberProfileDetails m={m} />
-          <div className="flex w-full flex-col gap-3 border-t border-line/60 pt-4 lg:w-72 lg:shrink-0 lg:border-t-0 lg:pt-0">
-            <PaymentControls member={m} busy={busy || isPending} onPayment={onPayment} />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <MemberProfileDetails m={m} />
+        <div className="flex w-full flex-col gap-3 border-t border-line/60 pt-4 lg:w-72 lg:shrink-0 lg:border-t-0 lg:pt-0">
+          <PaymentControls member={m} busy={busy || isPending} onPayment={onPayment} />
 
-            <div className="space-y-2 rounded-xl border border-line/70 bg-cream/30 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-muted">Club role &amp; exec seat</p>
+          <div className="space-y-2 rounded-xl border border-line/70 bg-cream/30 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted">Club role &amp; exec seat</p>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+              className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-medium text-ink"
+            >
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABELS[r]}
+                </option>
+              ))}
+            </select>
+            {(role === "exec" || role === "admin") && (
               <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as Role)}
+                value={execTitle ?? ""}
+                onChange={(e) => setExecTitle(isExecTitle(e.target.value) ? e.target.value : null)}
                 className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-medium text-ink"
               >
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_LABELS[r]}
+                <option value="" disabled={role === "exec"}>
+                  {role === "exec" ? "Select executive seat…" : "Optional seat…"}
+                </option>
+                {role === "admin" ? <option value="">No seat — Administrator only</option> : null}
+                {EXEC_TITLES.map((t) => (
+                  <option key={t} value={t}>
+                    {EXEC_TITLE_LABELS[t]}
                   </option>
                 ))}
               </select>
-              {(role === "exec" || role === "admin") && (
-                <select
-                  value={execTitle ?? ""}
-                  onChange={(e) => setExecTitle(isExecTitle(e.target.value) ? e.target.value : null)}
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-medium text-ink"
-                >
-                  <option value="" disabled={role === "exec"}>
-                    {role === "exec" ? "Select executive seat…" : "Optional seat…"}
-                  </option>
-                  {role === "admin" ? <option value="">No seat — Administrator only</option> : null}
-                  {EXEC_TITLES.map((t) => (
-                    <option key={t} value={t}>
-                      {EXEC_TITLE_LABELS[t]}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <Button
-                variant="primary"
-                size="sm"
-                disabled={!dirty || isPending || (role === "exec" && !execTitle)}
-                onClick={save}
-                className="w-full rounded-xl text-xs"
-              >
-                {isPending ? "Saving…" : saved ? "Saved" : "Save Role"}
-              </Button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowCard((v) => !v)}
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-line px-3 py-2 text-xs font-semibold text-ink-2 hover:bg-cream-2"
+            )}
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={!dirty || isPending || (role === "exec" && !execTitle)}
+              onClick={save}
+              className="w-full rounded-xl text-xs"
             >
-              <IdCard size={14} /> {showCard ? "Hide membership card" : "Show membership card"}
-            </button>
+              {isPending ? "Saving…" : saved ? "Saved" : "Save Role"}
+            </Button>
           </div>
         </div>
-
-        {showCard && (
-          <div className="rounded-2xl border border-line/70 bg-cream/30 p-3 sm:p-4">
-            <MembershipCard
-              preview
-              memberId={m.id}
-              fullName={m.fullName}
-              email={m.email}
-              avatarUrl={m.avatarUrl}
-              username={m.username}
-              studentId={m.studentId}
-              campus={m.campus}
-              isChiromo={m.isChiromo}
-              course={m.course}
-              yearOfStudy={m.yearOfStudy}
-              createdAt={m.createdAt}
-              membershipStatus={m.status}
-              isApproved={m.status === "approved"}
-              role={m.role}
-              execTitle={m.execTitle}
-              cardTheme={m.cardTheme}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
