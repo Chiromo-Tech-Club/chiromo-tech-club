@@ -57,6 +57,8 @@ export async function registerForEvent(eventSlug: string): Promise<ActionResult>
 
     revalidatePath(ROUTES.event(eventSlug));
     revalidatePath(ROUTES.events);
+    revalidatePath(ROUTES.dashboard);
+    revalidatePath("/");
     return { success: true };
   } catch (err) {
     console.error("registerForEvent failed:", err);

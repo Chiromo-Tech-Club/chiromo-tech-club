@@ -133,6 +133,10 @@ export const events = pgTable("events", {
   location: text("location").notNull(),
   capacity: integer("capacity"),
   coverImageUrl: text("cover_image_url"),
+  /** Display name of who is hosting / organizing (Luma-style). */
+  organizerName: text("organizer_name"),
+  /** Guest speaker shown on event cards (free text; may mirror guest_speakers). */
+  guestSpeakerName: text("guest_speaker_name"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),

@@ -26,7 +26,6 @@ import {
   DollarSign,
   Phone,
   Mail,
-  Code2,
   Layers,
   Users,
 } from "lucide-react";
@@ -109,40 +108,10 @@ function EmailBadge() {
   );
 }
 
-function DetailRow({
-  label,
-  value,
-  alwaysShow = false,
-}: {
-  label: string;
-  value?: string | null;
-  alwaysShow?: boolean;
-}) {
-  if (!value?.trim() && !alwaysShow) return null;
-  return (
-    <div className="min-w-0">
-      <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">{label}</dt>
-      <dd className={cn("mt-0.5 break-words text-sm font-medium", value?.trim() ? "text-ink" : "text-muted")}>
-        {value?.trim() || "Not provided"}
-      </dd>
-    </div>
-  );
-}
-
 function feeLabel(m: ExtendedMemberRow): string {
   if (m.membershipFeeStatus === "fully_paid") return `Paid KES ${m.feeAmountPaid || 500} (Full)`;
   if (m.membershipFeeStatus === "deposit_paid") return `Paid KES ${m.feeAmountPaid || 250} (Deposit)`;
   return "Unpaid / Pay Later";
-}
-
-function experienceLabel(level?: string | null) {
-  if (!level) return null;
-  const map: Record<string, string> = {
-    beginner: "Beginner",
-    intermediate: "Intermediate",
-    advanced: "Advanced",
-  };
-  return map[level] ?? level;
 }
 
 function MemberProfileDetails({ m }: { m: ExtendedMemberRow }) {
@@ -188,7 +157,7 @@ function MemberProfileDetails({ m }: { m: ExtendedMemberRow }) {
         </div>
       </div>
 
-      <dl className="grid grid-cols-1 gap-3 rounded-2xl border border-line/70 bg-cream/40 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
+      <dl className="grid grid-cols-1 gap-3 rounded-2xl border border-line/70 bg-cream/40 p-3 sm:grid-cols-2 sm:p-4">
         <div className="min-w-0">
           <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">Email</dt>
           <dd className="mt-0.5">
@@ -215,54 +184,6 @@ function MemberProfileDetails({ m }: { m: ExtendedMemberRow }) {
             )}
           </dd>
         </div>
-        <DetailRow label="Student / Reg ID" value={m.studentId} alwaysShow />
-        <DetailRow label="Course / Programme" value={m.course} alwaysShow />
-        <DetailRow label="Year of study" value={m.yearOfStudy} alwaysShow />
-        <div className="min-w-0">
-          <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">Campus</dt>
-          <dd className="mt-0.5 flex flex-wrap items-center gap-1.5 text-sm font-medium">
-            <Building2 size={13} className="shrink-0 text-muted" />
-            <span className={m.isChiromo || m.campus?.toLowerCase().includes("chiromo") ? "text-green" : "text-ink"}>
-              {m.campus ?? "Chiromo Campus"}
-            </span>
-            <span className="text-[10px] font-semibold text-muted">({m.isChiromo ? "Chiromo" : "External"})</span>
-          </dd>
-        </div>
-        <DetailRow label="Institution" value={m.institutionName} alwaysShow={!m.isChiromo} />
-        <DetailRow label="Department / Faculty" value={m.department} alwaysShow />
-        <DetailRow label="Experience level" value={experienceLabel(m.experienceLevel)} alwaysShow />
-        <div className="min-w-0 sm:col-span-2 lg:col-span-3">
-          <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">Learning goals</dt>
-          <dd className={cn("mt-0.5 text-sm", m.learningGoals?.trim() ? "text-ink" : "text-muted")}>
-            {m.learningGoals?.trim() || "Not provided"}
-          </dd>
-        </div>
-        {m.githubHandle ? (
-          <div className="min-w-0">
-            <dt className="text-[10px] font-bold uppercase tracking-wide text-muted">GitHub</dt>
-            <dd className="mt-0.5">
-              <a
-                href={`https://github.com/${m.githubHandle}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-sky hover:underline"
-              >
-                <Code2 size={13} /> {m.githubHandle}
-              </a>
-            </dd>
-          </div>
-        ) : (
-          <DetailRow label="GitHub" value={null} alwaysShow />
-        )}
-        <DetailRow
-          label="Registered"
-          value={
-            m.createdAt
-              ? new Date(m.createdAt).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" })
-              : null
-          }
-          alwaysShow
-        />
       </dl>
 
       <div className="space-y-2">

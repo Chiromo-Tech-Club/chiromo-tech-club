@@ -15,19 +15,20 @@ import {
 import { sendNewsletterConfirmation } from "@/services/email";
 import { ROUTES } from "@/constants/routes";
 import type { ActionResult } from "@/actions/membership";
+import { friendlyAuthError } from "@/lib/utils/friendly-error";
 
 function registrationErrorMessage(err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err ?? "");
-  if (/column .* does not exist|42703/i.test(msg)) {
-    return "Database is missing membership columns. Open Supabase → SQL Editor and run the members column migration, then try again.";
-  }
-  if (/duplicate key|unique constraint|23505|already been registered|already registered/i.test(msg)) {
+  if (/already been registered|already registered|duplicate key|unique constraint|23505/i.test(msg)) {
     return "An account with this email already exists. Sign in, or use Finish with Google on this page.";
   }
   if (/foreign key|23503/i.test(msg)) {
     return "Please create your account in this registration form (password or Google), then submit again.";
   }
-  return "Unable to complete registration. Please check your details and try again.";
+  return friendlyAuthError(
+    err,
+    "Unable to complete registration. Please check your details and try again.",
+  );
 }
 
 function resolveCampusFields(data: FullRegistrationInput) {

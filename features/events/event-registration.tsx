@@ -65,7 +65,7 @@ export function EventRegistrationForm({
         disabled={status === "submitting" || full}
         onClick={register}
       >
-        {status === "submitting" ? "Registering…" : full ? "Sold out" : "Register"}
+        {status === "submitting" ? "Registering…" : full ? "Sold out" : "RSVP"}
       </Button>
       {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
     </div>

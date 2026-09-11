@@ -6,7 +6,10 @@ import { Camera, CheckCircle2, Loader2, ArrowLeft, AtSign, User } from "lucide-r
 import { updateMyProfile } from "@/actions/profile";
 import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
+import { ImageCropDialog } from "@/components/media/ImageCropDialog";
 import { ROUTES } from "@/constants/routes";
+import { IMAGE_CROP } from "@/constants/image-crop";
+import { LIMITS } from "@/constants/limits";
 
 export interface ProfileFormMember {
   fullName: string;
@@ -44,6 +47,7 @@ export function ProfileEditForm({ member }: { member: ProfileFormMember }) {
   const [yearOfStudy, setYearOfStudy] = useState(member.yearOfStudy ?? "");
   const [campus, setCampus] = useState(member.campus ?? "");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [cropSource, setCropSource] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -57,18 +61,18 @@ export function ProfileEditForm({ member }: { member: ProfileFormMember }) {
 
   function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+    if (!(LIMITS.allowedImageTypes as readonly string[]).includes(file.type)) {
       setError("Please choose a PNG, JPG, or WebP image.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > LIMITS.maxUploadBytes) {
       setError("Image must be under 5 MB.");
       return;
     }
     setError(null);
-    setAvatarFile(file);
-    setPreview(URL.createObjectURL(file));
+    setCropSource(file);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -102,6 +106,20 @@ export function ProfileEditForm({ member }: { member: ProfileFormMember }) {
   }
 
   return (
+    <>
+      <ImageCropDialog
+        open={Boolean(cropSource)}
+        file={cropSource}
+        preset="avatar"
+        title="Crop profile photo"
+        onCancel={() => setCropSource(null)}
+        onComplete={(file, previewUrl) => {
+          setAvatarFile(file);
+          setPreview(previewUrl);
+          setCropSource(null);
+        }}
+      />
+
     <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -121,7 +139,10 @@ export function ProfileEditForm({ member }: { member: ProfileFormMember }) {
       {/* Avatar */}
       <div className="rounded-3xl border border-line bg-surface p-6 shadow-sm">
         <h2 className="font-display text-sm font-bold text-ink">Profile photo</h2>
-        <p className="mt-1 text-xs text-muted">PNG, JPG or WebP · max 5 MB. Used on your printable membership card.</p>
+        <p className="mt-1 text-xs text-muted">
+          PNG, JPG or WebP · max 5 MB · you crop it · final size {IMAGE_CROP.avatar.label}. Used on your membership
+          card.
+        </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-5">
           <div className="relative h-28 w-28 overflow-hidden rounded-2xl border-2 border-line bg-cream-2">
@@ -154,7 +175,7 @@ export function ProfileEditForm({ member }: { member: ProfileFormMember }) {
             </Button>
             {avatarFile && (
               <p className="text-[11px] text-muted">
-                New photo selected: <span className="font-medium text-ink">{avatarFile.name}</span>
+                Cropped and ready: <span className="font-medium text-ink">{avatarFile.name}</span>
               </p>
             )}
           </div>
@@ -315,5 +336,6 @@ export function ProfileEditForm({ member }: { member: ProfileFormMember }) {
         </Link>
       </div>
     </form>
+    </>
   );
 }

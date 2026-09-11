@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Navbar } from "../components/navigation/Navbar";
 import { HeroBand } from "../sections/hero-band";
+import { LandingEventsBand } from "../sections/landing-events";
 import { AboutCollage } from "../sections/about-collage";
 import { ImpactStat } from "../sections/impact-stat";
 import { DiscoverTeam } from "../sections/discover-team";
@@ -28,6 +29,7 @@ export default function Home() {
       <Navbar />
       <main>
         <HeroBand />
+        <LandingEventsBand />
         <AboutCollage />
         <ImpactStat />
         <DiscoverTeam />

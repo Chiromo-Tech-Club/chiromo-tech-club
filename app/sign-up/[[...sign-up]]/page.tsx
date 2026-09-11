@@ -9,6 +9,7 @@ import { TextField, Label, Input, Button, Spinner } from "@heroui/react";
 import { ROUTES } from "@/constants/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { validateEmail, validateFullName, validateSignUpPassword } from "@/lib/utils/auth-validation";
+import { friendlyAuthError } from "@/lib/utils/friendly-error";
 import { PasswordStrengthMeter } from "@/components/auth/PasswordStrengthMeter";
 
 function ArrowLeftIcon() {
@@ -95,11 +96,12 @@ export default function SignUpPage() {
     });
 
     if (error) {
-      if (/email/i.test(error.message)) {
-        setFieldErrors((prev) => ({ ...prev, email: error.message }));
+      const friendly = friendlyAuthError(error, "Could not create your account. Please try again.");
+      if (/email|already registered|already exists/i.test(error.message)) {
+        setFieldErrors((prev) => ({ ...prev, email: friendly }));
         setTouched((t) => ({ ...t, email: true }));
       } else {
-        setFormError(error.message);
+        setFormError(friendly);
       }
       setFormLoading(false);
       return;
@@ -126,7 +128,7 @@ export default function SignUpPage() {
       },
     });
     if (error) {
-      setGoogleError(error.message);
+      setGoogleError(friendlyAuthError(error, "Google sign-up didn’t complete. Please try again."));
       setGoogleLoading(false);
     }
   }

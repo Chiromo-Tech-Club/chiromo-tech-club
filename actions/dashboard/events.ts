@@ -8,6 +8,7 @@ import { events } from "@/lib/drizzle/schema";
 import { canAccessExecSection } from "@/lib/supabase/auth-helpers";
 import { slugify } from "@/lib/utils/slugify";
 import { uploadEventCover } from "@/services/upload";
+import { ensureEventsColumns } from "@/lib/drizzle/ensure-events-columns";
 import { ROUTES } from "@/constants/routes";
 import type { ActionResult } from "@/actions/membership";
 
@@ -17,23 +18,30 @@ const fieldsSchema = z.object({
   startsAt: z.string().datetime(),
   location: z.string().min(2).max(200),
   capacity: z.number().int().positive().optional().nullable(),
+  organizerName: z.string().max(120).optional().nullable(),
+  guestSpeakerName: z.string().max(120).optional().nullable(),
 });
 
 function revalidateEventPaths(slug?: string) {
   revalidatePath("/dashboard/corporate_affairs/event-manager");
   revalidatePath("/events");
   revalidatePath(ROUTES.dashboard);
+  revalidatePath("/");
   if (slug) revalidatePath(ROUTES.event(slug));
 }
 
 function parseEventFields(formData: FormData) {
   const capacityRaw = String(formData.get("capacity") ?? "").trim();
+  const organizerName = String(formData.get("organizerName") ?? "").trim();
+  const guestSpeakerName = String(formData.get("guestSpeakerName") ?? "").trim();
   return fieldsSchema.safeParse({
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
     startsAt: String(formData.get("startsAt") ?? ""),
     location: String(formData.get("location") ?? ""),
     capacity: capacityRaw ? Number(capacityRaw) : null,
+    organizerName: organizerName || null,
+    guestSpeakerName: guestSpeakerName || null,
   });
 }
 
@@ -52,6 +60,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult> {
   if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
 
   try {
+    await ensureEventsColumns();
     const slug = `${slugify(parsed.data.title)}-${Date.now().toString(36)}`;
     let coverImageUrl: string | null = null;
     try {
@@ -75,6 +84,8 @@ export async function createEvent(formData: FormData): Promise<ActionResult> {
         startsAt: new Date(parsed.data.startsAt),
         location: parsed.data.location,
         capacity: parsed.data.capacity || null,
+        organizerName: parsed.data.organizerName ?? null,
+        guestSpeakerName: parsed.data.guestSpeakerName ?? null,
         coverImageUrl,
       });
     revalidateEventPaths(slug);
@@ -98,6 +109,7 @@ export async function updateEvent(formData: FormData): Promise<ActionResult> {
   if (!parsed.success) return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
 
   try {
+    await ensureEventsColumns();
     const db = getDb();
     const [existing] = await db
       .select({ slug: events.slug, coverImageUrl: events.coverImageUrl })
@@ -128,6 +140,8 @@ export async function updateEvent(formData: FormData): Promise<ActionResult> {
         startsAt: new Date(parsed.data.startsAt),
         location: parsed.data.location,
         capacity: parsed.data.capacity || null,
+        organizerName: parsed.data.organizerName ?? null,
+        guestSpeakerName: parsed.data.guestSpeakerName ?? null,
         coverImageUrl,
         updatedAt: new Date(),
       })

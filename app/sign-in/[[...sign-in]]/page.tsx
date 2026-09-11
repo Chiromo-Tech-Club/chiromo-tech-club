@@ -9,6 +9,7 @@ import { TextField, Label, Input, Button, Spinner } from "@heroui/react";
 import { ROUTES } from "@/constants/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { validateEmail, validateSignInPassword } from "@/lib/utils/auth-validation";
+import { friendlyAuthError } from "@/lib/utils/friendly-error";
 
 function ArrowLeftIcon() {
   return (
@@ -97,7 +98,7 @@ function SignInForm() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      setFormError(error.message);
+      setFormError(friendlyAuthError(error, "Could not sign in. Please try again."));
       setFormLoading(false);
       return;
     }
@@ -118,7 +119,7 @@ function SignInForm() {
       },
     });
     if (error) {
-      setGoogleError(error.message);
+      setGoogleError(friendlyAuthError(error, "Google sign-in didn’t complete. Please try again."));
       setGoogleLoading(false);
     }
   }

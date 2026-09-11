@@ -4,6 +4,7 @@ import { SHARED_NAV_ITEMS, EXEC_NAV, isSlugForExecTitle } from "@/config/dashboa
 import { isExecTitle, EXEC_TITLE_LABELS } from "@/types/exec-title";
 import { canAccessExecSection, getCurrentRole } from "@/lib/supabase/auth-helpers";
 import { getDb } from "@/lib/drizzle/client";
+import { listClubEvents } from "@/lib/events/queries";
 import {
   decisions,
   initiatives,
@@ -595,7 +596,7 @@ async function SecretaryGeneralDecisionLog({ statusFilter }: { statusFilter?: "p
 
 async function MembershipOfficerEventsParticipation() {
   const db = getDb();
-  const eventRows = await db.select({ id: events.id, title: events.title, startsAt: events.startsAt }).from(events).where(isNull(events.deletedAt));
+  const eventRows = await listClubEvents({ scope: "all" });
 
   const regRows = await db
     .select({ eventId: eventRegistrations.eventId, memberName: members.fullName })
@@ -621,22 +622,37 @@ async function MembershipOfficerEventsParticipation() {
 
 async function CorporateAffairsEventManager() {
   const db = getDb();
-  const rows = await db
-    .select({
-      id: events.id,
-      slug: events.slug,
-      title: events.title,
-      description: events.description,
-      startsAt: events.startsAt,
-      location: events.location,
-      capacity: events.capacity,
-      coverImageUrl: events.coverImageUrl,
-    })
-    .from(events)
-    .where(isNull(events.deletedAt))
-    .orderBy(desc(events.startsAt));
+  const rows = await listClubEvents({ scope: "all" });
 
-  const items: EventManagerItem[] = rows.map((r) => ({ ...r, startsAt: r.startsAt.toISOString() }));
+  const regRows = await db
+    .select({ eventId: eventRegistrations.eventId, memberName: members.fullName })
+    .from(eventRegistrations)
+    .innerJoin(members, eq(eventRegistrations.memberId, members.id));
+
+  const namesByEvent = new Map<string, string[]>();
+  for (const r of regRows) {
+    const list = namesByEvent.get(r.eventId) ?? [];
+    list.push(r.memberName);
+    namesByEvent.set(r.eventId, list);
+  }
+
+  const items: EventManagerItem[] = rows.map((r) => {
+    const attendeeNames = namesByEvent.get(r.id) ?? [];
+    return {
+      id: r.id,
+      slug: r.slug,
+      title: r.title,
+      description: r.description,
+      startsAt: r.startsAt.toISOString(),
+      location: r.location,
+      capacity: r.capacity,
+      coverImageUrl: r.coverImageUrl,
+      organizerName: r.organizerName,
+      guestSpeakerName: r.guestSpeakerName,
+      attendeeNames,
+      rsvpCount: attendeeNames.length,
+    };
+  });
   return <EventManager events={items} />;
 }
 

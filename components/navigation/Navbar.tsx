@@ -62,6 +62,7 @@ export function Navbar() {
           items={[
             { label: "Communities", href: ROUTES.communities },
             { label: "Discover the Team", href: `${ROUTES.home}#team` },
+            { label: "Events", href: ROUTES.events },
           ]}
         />
         <NavDropdown

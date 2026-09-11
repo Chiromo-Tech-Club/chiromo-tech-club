@@ -28,6 +28,7 @@ import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
 import { ROUTES } from "@/constants/routes";
 import { SITE_CONFIG } from "@/config/site";
+import { friendlyAuthError } from "@/lib/utils/friendly-error";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const CAMPUS_OPTIONS = [
@@ -211,7 +212,7 @@ export function RegistrationWizard({
       },
     });
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(friendlyAuthError(error, "Google sign-in didn’t complete. Please try again."));
       setGoogleLoading(false);
     }
   }
@@ -240,7 +241,7 @@ export function RegistrationWizard({
           },
         });
         if (oauthError) {
-          setErrorMessage(oauthError.message);
+          setErrorMessage(friendlyAuthError(oauthError, "Google sign-in didn’t complete. Please try again."));
           setGoogleLoading(false);
         }
       }
@@ -255,7 +256,7 @@ export function RegistrationWizard({
       },
     });
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(friendlyAuthError(error, "Google sign-in didn’t complete. Please try again."));
       setGoogleLoading(false);
     }
   }

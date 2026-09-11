@@ -2,11 +2,26 @@
 
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { CalendarPlus, MapPin, Pencil, Trash2, ExternalLink, ImagePlus } from "lucide-react";
+import {
+  CalendarPlus,
+  MapPin,
+  Pencil,
+  Trash2,
+  ExternalLink,
+  ImagePlus,
+  Users,
+  Mic2,
+  UserRound,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { createEvent, updateEvent, deleteEvent } from "@/actions/dashboard/events";
 import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
+import { ImageCropDialog } from "@/components/media/ImageCropDialog";
 import { ROUTES } from "@/constants/routes";
+import { IMAGE_CROP } from "@/constants/image-crop";
+import { LIMITS } from "@/constants/limits";
 
 export interface EventManagerItem {
   id: string;
@@ -17,6 +32,10 @@ export interface EventManagerItem {
   location: string;
   capacity: number | null;
   coverImageUrl?: string | null;
+  organizerName?: string | null;
+  guestSpeakerName?: string | null;
+  attendeeNames?: string[];
+  rsvpCount?: number;
 }
 
 function toLocalInputValue(iso: string) {
@@ -39,25 +58,28 @@ function EventForm({
   const [startsAt, setStartsAt] = useState(initial ? toLocalInputValue(initial.startsAt) : "");
   const [location, setLocation] = useState(initial?.location ?? "");
   const [capacity, setCapacity] = useState(initial?.capacity ? String(initial.capacity) : "");
+  const [organizerName, setOrganizerName] = useState(initial?.organizerName ?? "Chiromo Tech Club");
+  const [guestSpeakerName, setGuestSpeakerName] = useState(initial?.guestSpeakerName ?? "");
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [posterPreview, setPosterPreview] = useState<string | null>(initial?.coverImageUrl ?? null);
+  const [cropSource, setCropSource] = useState<File | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   function onPickPoster(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+    if (!(LIMITS.allowedImageTypes as readonly string[]).includes(file.type)) {
       setError("Poster must be PNG, JPG, or WebP.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > LIMITS.maxUploadBytes) {
       setError("Poster must be under 5 MB.");
       return;
     }
     setError(null);
-    setPosterFile(file);
-    setPosterPreview(URL.createObjectURL(file));
+    setCropSource(file);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -74,6 +96,8 @@ function EventForm({
       );
       formData.set("location", location);
       if (capacity) formData.set("capacity", capacity);
+      formData.set("organizerName", organizerName);
+      formData.set("guestSpeakerName", guestSpeakerName);
       if (posterFile) formData.set("poster", posterFile);
 
       const result = initial ? await updateEvent(formData) : await createEvent(formData);
@@ -85,6 +109,8 @@ function EventForm({
           setStartsAt("");
           setLocation("");
           setCapacity("");
+          setOrganizerName("Chiromo Tech Club");
+          setGuestSpeakerName("");
           setPosterFile(null);
           setPosterPreview(null);
           if (fileRef.current) fileRef.current.value = "";
@@ -93,84 +119,144 @@ function EventForm({
         }
         onDone?.();
       } else {
-        setError(result.error ?? "Something went wrong.");
+        setError(result.error ?? "Something went wrong. Please try again.");
       }
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
-      <h3 className="mb-4 font-display text-sm font-bold text-ink">
-        {initial ? "Edit event" : "Create an event"}
-      </h3>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-        <Input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
-        <Input placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} required />
-        <Input
-          placeholder="Capacity (optional)"
-          type="number"
-          min="1"
-          value={capacity}
-          onChange={(e) => setCapacity(e.target.value)}
-        />
-      </div>
-      <textarea
-        placeholder="What's this event about? (shown on the public event page)"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        required
-        rows={4}
-        className="mt-3 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
+    <>
+      <ImageCropDialog
+        open={Boolean(cropSource)}
+        file={cropSource}
+        preset="eventPoster"
+        title="Crop event poster"
+        onCancel={() => setCropSource(null)}
+        onComplete={(file, previewUrl) => {
+          setPosterFile(file);
+          setPosterPreview(previewUrl);
+          setCropSource(null);
+        }}
       />
 
-      <div className="mt-4 rounded-xl border border-dashed border-line bg-cream/40 p-4">
-        <p className="text-xs font-semibold text-ink">Event poster</p>
-        <p className="mt-0.5 text-[11px] text-muted">PNG, JPG or WebP · max 5 MB. Shown on the public events page.</p>
-        <div className="mt-3 flex flex-wrap items-center gap-4">
-          <div className="relative h-28 w-44 overflow-hidden rounded-xl border border-line bg-surface">
-            {posterPreview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={posterPreview} alt="Event poster preview" className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted">
-                <ImagePlus size={20} />
-                <span className="text-[10px]">No poster yet</span>
-              </div>
-            )}
-          </div>
-          <div className="space-y-2">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-              onChange={onPickPoster}
-            />
-            <Button type="button" variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>
-              <ImagePlus size={14} /> {posterPreview ? "Change poster" : "Upload poster"}
-            </Button>
-            {posterFile && (
-              <p className="text-[11px] text-muted">
-                Selected: <span className="font-medium text-ink">{posterFile.name}</span>
-              </p>
-            )}
+      <form onSubmit={handleSubmit} className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
+        <h3 className="mb-4 font-display text-sm font-bold text-ink">
+          {initial ? "Edit event" : "Create an event"}
+        </h3>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+          <Input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
+          <Input placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} required />
+          <Input
+            placeholder="Capacity (optional)"
+            type="number"
+            min="1"
+            value={capacity}
+            onChange={(e) => setCapacity(e.target.value)}
+          />
+          <Input
+            placeholder="Organizer / host"
+            value={organizerName}
+            onChange={(e) => setOrganizerName(e.target.value)}
+          />
+          <Input
+            placeholder="Guest speaker (optional)"
+            value={guestSpeakerName}
+            onChange={(e) => setGuestSpeakerName(e.target.value)}
+          />
+        </div>
+        <textarea
+          placeholder="What's this event about? (shown on cards and the public event page)"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+          rows={4}
+          className="mt-3 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none"
+        />
+
+        <div className="mt-4 rounded-xl border border-dashed border-line bg-cream/40 p-4">
+          <p className="text-xs font-semibold text-ink">Event poster</p>
+          <p className="mt-0.5 text-[11px] text-muted">
+            PNG, JPG or WebP · max 5 MB · you crop it · final size {IMAGE_CROP.eventPoster.label} (4:5)
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <div className="relative aspect-[1080/1350] w-28 overflow-hidden rounded-xl border border-line bg-surface sm:w-32">
+              {posterPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={posterPreview} alt="Event poster preview" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-muted">
+                  <ImagePlus size={20} />
+                  <span className="text-[10px]">No poster yet</span>
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={onPickPoster}
+              />
+              <Button type="button" variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>
+                <ImagePlus size={14} /> {posterPreview ? "Change poster" : "Upload poster"}
+              </Button>
+              {posterFile && (
+                <p className="text-[11px] text-muted">
+                  Cropped and ready: <span className="font-medium text-ink">{posterFile.name}</span>
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button type="submit" variant="primary" disabled={isPending}>
-          {isPending ? "Saving…" : initial ? "Save changes" : "Create event"}
-        </Button>
-        {initial && onDone && (
-          <Button type="button" variant="ghost" disabled={isPending} onClick={onDone}>
-            Cancel
+        {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button type="submit" variant="primary" disabled={isPending}>
+            {isPending ? "Saving…" : initial ? "Save changes" : "Create event"}
           </Button>
-        )}
-      </div>
-    </form>
+          {initial && onDone && (
+            <Button type="button" variant="ghost" disabled={isPending} onClick={onDone}>
+              Cancel
+            </Button>
+          )}
+        </div>
+      </form>
+    </>
+  );
+}
+
+function AttendeesPanel({ names }: { names: string[] }) {
+  const [open, setOpen] = useState(false);
+  if (names.length === 0) {
+    return <p className="text-[11px] text-muted">No RSVPs yet.</p>;
+  }
+  return (
+    <div className="mt-2 rounded-xl border border-line/70 bg-cream/40 p-2.5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 text-left text-[11px] font-semibold text-ink"
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <Users size={12} className="text-green" />
+          {names.length} RSVP{names.length === 1 ? "" : "s"}
+        </span>
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+      {open ? (
+        <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-[11px] text-ink-2">
+          {names.map((name) => (
+            <li key={name} className="rounded-lg bg-surface px-2 py-1">
+              {name}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1 line-clamp-1 text-[11px] text-muted">{names.join(", ")}</p>
+      )}
+    </div>
   );
 }
 
@@ -193,7 +279,8 @@ export function EventManager({ events }: { events: EventManagerItem[] }) {
   return (
     <div className="flex flex-col gap-6">
       <p className="text-xs text-muted">
-        Create CTC events like Luma — upload a poster, then members register on the public event page.
+        Create CTC events like Luma — poster ({IMAGE_CROP.eventPoster.label}), organizer, guest speaker, description —
+        then track who RSVPs below.
       </p>
       <EventForm />
 
@@ -218,10 +305,10 @@ export function EventManager({ events }: { events: EventManagerItem[] }) {
                     <img
                       src={e.coverImageUrl}
                       alt=""
-                      className="h-16 w-24 shrink-0 rounded-lg border border-line object-cover"
+                      className="aspect-[1080/1350] h-20 w-auto shrink-0 rounded-lg border border-line object-cover"
                     />
                   ) : (
-                    <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-lg border border-dashed border-line bg-cream text-[10px] text-muted">
+                    <div className="flex aspect-[1080/1350] h-20 shrink-0 items-center justify-center rounded-lg border border-dashed border-line bg-cream text-[10px] text-muted">
                       No poster
                     </div>
                   )}
@@ -229,14 +316,25 @@ export function EventManager({ events }: { events: EventManagerItem[] }) {
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="text-sm font-semibold text-ink">{e.title}</div>
-                        <p className="mt-1 text-xs text-ink-2 line-clamp-3">{e.description}</p>
+                        <p className="mt-1 text-xs text-ink-2 line-clamp-2">{e.description}</p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted">
                           <span className="font-mono text-green">{new Date(e.startsAt).toLocaleString()}</span>
                           <span className="inline-flex items-center gap-1">
                             <MapPin size={11} /> {e.location}
                           </span>
+                          {e.organizerName ? (
+                            <span className="inline-flex items-center gap-1">
+                              <UserRound size={11} /> {e.organizerName}
+                            </span>
+                          ) : null}
+                          {e.guestSpeakerName ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Mic2 size={11} /> {e.guestSpeakerName}
+                            </span>
+                          ) : null}
                           {e.capacity ? <span>· Capacity {e.capacity}</span> : null}
                         </div>
+                        <AttendeesPanel names={e.attendeeNames ?? []} />
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         <Link

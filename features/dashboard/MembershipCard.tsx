@@ -103,61 +103,106 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function printHtmlDocument(html: string) {
+function isAppleTouchDevice(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  if (/iPad|iPhone|iPod/i.test(ua)) return true;
+  // iPadOS 13+ reports as MacIntel with touch
+  return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+}
+
+function waitForImages(doc: Document): Promise<void> {
+  const images = Array.from(doc.images);
+  if (images.length === 0) return Promise.resolve();
+
+  return Promise.all(
+    images.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) {
+            resolve();
+            return;
+          }
+          img.addEventListener("load", () => resolve(), { once: true });
+          img.addEventListener("error", () => resolve(), { once: true });
+        }),
+    ),
+  ).then(() => undefined);
+}
+
+/**
+ * iOS Safari often ignores print() from zero-size iframes and may block
+ * auto-print. Open a real tab synchronously (user gesture), then print.
+ * Desktop keeps a hidden iframe flow.
+ */
+async function printHtmlDocument(html: string): Promise<{ ok: boolean; error?: string }> {
+  const ios = isAppleTouchDevice();
+
+  if (ios) {
+    const win = window.open("", "_blank");
+    if (!win) {
+      return {
+        ok: false,
+        error: "Allow pop-ups for this site, then tap Print again.",
+      };
+    }
+
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+
+    await waitForImages(win.document);
+    // Give WebKit a beat to layout before print sheet
+    await new Promise((r) => window.setTimeout(r, 400));
+
+    try {
+      win.focus();
+      win.print();
+    } catch {
+      // Sheet may still be available via Share → Print; leave tab open.
+    }
+
+    return { ok: true };
+  }
+
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
+  // Non-zero size: some engines skip print from 0×0 frames
   iframe.style.cssText =
-    "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none;";
+    "position:fixed;inset:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;z-index:-1;";
   document.body.appendChild(iframe);
 
   const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
-  if (!doc) {
+  const win = iframe.contentWindow;
+  if (!doc || !win) {
     iframe.remove();
-    return;
+    return { ok: false, error: "Could not open the print preview. Please try again." };
   }
 
   doc.open();
   doc.write(html);
   doc.close();
 
-  const win = iframe.contentWindow;
-  if (!win) {
+  await waitForImages(doc);
+  await new Promise((r) => window.setTimeout(r, 250));
+
+  try {
+    win.focus();
+    win.print();
+  } catch {
     iframe.remove();
-    return;
+    return { ok: false, error: "Could not open the print dialog. Please try again." };
   }
 
-  let printed = false;
-  const cleanup = () => window.setTimeout(() => iframe.remove(), 1200);
-  const runPrint = () => {
-    if (printed) return;
-    printed = true;
-    try {
-      win.focus();
-      win.print();
-    } finally {
-      cleanup();
-    }
+  // Remove after the print UI has had time to appear (don’t yank mid-dialog)
+  window.setTimeout(() => iframe.remove(), 60_000);
+  const afterPrint = () => {
+    window.setTimeout(() => iframe.remove(), 800);
+    win.removeEventListener("afterprint", afterPrint);
   };
+  win.addEventListener("afterprint", afterPrint);
 
-  const images = Array.from(doc.images);
-  if (images.length === 0) {
-    window.setTimeout(runPrint, 350);
-    return;
-  }
-
-  let settled = 0;
-  const done = () => {
-    settled += 1;
-    if (settled >= images.length) window.setTimeout(runPrint, 250);
-  };
-  for (const img of images) {
-    if (img.complete) done();
-    else {
-      img.addEventListener("load", done, { once: true });
-      img.addEventListener("error", done, { once: true });
-    }
-  }
-  window.setTimeout(runPrint, 3000);
+  return { ok: true };
 }
 
 function QrBlock({ value, svg }: { value: string; svg: string | null }) {
@@ -192,6 +237,7 @@ export function MembershipCard(props: MembershipCardProps) {
   const theme = CARD_THEMES[themeId];
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
+  const [printMessage, setPrintMessage] = useState<string | null>(null);
   const [themePending, startThemeTransition] = useTransition();
   const [themeMessage, setThemeMessage] = useState<string | null>(null);
 
@@ -272,6 +318,27 @@ export function MembershipCard(props: MembershipCardProps) {
   async function handleDownloadPrint() {
     if (isPreparingPrint) return;
     setIsPreparingPrint(true);
+    setPrintMessage(null);
+
+    // iOS requires window.open during the user gesture — open before any await.
+    const ios = isAppleTouchDevice();
+    const printWin = ios ? window.open("", "_blank") : null;
+    if (ios && !printWin) {
+      setPrintMessage("Allow pop-ups for this site, then tap Print again.");
+      setIsPreparingPrint(false);
+      return;
+    }
+    if (printWin) {
+      try {
+        printWin.document.write(
+          "<!DOCTYPE html><html><head><meta charset='utf-8'/><title>Preparing card…</title></head><body style='font-family:system-ui;padding:24px;color:#334155'>Preparing your membership card…</body></html>",
+        );
+        printWin.document.close();
+      } catch {
+        /* ignore */
+      }
+    }
+
     try {
       let qr = qrSvg;
       if (!qr) {
@@ -289,17 +356,26 @@ export function MembershipCard(props: MembershipCardProps) {
         : `<div class="photo-fallback">${escapeHtml(initials || "CTC")}</div>`;
       const sigName = escapeHtml(props.fullName.split(" ").slice(0, 2).join(" "));
       const qrHtml = qr ?? `<div class="qr-fallback">${escapeHtml(membershipId)}</div>`;
+      const iosHint = ios
+        ? `<p class="ios-hint">If the print sheet doesn’t appear, tap the Share button, then choose <strong>Print</strong>.</p>
+<button type="button" class="ios-print-btn" onclick="window.print()">Print card</button>`
+        : "";
 
       const html = `<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>CTC Membership Card — ${escapeHtml(membershipId)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet" />
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@600;700&display=swap');
 @page { size: A4 landscape; margin: 10mm; }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:#f4f6f9;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;margin:0}
+body{font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0}
+.ios-hint{max-width:170mm;margin:0 auto 3mm;padding:0 6mm;font-size:12px;line-height:1.4;color:#475569;text-align:center}
+.ios-print-btn{display:block;margin:0 auto 6mm;padding:10px 18px;border:0;border-radius:12px;background:#0B1B3A;color:#fff;font-size:14px;font-weight:700}
 .card-col{width:100%;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3mm;padding:6mm;page-break-after:always;break-after:page}
 .card-col:last-child{page-break-after:auto;break-after:auto}
 .side-label{font-size:2.6mm;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#64748b}
@@ -333,9 +409,15 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;margin:0}
 .back-foot{margin-top:auto;padding-top:2.5mm;display:flex;justify-content:space-between;align-items:flex-end;gap:4mm;border-top:.3mm solid ${theme.accent}44}
 .sig{font-family:'Caveat',cursive;font-size:5.5mm;margin-top:.6mm;transform:rotate(-2deg);color:${theme.accent}}
 .sig-line{width:30mm;height:.3mm;background:${theme.accent}88;margin-top:.6mm}
-.mono{font-family:'JetBrains Mono',monospace}
-@media print{html,body{background:#fff!important}.card-col{min-height:0;height:100vh;padding:0}.face{box-shadow:none}}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+@media print{
+  html,body{background:#fff!important}
+  .ios-hint,.ios-print-btn{display:none!important}
+  .card-col{min-height:0;height:100vh;padding:0}
+  .face{box-shadow:none}
+}
 </style></head><body>
+  ${iosHint}
   <div class="card-col">
     <div class="side-label">Front</div>
     <div class="face">
@@ -405,7 +487,29 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;margin:0}
   </div>
 </body></html>`;
 
-      printHtmlDocument(html);
+      if (printWin) {
+        printWin.document.open();
+        printWin.document.write(html);
+        printWin.document.close();
+        await waitForImages(printWin.document);
+        await new Promise((r) => window.setTimeout(r, 400));
+        try {
+          printWin.focus();
+          printWin.print();
+        } catch {
+          /* Share → Print fallback in the opened tab */
+        }
+        setPrintMessage("Card opened in a new tab. Use Print, or Share → Print on iPhone.");
+        window.setTimeout(() => setPrintMessage(null), 6000);
+      } else {
+        const result = await printHtmlDocument(html);
+        if (!result.ok) {
+          setPrintMessage(result.error ?? "Could not print your card. Please try again.");
+        }
+      }
+    } catch {
+      printWin?.close();
+      setPrintMessage("Could not prepare your card for printing. Please try again.");
     } finally {
       setIsPreparingPrint(false);
     }
@@ -442,6 +546,11 @@ body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;margin:0}
           </button>
         )}
       </div>
+      {printMessage ? (
+        <p className="text-xs font-medium text-sky" role="status">
+          {printMessage}
+        </p>
+      ) : null}
 
       {/* Recolor — owner only (preview still allows local theme peek without saving) */}
       {!props.preview && (

@@ -8,6 +8,8 @@ export interface ClubEvent {
   location: string;
   capacity: number | null;
   coverImageUrl: string | null;
+  organizerName: string | null;
+  guestSpeakerName: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

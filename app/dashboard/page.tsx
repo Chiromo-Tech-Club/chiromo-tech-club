@@ -1,7 +1,8 @@
 import { Users, CalendarCheck, FolderKanban, Megaphone as MegaphoneIcon } from "lucide-react";
-import { desc, gte, isNull, sql } from "drizzle-orm";
+import { desc, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/drizzle/client";
 import { members, events, projects, announcements } from "@/lib/drizzle/schema";
+import { listClubEvents, toUpcomingWidgetItem } from "@/lib/events/queries";
 import { getCurrentMember } from "@/lib/supabase/get-current-member";
 import { getCurrentRole } from "@/lib/supabase/auth-helpers";
 import { WelcomeCard } from "@/features/dashboard/WelcomeCard";
@@ -16,7 +17,6 @@ import { ROUTES } from "@/constants/routes";
 
 async function getOverviewData() {
   const db = getDb();
-  const now = new Date();
 
   const [memberCountRow] = await db
     .select({ count: sql<number>`count(*)` })
@@ -33,12 +33,8 @@ async function getOverviewData() {
     .from(projects)
     .where(isNull(projects.deletedAt));
 
-  const upcomingEvents = await db
-    .select({ id: events.id, title: events.title, startsAt: events.startsAt, location: events.location })
-    .from(events)
-    .where(gte(events.startsAt, now))
-    .orderBy(events.startsAt)
-    .limit(3);
+  const upcomingRows = await listClubEvents({ scope: "upcoming", limit: 3 });
+  const upcomingEvents: UpcomingEventItem[] = upcomingRows.map(toUpcomingWidgetItem);
 
   const recentAnnouncements = await db
     .select({
@@ -58,12 +54,7 @@ async function getOverviewData() {
     memberCount: Number(memberCountRow?.count ?? 0),
     eventCount: Number(eventCountRow?.count ?? 0),
     projectCount: Number(projectCountRow?.count ?? 0),
-    upcomingEvents: upcomingEvents.map<UpcomingEventItem>((e) => ({
-      id: e.id,
-      title: e.title,
-      startsAt: e.startsAt.toISOString(),
-      location: e.location,
-    })),
+    upcomingEvents,
     recentAnnouncements: recentAnnouncements.map<AnnouncementItem>((a) => ({
       id: a.id,
       title: a.title,

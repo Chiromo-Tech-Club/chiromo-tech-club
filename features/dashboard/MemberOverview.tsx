@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import Link from "next/link";
 import { 
   Trophy, 
@@ -10,7 +10,8 @@ import {
   Code2
 } from "lucide-react";
 import { getDb } from "@/lib/drizzle/client";
-import { events, eventRegistrations, projects, announcements, members } from "@/lib/drizzle/schema";
+import { eventRegistrations, projects, announcements, members } from "@/lib/drizzle/schema";
+import { listClubEvents, toUpcomingWidgetItem } from "@/lib/events/queries";
 import { academyUserProgress, academyQuests, academyUserBadges, academyBadges } from "@/lib/drizzle/schema.academy";
 import type { Member } from "@/types/member";
 import { WelcomeCard } from "@/features/dashboard/WelcomeCard";
@@ -24,15 +25,10 @@ import { ROUTES } from "@/constants/routes";
 
 async function getMemberOverviewData(member: Member) {
   const db = getDb();
-  const now = new Date();
 
-  // 1. Upcoming events
-  const upcomingEvents = await db
-    .select({ id: events.id, title: events.title, startsAt: events.startsAt, location: events.location })
-    .from(events)
-    .where(gte(events.startsAt, now))
-    .orderBy(events.startsAt)
-    .limit(5);
+  // 1. Upcoming events — same DB source as /events + Event Manager
+  const upcomingRows = await listClubEvents({ scope: "upcoming", limit: 5 });
+  const upcomingEvents: UpcomingEventItem[] = upcomingRows.map(toUpcomingWidgetItem);
 
   const myRegistrations = await db
     .select({ eventId: eventRegistrations.eventId })
@@ -170,12 +166,7 @@ async function getMemberOverviewData(member: Member) {
   }
 
   return {
-    upcomingEvents: upcomingEvents.map<UpcomingEventItem>((e) => ({
-      id: e.id,
-      title: e.title,
-      startsAt: e.startsAt.toISOString(),
-      location: e.location,
-    })),
+    upcomingEvents,
     registeredEventIds: myRegistrations.map((r) => r.eventId),
     communityProjects: communityProjects as CommunityProjectItem[],
     recentAnnouncements: recentAnnouncements.map<AnnouncementItem>((a) => ({
@@ -388,7 +379,11 @@ export async function MemberOverview({ member }: { member: Member }) {
       {/* Communities & Events */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <MyCommunitiesWidget communitySlugs={member.communitySlugs} />
-        <UpcomingEventsWidget events={data.upcomingEvents} registeredEventIds={data.registeredEventIds} />
+        <UpcomingEventsWidget
+          events={data.upcomingEvents}
+          registeredEventIds={data.registeredEventIds}
+          canRsvp
+        />
       </div>
 
       {/* Projects & Announcements */}
