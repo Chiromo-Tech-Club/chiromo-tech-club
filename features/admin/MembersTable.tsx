@@ -27,7 +27,7 @@ import {
   DollarSign,
   Phone,
   Mail,
-  Github,
+  Code2,
   Layers,
   IdCard,
   Users,
@@ -249,7 +249,7 @@ function MemberProfileDetails({ m }: { m: ExtendedMemberRow }) {
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-sky hover:underline"
               >
-                <Github size={13} /> {m.githubHandle}
+                <Code2 size={13} /> {m.githubHandle}
               </a>
             </dd>
           </div>
