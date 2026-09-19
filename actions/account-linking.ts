@@ -10,7 +10,7 @@ import {
   memberCommunities,
   eventRegistrations,
 } from "@/lib/drizzle/schema";
-import { getAuthUserId } from "@/lib/supabase/auth-helpers";
+import { getAuthUserId, getCurrentRole, getCurrentExecTitle } from "@/lib/supabase/auth-helpers";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   maskEmail,
@@ -125,6 +125,47 @@ export async function mergeMemberAccounts(input: {
     return { success: false, error: "You can only merge accounts that belong to you." };
   }
 
+  return executeMemberMerge(primaryMemberId, secondaryMemberId);
+}
+
+/**
+ * Executive / admin merge: combine duplicate same-person records (e.g. two
+ * emails for Shirlyn) so the club only counts one member.
+ */
+export async function mergeMemberAccountsAsExec(input: {
+  primaryMemberId: string;
+  secondaryMemberId: string;
+}): Promise<ActionResult<{ primaryEmail: string }>> {
+  const role = await getCurrentRole();
+  if (role !== "admin" && role !== "exec") {
+    return { success: false, error: "Executive or Admin access required." };
+  }
+  if (role === "exec") {
+    const title = await getCurrentExecTitle();
+    const allowed =
+      title === "patron" ||
+      title === "chairperson" ||
+      title === "vice_chairperson" ||
+      title === "secretary_general" ||
+      title === "treasurer" ||
+      title === "membership_officer" ||
+      title === "training_coordinator" ||
+      title === "corporate_affairs";
+    if (!allowed) return { success: false, error: "Executive or Admin access required." };
+  }
+
+  const { primaryMemberId, secondaryMemberId } = input;
+  if (primaryMemberId === secondaryMemberId) {
+    return { success: false, error: "Pick two different emails." };
+  }
+
+  return executeMemberMerge(primaryMemberId, secondaryMemberId);
+}
+
+async function executeMemberMerge(
+  primaryMemberId: string,
+  secondaryMemberId: string,
+): Promise<ActionResult<{ primaryEmail: string }>> {
   await ensureSchema();
   const db = getDb();
 
@@ -172,17 +213,47 @@ export async function mergeMemberAccounts(input: {
         .onConflictDoNothing();
     }
 
+    // Prefer richer profile fields from whichever row has them
+    const profilePatch = {
+      phoneNumber: primary.phoneNumber || secondary.phoneNumber,
+      studentId: primary.studentId || secondary.studentId,
+      campus: primary.campus || secondary.campus,
+      course: primary.course || secondary.course,
+      yearOfStudy: primary.yearOfStudy || secondary.yearOfStudy,
+      bio: primary.bio || secondary.bio,
+      githubHandle: primary.githubHandle || secondary.githubHandle,
+      avatarUrl: primary.avatarUrl || secondary.avatarUrl,
+      experienceLevel: primary.experienceLevel || secondary.experienceLevel,
+      learningGoals: primary.learningGoals || secondary.learningGoals,
+      institutionName: primary.institutionName || secondary.institutionName,
+      department: primary.department || secondary.department,
+      mpesaPhoneNumber: primary.mpesaPhoneNumber || secondary.mpesaPhoneNumber,
+    };
+
     const primaryPaid = primary.feeAmountPaid ?? 0;
     const secondaryPaid = secondary.feeAmountPaid ?? 0;
+    // Keep the higher payment; if equal, keep primary's M-Pesa but note both were paid
     const feePatch =
       secondaryPaid > primaryPaid
         ? {
             feeAmountPaid: secondaryPaid,
             membershipFeeStatus: secondary.membershipFeeStatus,
             mpesaReference: secondary.mpesaReference ?? primary.mpesaReference,
-            mpesaPhoneNumber: secondary.mpesaPhoneNumber ?? primary.mpesaPhoneNumber,
           }
-        : {};
+        : primaryPaid === 0 && secondaryPaid === 0
+          ? {}
+          : {
+              feeAmountPaid: Math.max(primaryPaid, secondaryPaid),
+              membershipFeeStatus:
+                primary.membershipFeeStatus === "fully_paid" ||
+                secondary.membershipFeeStatus === "fully_paid"
+                  ? "fully_paid"
+                  : primary.membershipFeeStatus === "deposit_paid" ||
+                      secondary.membershipFeeStatus === "deposit_paid"
+                    ? "deposit_paid"
+                    : primary.membershipFeeStatus,
+              mpesaReference: primary.mpesaReference || secondary.mpesaReference,
+            };
 
     const membershipStatus =
       primary.membershipStatus === "approved" || secondary.membershipStatus === "approved"
@@ -193,15 +264,28 @@ export async function mergeMemberAccounts(input: {
 
     let role = primary.role;
     if (secondary.role === "admin") role = "admin";
-    else if (secondary.role === "exec" && primary.role !== "admin") role = "exec";
-    else if (membershipStatus === "approved" && primary.role === "visitor") role = "member";
+    else if (primary.role === "admin") role = "admin";
+    else if (secondary.role === "exec" || primary.role === "exec") {
+      role = primary.role === "exec" ? primary.role : secondary.role;
+    } else if (membershipStatus === "approved") {
+      role = primary.role === "member" || secondary.role === "member" ? "member" : "member";
+    }
+
+    const execTitle =
+      primary.role === "exec" || primary.role === "admin"
+        ? primary.execTitle
+        : secondary.role === "exec" || secondary.role === "admin"
+          ? secondary.execTitle
+          : primary.execTitle;
 
     await db
       .update(members)
       .set({
+        ...profilePatch,
         ...feePatch,
         membershipStatus,
         role,
+        execTitle: role === "exec" || role === "admin" ? execTitle : null,
         updatedAt: new Date(),
       })
       .where(eq(members.id, primaryMemberId));
@@ -251,7 +335,7 @@ export async function mergeMemberAccounts(input: {
     revalidatePath(ROUTES.adminMembers);
     return { success: true, data: { primaryEmail: primary.email } };
   } catch (err) {
-    console.error("mergeMemberAccounts failed:", err);
+    console.error("executeMemberMerge failed:", err);
     return { success: false, error: "Could not merge accounts. Please try again." };
   }
 }

@@ -8,6 +8,8 @@ import {
   updateMemberPaymentStatus,
 } from "@/actions/admin/members";
 import { scheduleMemberDeletion, cancelMemberDeletion } from "@/actions/deactivation";
+import { mergeMemberAccountsAsExec } from "@/actions/account-linking";
+import { normalizeMemberName } from "@/lib/membership/name-match";
 import { ROLES, ROLE_LABELS } from "@/constants/roles";
 import { EXEC_TITLES, EXEC_TITLE_LABELS, isExecTitle, type ExecTitle } from "@/types/exec-title";
 import { MEMBER_STATUS_LABELS } from "@/types/member-status";
@@ -32,6 +34,7 @@ import {
   Users,
   Trash2,
   RotateCcw,
+  GitMerge,
 } from "lucide-react";
 
 export interface ExtendedMemberRow {
@@ -327,10 +330,29 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
   const [, startTransition] = useTransition();
 
   const pendingCount = members.filter((m) => m.status === "pending").length;
-  const approvedCount = members.filter((m) => m.status === "approved").length;
+  // Unique people by case-insensitive name — same person with 2 emails counts as 1
+  const uniqueApprovedNames = new Set(
+    members.filter((m) => m.status === "approved").map((m) => normalizeMemberName(m.fullName)),
+  );
+  const approvedCount = uniqueApprovedNames.size;
+  const approvedRecordCount = members.filter((m) => m.status === "approved").length;
+  const uniquePeopleCount = new Set(members.map((m) => normalizeMemberName(m.fullName))).size;
   const chiromoCount = members.filter((m) => m.isChiromo || (m.campus && m.campus.toLowerCase().includes("chiromo"))).length;
   const totalRevenue = members.reduce((sum, m) => sum + (m.feeAmountPaid ?? 0), 0);
   const googleCount = members.filter((m) => m.authProvider === "google").length;
+
+  /** Groups of 2+ roster rows that share the same normalized name (duplicates to combine). */
+  const duplicateNameGroups = (() => {
+    const map = new Map<string, ExtendedMemberRow[]>();
+    for (const m of members) {
+      const key = normalizeMemberName(m.fullName);
+      if (!key) continue;
+      const list = map.get(key) ?? [];
+      list.push(m);
+      map.set(key, list);
+    }
+    return [...map.values()].filter((g) => g.length > 1);
+  })();
 
   const filteredMembers = members.filter((m) => {
     if (activeTab === "pending" && m.status !== "pending") return false;
@@ -399,6 +421,20 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
     });
   };
 
+  const handleCombineDuplicates = (primaryMemberId: string, secondaryMemberIds: string[]) => {
+    setActionInProgress(primaryMemberId);
+    startTransition(async () => {
+      for (const secondaryMemberId of secondaryMemberIds) {
+        const res = await mergeMemberAccountsAsExec({ primaryMemberId, secondaryMemberId });
+        if (!res.success) {
+          window.alert(res.error ?? "Could not combine accounts.");
+          break;
+        }
+      }
+      setActionInProgress(null);
+    });
+  };
+
   const handlePaymentUpdate = (
     memberId: string,
     status: PaymentStatus,
@@ -441,7 +477,11 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
             <CheckCircle2 size={14} className="shrink-0 text-green sm:h-4 sm:w-4" />
           </div>
           <p className="mt-1.5 font-display text-xl font-extrabold text-ink sm:mt-2 sm:text-2xl">{approvedCount}</p>
-          <span className="text-[10px] text-muted sm:text-[11px]">Fully approved</span>
+          <span className="text-[10px] text-muted sm:text-[11px]">
+            {approvedRecordCount > approvedCount
+              ? `${approvedRecordCount} records · ${approvedCount} unique people`
+              : "Unique approved people"}
+          </span>
         </div>
 
         <div className="rounded-2xl border border-line/70 bg-surface/90 p-3 shadow-sm backdrop-blur-md sm:p-4">
@@ -488,7 +528,10 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
             <Users size={14} className="shrink-0" />
             <span className="sm:hidden">All Members</span>
             <span className="hidden sm:inline">All Members &amp; Fee Updates</span>
-            <span className="text-[11px] opacity-70">({members.length})</span>
+            <span className="text-[11px] opacity-70">
+              ({uniquePeopleCount} people
+              {members.length !== uniquePeopleCount ? ` · ${members.length} records` : ""})
+            </span>
           </button>
         </div>
 
@@ -502,6 +545,19 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
           />
         </div>
       </div>
+
+      {duplicateNameGroups.length > 0 && activeTab === "all" && (
+        <div className="space-y-3">
+          {duplicateNameGroups.map((group) => (
+            <DuplicateCombineCard
+              key={normalizeMemberName(group[0].fullName)}
+              group={group}
+              busy={group.some((m) => actionInProgress === m.id)}
+              onCombine={handleCombineDuplicates}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
         <span className="hidden text-xs font-semibold text-muted sm:mr-1 sm:inline">Filter:</span>
@@ -793,6 +849,114 @@ function RosterMemberCard({
               </Button>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Shown when 2+ roster rows share the same name (case-insensitive).
+ * Executive picks the primary email; others fold into that one person so
+ * member counts stay accurate (one person = one member).
+ */
+function DuplicateCombineCard({
+  group,
+  busy,
+  onCombine,
+}: {
+  group: ExtendedMemberRow[];
+  busy: boolean;
+  onCombine: (primaryMemberId: string, secondaryMemberIds: string[]) => void;
+}) {
+  // Prefer the richer / approved / member-role account as default primary
+  const suggested =
+    [...group].sort((a, b) => {
+      const score = (m: ExtendedMemberRow) =>
+        (m.status === "approved" ? 4 : 0) +
+        (m.role === "member" || m.role === "exec" || m.role === "admin" ? 3 : 0) +
+        (m.communitySlugs?.length ? 2 : 0) +
+        (m.phoneNumber ? 1 : 0) +
+        (m.feeAmountPaid ?? 0) / 100;
+      return score(b) - score(a);
+    })[0]?.id ?? group[0].id;
+
+  const [primaryId, setPrimaryId] = useState(suggested);
+
+  return (
+    <div className="rounded-2xl border border-amber-300/80 bg-amber-50/70 p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-200/60 text-amber-900">
+          <GitMerge size={18} />
+        </div>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-800">
+              Same person · {group.length} accounts
+            </p>
+            <h3 className="font-display text-base font-bold text-ink">{group[0].fullName}</h3>
+            <p className="mt-1 text-xs text-ink-2">
+              These emails belong to one member. Combine them into a single dashboard so they count as{" "}
+              <span className="font-semibold text-ink">1 person</span> in membership numbers — not{" "}
+              {group.length}.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted">
+              Which email stays primary?
+            </p>
+            {group.map((m) => (
+              <label
+                key={m.id}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors",
+                  primaryId === m.id
+                    ? "border-navy bg-surface"
+                    : "border-line/70 bg-surface/70 hover:border-sky/40",
+                )}
+              >
+                <input
+                  type="radio"
+                  name={`primary-${normalizeMemberName(m.fullName)}`}
+                  className="mt-1"
+                  checked={primaryId === m.id}
+                  onChange={() => setPrimaryId(m.id)}
+                />
+                <div className="min-w-0">
+                  <p className="break-all text-sm font-semibold text-ink">{m.email}</p>
+                  <p className="text-[11px] text-muted">
+                    {MEMBER_STATUS_LABELS[m.status] ?? m.status}
+                    {m.phoneNumber ? ` · ${m.phoneNumber}` : ""}
+                    {m.feeAmountPaid ? ` · KES ${m.feeAmountPaid}` : ""}
+                    {m.communitySlugs?.length ? ` · ${m.communitySlugs.length} tracks` : ""}
+                  </p>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            disabled={busy || !primaryId}
+            className="inline-flex items-center gap-1.5 rounded-xl text-xs"
+            onClick={() => {
+              const secondaries = group.filter((m) => m.id !== primaryId).map((m) => m.id);
+              if (
+                !window.confirm(
+                  `Combine into one member? Primary login will be the selected email. The other account(s) close and fold into that one dashboard.`,
+                )
+              ) {
+                return;
+              }
+              onCombine(primaryId, secondaries);
+            }}
+          >
+            <GitMerge size={14} />
+            {busy ? "Combining…" : "Combine into one member"}
+          </Button>
         </div>
       </div>
     </div>
