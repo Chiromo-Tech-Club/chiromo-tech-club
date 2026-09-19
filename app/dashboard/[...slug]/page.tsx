@@ -970,6 +970,8 @@ export default async function DashboardCatchAllPage({ params }: DashboardCatchAl
           feeAmountPaid: members.feeAmountPaid,
           mpesaReference: members.mpesaReference,
           createdAt: members.createdAt,
+          deactivatedAt: members.deactivatedAt,
+          purgeScheduledAt: members.purgeScheduledAt,
         })
         .from(members)
         .where(isNull(members.deletedAt))
@@ -993,6 +995,8 @@ export default async function DashboardCatchAllPage({ params }: DashboardCatchAl
         feeAmountPaid: row.feeAmountPaid ?? 0,
         communitySlugs: communitiesByMember.get(row.id) ?? [],
         createdAt: row.createdAt ? row.createdAt.toISOString() : undefined,
+        deactivatedAt: row.deactivatedAt ? row.deactivatedAt.toISOString() : null,
+        purgeScheduledAt: row.purgeScheduledAt ? row.purgeScheduledAt.toISOString() : null,
       }));
 
       return (

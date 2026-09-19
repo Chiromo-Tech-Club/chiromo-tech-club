@@ -37,6 +37,10 @@ export interface Member {
   reviewedAt?: string | null;
   reviewNotes?: string | null;
   cardTheme?: string | null;
+  mergedIntoId?: string | null;
+  nameDistinctConfirmed?: boolean;
+  deactivatedAt?: string | null;
+  purgeScheduledAt?: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

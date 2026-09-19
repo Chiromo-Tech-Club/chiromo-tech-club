@@ -49,6 +49,8 @@ async function getMembers(): Promise<ExtendedMemberRow[]> {
       mpesaPhoneNumber: members.mpesaPhoneNumber,
       cardTheme: members.cardTheme,
       createdAt: members.createdAt,
+      deactivatedAt: members.deactivatedAt,
+      purgeScheduledAt: members.purgeScheduledAt,
     })
     .from(members)
     .where(isNull(members.deletedAt))
@@ -72,6 +74,8 @@ async function getMembers(): Promise<ExtendedMemberRow[]> {
     feeAmountPaid: row.feeAmountPaid ?? 0,
     communitySlugs: communitiesByMember.get(row.id) ?? [],
     createdAt: row.createdAt ? row.createdAt.toISOString() : undefined,
+    deactivatedAt: row.deactivatedAt ? row.deactivatedAt.toISOString() : null,
+    purgeScheduledAt: row.purgeScheduledAt ? row.purgeScheduledAt.toISOString() : null,
   }));
 }
 

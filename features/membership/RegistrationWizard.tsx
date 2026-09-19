@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   User, 
@@ -23,6 +23,9 @@ import {
 } from "lucide-react";
 import { COMMUNITIES } from "@/data/communities";
 import { submitClubRegistration } from "@/actions/registration";
+import { findSimilarNamedMembers } from "@/actions/account-linking";
+import { NameMatchModal } from "@/features/membership/NameMatchModal";
+import type { SimilarMemberCandidate } from "@/lib/membership/name-match";
 import { type FullRegistrationInput, OTHER_CAMPUS_LABEL } from "@/lib/validations/registration";
 import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
@@ -85,9 +88,21 @@ export function RegistrationWizard({
     needsClientSignIn?: boolean;
   } | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [nameMatchOpen, setNameMatchOpen] = useState(false);
+  const [nameCandidates, setNameCandidates] = useState<SimilarMemberCandidate[]>([]);
+  const [nameCheckPassed, setNameCheckPassed] = useState(false);
+  const [signedInMemberId, setSignedInMemberId] = useState<string | undefined>(undefined);
 
   const totalSteps = 5;
   const isOtherCampus = formData.campus === OTHER_CAMPUS_LABEL || (!formData.isChiromo && formData.campus.toLowerCase().includes("other"));
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const supabase = getSupabaseBrowserClient();
+    void supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.id) setSignedInMemberId(data.user.id);
+    });
+  }, [isSignedIn]);
 
   const validateStep = (step: number): boolean => {
     const errors: Record<string, string> = {};
@@ -140,12 +155,26 @@ export function RegistrationWizard({
     return Object.keys(errors).length === 0;
   };
 
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      setErrorMessage(null);
-      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
-      window.scrollTo({ top: 120, behavior: "smooth" });
+  const handleNext = async () => {
+    if (!validateStep(currentStep)) return;
+
+    // Step 1: ask about similar names before continuing (case-insensitive)
+    if (currentStep === 1 && !nameCheckPassed) {
+      const res = await findSimilarNamedMembers({
+        fullName: formData.fullName,
+        excludeEmail: formData.email,
+      });
+      if (res.success && res.data && res.data.candidates.length > 0) {
+        setNameCandidates(res.data.candidates);
+        setNameMatchOpen(true);
+        return;
+      }
+      setNameCheckPassed(true);
     }
+
+    setErrorMessage(null);
+    setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+    window.scrollTo({ top: 120, behavior: "smooth" });
   };
 
   const handleBack = () => {
@@ -381,6 +410,31 @@ export function RegistrationWizard({
 
   return (
     <div className="mx-auto max-w-3xl">
+      <NameMatchModal
+        open={nameMatchOpen}
+        mode="register"
+        current={{
+          id: signedInMemberId,
+          fullName: formData.fullName,
+          email: formData.email,
+        }}
+        candidates={nameCandidates}
+        onClose={() => setNameMatchOpen(false)}
+        onDistinct={() => {
+          setNameMatchOpen(false);
+          setNameCheckPassed(true);
+          setErrorMessage(null);
+          setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+          window.scrollTo({ top: 120, behavior: "smooth" });
+        }}
+        onMerged={(primaryEmail) => {
+          setNameMatchOpen(false);
+          setErrorMessage(
+            `Accounts merged. Sign in with your primary email (${primaryEmail}) to open your single dashboard.`,
+          );
+        }}
+      />
+
       {/* Top Progress Tracker */}
       <div className="mb-8 rounded-2xl border border-line/60 bg-surface/80 p-4 shadow-sm backdrop-blur-md sm:p-6">
         <div className="flex items-center justify-between">
@@ -486,7 +540,10 @@ export function RegistrationWizard({
               <label className="mb-1.5 block text-xs font-semibold text-text-3">Full Name (Official)</label>
               <Input
                 value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, fullName: e.target.value });
+                  setNameCheckPassed(false);
+                }}
                 placeholder="e.g. Victor Ndambuki"
                 className="rounded-xl"
               />

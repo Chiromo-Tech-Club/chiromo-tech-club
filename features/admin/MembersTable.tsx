@@ -7,6 +7,7 @@ import {
   rejectMember,
   updateMemberPaymentStatus,
 } from "@/actions/admin/members";
+import { scheduleMemberDeletion, cancelMemberDeletion } from "@/actions/deactivation";
 import { ROLES, ROLE_LABELS } from "@/constants/roles";
 import { EXEC_TITLES, EXEC_TITLE_LABELS, isExecTitle, type ExecTitle } from "@/types/exec-title";
 import { MEMBER_STATUS_LABELS } from "@/types/member-status";
@@ -16,6 +17,7 @@ import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
 import { cn } from "@/lib/utils/cn";
 import { getCommunityBySlug } from "@/utils/get-community-slug";
+import { DEACTIVATION_GRACE_DAYS, daysUntilPurge } from "@/lib/membership/constants";
 import {
   CheckCircle2,
   XCircle,
@@ -28,6 +30,8 @@ import {
   Mail,
   Layers,
   Users,
+  Trash2,
+  RotateCcw,
 } from "lucide-react";
 
 export interface ExtendedMemberRow {
@@ -59,6 +63,8 @@ export interface ExtendedMemberRow {
   cardTheme?: string | null;
   communitySlugs?: string[];
   createdAt?: string;
+  deactivatedAt?: string | null;
+  purgeScheduledAt?: string | null;
 }
 
 type PaymentStatus = "fully_paid" | "deposit_paid";
@@ -147,6 +153,14 @@ function MemberProfileDetails({ m }: { m: ExtendedMemberRow }) {
             >
               {MEMBER_STATUS_LABELS[m.status] ?? m.status}
             </span>
+            {m.deactivatedAt && (
+              <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
+                Deactivating
+                {m.purgeScheduledAt
+                  ? ` · ${daysUntilPurge(m.purgeScheduledAt) ?? DEACTIVATION_GRACE_DAYS}d left`
+                  : ""}
+              </span>
+            )}
           </div>
           {m.username && <p className="font-mono text-xs text-muted">@{m.username}</p>}
           {m.bio ? (
@@ -362,6 +376,29 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
     });
   };
 
+  const handleDelete = (memberId: string) => {
+    if (
+      !window.confirm(
+        `Schedule deletion of this member? They will have ${DEACTIVATION_GRACE_DAYS} days to restore. Event registrations and fee records are kept; login access is removed after the grace period.`,
+      )
+    ) {
+      return;
+    }
+    setActionInProgress(memberId);
+    startTransition(async () => {
+      await scheduleMemberDeletion(memberId, "Deleted by executive from membership roster");
+      setActionInProgress(null);
+    });
+  };
+
+  const handleCancelDelete = (memberId: string) => {
+    setActionInProgress(memberId);
+    startTransition(async () => {
+      await cancelMemberDeletion(memberId);
+      setActionInProgress(null);
+    });
+  };
+
   const handlePaymentUpdate = (
     memberId: string,
     status: PaymentStatus,
@@ -532,6 +569,10 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
                 member={m}
                 busy={actionInProgress === m.id}
                 onPayment={(status, amount, mpesa) => handlePaymentUpdate(m.id, status, amount, mpesa)}
+                onApprove={() => handleApprove(m.id)}
+                onReject={() => handleReject(m.id)}
+                onDelete={() => handleDelete(m.id)}
+                onCancelDelete={() => handleCancelDelete(m.id)}
               />
             ))}
           </div>
@@ -613,10 +654,18 @@ function RosterMemberCard({
   member: m,
   busy,
   onPayment,
+  onApprove,
+  onReject,
+  onDelete,
+  onCancelDelete,
 }: {
   member: ExtendedMemberRow;
   busy: boolean;
   onPayment: (status: PaymentStatus, amount: number, mpesaRef?: string) => void;
+  onApprove: () => void;
+  onReject: () => void;
+  onDelete: () => void;
+  onCancelDelete: () => void;
 }) {
   const { role, setRole, execTitle, setExecTitle, isPending, saved, dirty, save } = useMemberRoleEditor(m);
 
@@ -626,6 +675,54 @@ function RosterMemberCard({
         <MemberProfileDetails m={m} />
         <div className="flex w-full flex-col gap-3 border-t border-line/60 pt-4 lg:w-72 lg:shrink-0 lg:border-t-0 lg:pt-0">
           <PaymentControls member={m} busy={busy || isPending} onPayment={onPayment} />
+
+          <div className="space-y-2 rounded-xl border border-line/70 bg-cream/30 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-muted">Membership status</p>
+            {m.status === "approved" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy || isPending}
+                onClick={onReject}
+                className="flex w-full items-center justify-center gap-1 rounded-xl border-red-200 text-xs text-red-600 hover:bg-red-50"
+              >
+                <XCircle size={14} /> Reject approved member
+              </Button>
+            )}
+            {m.status === "rejected" && (
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={busy || isPending}
+                onClick={onApprove}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-green px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-green/90"
+              >
+                <CheckCircle2 size={15} /> Approve rejected member
+              </Button>
+            )}
+            {m.status === "pending" && (
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy || isPending}
+                  onClick={onReject}
+                  className="flex w-full items-center justify-center gap-1 rounded-xl border-red-200 text-xs text-red-600 hover:bg-red-50"
+                >
+                  <XCircle size={14} /> Reject
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  disabled={busy || isPending}
+                  onClick={onApprove}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-green text-xs font-bold text-white"
+                >
+                  <CheckCircle2 size={15} /> Approve
+                </Button>
+              </div>
+            )}
+          </div>
 
           <div className="space-y-2 rounded-xl border border-line/70 bg-cream/30 p-3">
             <p className="text-[10px] font-bold uppercase tracking-wide text-muted">Club role &amp; exec seat</p>
@@ -666,6 +763,35 @@ function RosterMemberCard({
             >
               {isPending ? "Saving…" : saved ? "Saved" : "Save Role"}
             </Button>
+          </div>
+
+          <div className="space-y-2 rounded-xl border border-red-200/60 bg-red-50/40 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-red-700/80">Remove access</p>
+            <p className="text-[11px] leading-relaxed text-muted">
+              Schedules a {DEACTIVATION_GRACE_DAYS}-day deletion. Fees and event registrations stay; personal
+              login details are cleared after the grace period so the email can be reused.
+            </p>
+            {m.deactivatedAt ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy || isPending}
+                onClick={onCancelDelete}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl text-xs"
+              >
+                <RotateCcw size={14} /> Cancel scheduled deletion
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy || isPending}
+                onClick={onDelete}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border-red-300 text-xs text-red-700 hover:bg-red-100"
+              >
+                <Trash2 size={14} /> Delete member…
+              </Button>
+            )}
           </div>
         </div>
       </div>

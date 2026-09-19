@@ -3,6 +3,8 @@ import { getCurrentRole, getCurrentExecTitle } from "@/lib/supabase/auth-helpers
 import { getCurrentMember } from "@/lib/supabase/get-current-member";
 import { UserMenu } from "@/components/dashboard/UserMenu";
 import { ExecDashboardShell } from "@/components/dashboard/ExecDashboard";
+import { DashboardAccessGate } from "@/components/dashboard/DashboardAccessGate";
+import { purgeExpiredDeactivations } from "@/actions/deactivation";
 import { ROUTES } from "@/constants/routes";
 
 export const metadata = { title: "Dashboard" };
@@ -11,11 +13,18 @@ export const metadata = { title: "Dashboard" };
  * No redirects to /register. Signed-in users with a profile see the dashboard.
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  try {
+    await purgeExpiredDeactivations();
+  } catch {
+    // non-fatal
+  }
+
   const role = await getCurrentRole();
   const isExecOrAdmin = role === "exec" || role === "admin";
   const isAdmin = role === "admin";
 
   const member = await getCurrentMember();
+  const isDeactivated = Boolean(member?.deactivatedAt);
 
   if (!isExecOrAdmin) {
     return (
@@ -29,7 +38,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
             fullName={member?.fullName ?? "Member"}
           />
         </header>
-        <main className="mx-auto max-w-7xl p-4 sm:p-6 md:p-8">{children}</main>
+        <main className="mx-auto max-w-7xl p-4 sm:p-6 md:p-8">
+          <DashboardAccessGate
+            isDeactivated={isDeactivated}
+            deactivatedAt={member?.deactivatedAt}
+            purgeScheduledAt={member?.purgeScheduledAt}
+          >
+            {children}
+          </DashboardAccessGate>
+        </main>
       </div>
     );
   }
@@ -48,7 +65,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
         },
       }}
     >
-      {children}
+      <DashboardAccessGate
+        isDeactivated={isDeactivated}
+        deactivatedAt={member?.deactivatedAt}
+        purgeScheduledAt={member?.purgeScheduledAt}
+      >
+        {children}
+      </DashboardAccessGate>
     </ExecDashboardShell>
   );
 }

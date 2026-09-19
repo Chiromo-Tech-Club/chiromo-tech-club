@@ -35,11 +35,30 @@ export async function ensureMembersColumns(): Promise<void> {
       ADD COLUMN IF NOT EXISTS "reviewed_by_id" uuid,
       ADD COLUMN IF NOT EXISTS "reviewed_at" timestamp with time zone,
       ADD COLUMN IF NOT EXISTS "review_notes" text,
-      ADD COLUMN IF NOT EXISTS "card_theme" text DEFAULT 'navy_gold'
+      ADD COLUMN IF NOT EXISTS "card_theme" text DEFAULT 'navy_gold',
+      ADD COLUMN IF NOT EXISTS "merged_into_id" uuid,
+      ADD COLUMN IF NOT EXISTS "name_distinct_confirmed" boolean DEFAULT false,
+      ADD COLUMN IF NOT EXISTS "deactivated_at" timestamp with time zone,
+      ADD COLUMN IF NOT EXISTS "purge_scheduled_at" timestamp with time zone
   `);
 
   await db.execute(sql`
     CREATE UNIQUE INDEX IF NOT EXISTS "members_username_idx" ON "members" ("username")
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "member_emails" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+      "member_id" uuid NOT NULL REFERENCES "members"("id") ON DELETE CASCADE,
+      "email" text NOT NULL,
+      "is_primary" boolean DEFAULT false NOT NULL,
+      "linked_auth_user_id" uuid,
+      "created_at" timestamp with time zone DEFAULT now() NOT NULL
+    )
+  `);
+
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS "member_emails_email_idx" ON "member_emails" ("email")
   `);
 
   ensured = true;

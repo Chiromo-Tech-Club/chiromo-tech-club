@@ -98,6 +98,19 @@ export const members = pgTable(
     reviewNotes: text("review_notes"),
     /** Preferred membership-card color theme id (see card-theme.ts). */
     cardTheme: text("card_theme").default("navy_gold"),
+    /**
+     * When set, this auth account was merged into another member's dashboard.
+     * Login with this email should direct the user to the primary account.
+     */
+    mergedIntoId: uuid("merged_into_id"),
+    /**
+     * User confirmed a similar-named account is NOT them — skip re-prompting
+     * for that identity pair during registration / login.
+     */
+    nameDistinctConfirmed: boolean("name_distinct_confirmed").default(false),
+    /** Twitter-style deactivation: access revoked, purge after grace period. */
+    deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
+    purgeScheduledAt: timestamp("purge_scheduled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
@@ -107,6 +120,27 @@ export const members = pgTable(
     uniqueIndex("members_email_idx").on(table.email),
     uniqueIndex("members_username_idx").on(table.username),
   ],
+);
+
+/**
+ * Extra emails linked to one membership dashboard (primary + secondaries).
+ * After a merge, the non-primary email is stored here so both emails map
+ * to a single member profile without opening two dashboards.
+ */
+export const memberEmails = pgTable(
+  "member_emails",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    memberId: uuid("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    /** Auth user that originally owned this email before merge (if any). */
+    linkedAuthUserId: uuid("linked_auth_user_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("member_emails_email_idx").on(table.email)],
 );
 
 /** Many-to-many: a member can belong to several communities. */
@@ -540,6 +574,11 @@ export const googleCalendars = pgTable(
 export const membersRelations = relations(members, ({ many }) => ({
   communities: many(memberCommunities),
   eventRegistrations: many(eventRegistrations),
+  emails: many(memberEmails),
+}));
+
+export const memberEmailsRelations = relations(memberEmails, ({ one }) => ({
+  member: one(members, { fields: [memberEmails.memberId], references: [members.id] }),
 }));
 
 export const memberCommunitiesRelations = relations(memberCommunities, ({ one }) => ({

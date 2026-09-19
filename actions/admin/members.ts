@@ -105,6 +105,7 @@ export async function approveMember(memberId: string, notes?: string): Promise<A
 
 /**
  * Rejects a membership application with an optional reason.
+ * Also used to flip an already-approved member back to rejected.
  */
 export async function rejectMember(memberId: string, reason?: string): Promise<ActionResult> {
   const isAllowed = await canManageApprovals();
@@ -133,6 +134,13 @@ export async function rejectMember(memberId: string, reason?: string): Promise<A
     console.error("rejectMember failed:", err);
     return { success: false, error: "Could not reject member." };
   }
+}
+
+/**
+ * Re-approve a previously rejected (or any non-approved) member from the roster.
+ */
+export async function reapproveMember(memberId: string, notes?: string): Promise<ActionResult> {
+  return approveMember(memberId, notes || "Re-approved from member roster");
 }
 
 /**
