@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { 
   User, 
@@ -19,11 +19,13 @@ import {
   Check,
   MessageCircle,
   ExternalLink,
-  ArrowRight
+  ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { COMMUNITIES } from "@/data/communities";
 import { submitClubRegistration } from "@/actions/registration";
 import { findSimilarNamedMembers } from "@/actions/account-linking";
+import { checkEmailAvailability } from "@/actions/check-email-availability";
 import { NameMatchModal } from "@/features/membership/NameMatchModal";
 import type { SimilarMemberCandidate } from "@/lib/membership/name-match";
 import { type FullRegistrationInput, OTHER_CAMPUS_LABEL } from "@/lib/validations/registration";
@@ -33,6 +35,9 @@ import { ROUTES } from "@/constants/routes";
 import { SITE_CONFIG } from "@/config/site";
 import { friendlyAuthError } from "@/lib/utils/friendly-error";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils/cn";
+
+type EmailCheckStatus = "idle" | "checking" | "available" | "unavailable" | "invalid";
 
 const CAMPUS_OPTIONS = [
   { id: "chiromo", label: "Chiromo Campus ( / Science Hub)", isChiromo: true },
@@ -92,6 +97,9 @@ export function RegistrationWizard({
   const [nameCandidates, setNameCandidates] = useState<SimilarMemberCandidate[]>([]);
   const [nameCheckPassed, setNameCheckPassed] = useState(false);
   const [signedInMemberId, setSignedInMemberId] = useState<string | undefined>(undefined);
+  const [emailCheck, setEmailCheck] = useState<EmailCheckStatus>("idle");
+  const [emailCheckMessage, setEmailCheckMessage] = useState<string | null>(null);
+  const emailCheckSeq = useRef(0);
 
   const totalSteps = 5;
   const isOtherCampus = formData.campus === OTHER_CAMPUS_LABEL || (!formData.isChiromo && formData.campus.toLowerCase().includes("other"));
@@ -104,6 +112,53 @@ export function RegistrationWizard({
     });
   }, [isSignedIn]);
 
+  // Debounced live email check — any domain OK; must not already exist
+  useEffect(() => {
+    if (isSignedIn) {
+      setEmailCheck("idle");
+      setEmailCheckMessage(null);
+      return;
+    }
+
+    const value = formData.email.trim();
+    if (!value) {
+      setEmailCheck("idle");
+      setEmailCheckMessage(null);
+      return;
+    }
+
+    const basicOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    if (!basicOk) {
+      setEmailCheck("invalid");
+      setEmailCheckMessage("Enter a valid email address.");
+      return;
+    }
+
+    setEmailCheck("checking");
+    setEmailCheckMessage(null);
+    const seq = ++emailCheckSeq.current;
+    const timer = window.setTimeout(() => {
+      void checkEmailAvailability(value).then((res) => {
+        if (seq !== emailCheckSeq.current) return;
+        if (res.available) {
+          setEmailCheck("available");
+          setEmailCheckMessage(null);
+          setFieldErrors((prev) => {
+            if (!prev.email) return prev;
+            const next = { ...prev };
+            delete next.email;
+            return next;
+          });
+        } else {
+          setEmailCheck("unavailable");
+          setEmailCheckMessage(res.message ?? "This email cannot be used.");
+        }
+      });
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+  }, [formData.email, isSignedIn]);
+
   const validateStep = (step: number): boolean => {
     const errors: Record<string, string> = {};
 
@@ -113,6 +168,12 @@ export function RegistrationWizard({
       }
       if (!formData.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         errors.email = "Please enter a valid email address.";
+      } else if (!isSignedIn && emailCheck === "unavailable") {
+        errors.email = emailCheckMessage ?? "This email is already registered. Sign in instead.";
+      } else if (!isSignedIn && emailCheck === "checking") {
+        errors.email = "Please wait while we check this email.";
+      } else if (!isSignedIn && emailCheck !== "available" && emailCheck !== "idle") {
+        errors.email = emailCheckMessage ?? "Please enter a valid email address.";
       }
       if (!formData.phoneNumber.trim() || formData.phoneNumber.length < 9) {
         errors.phoneNumber = "Please enter a valid phone number.";
@@ -156,6 +217,13 @@ export function RegistrationWizard({
   };
 
   const handleNext = async () => {
+    if (currentStep === 1 && !isSignedIn && emailCheck === "checking") {
+      setFieldErrors((prev) => ({
+        ...prev,
+        email: "Please wait while we check this email.",
+      }));
+      return;
+    }
     if (!validateStep(currentStep)) return;
 
     // Step 1: ask about similar names before continuing (case-insensitive)
@@ -555,14 +623,45 @@ export function RegistrationWizard({
                 <label className="mb-1.5 block text-xs font-semibold text-text-3 flex items-center gap-1">
                   <Mail size={13} /> Email Address
                 </label>
-                <Input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="name@students.uonbi.ac.ke"
-                  className="rounded-xl"
-                />
-                {fieldErrors.email && <p className="mt-1 text-xs text-red-500">{fieldErrors.email}</p>}
+                <div className="relative">
+                  <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    disabled={isSignedIn}
+                    aria-invalid={
+                      emailCheck === "unavailable" || emailCheck === "invalid" || Boolean(fieldErrors.email)
+                    }
+                    className={cn(
+                      "rounded-xl pr-10 transition-colors",
+                      isSignedIn && "cursor-not-allowed opacity-70",
+                      emailCheck === "available" &&
+                        "border-green focus:border-green ring-1 ring-green/30",
+                      (emailCheck === "unavailable" || emailCheck === "invalid") &&
+                        "border-red-400 focus:border-red-500",
+                    )}
+                  />
+                  {/* Inline status at trailing edge — check / loader only (no X icon) */}
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                    {emailCheck === "checking" && (
+                      <Loader2 size={16} className="animate-spin text-muted" aria-label="Checking email" />
+                    )}
+                    {emailCheck === "available" && (
+                      <CheckCircle2 size={16} className="text-green" aria-label="Email available" />
+                    )}
+                  </span>
+                </div>
+                {emailCheck === "available" && (
+                  <p className="mt-1 text-xs font-medium text-green">Email looks good — available to register.</p>
+                )}
+                {(fieldErrors.email || emailCheckMessage) && emailCheck !== "available" && (
+                  <p className="mt-1 text-xs text-red-500">{fieldErrors.email || emailCheckMessage}</p>
+                )}
+                <p className="mt-1 text-[11px] text-muted">
+                  Any valid email works (Gmail, campus, work, etc.) — it just must not already be on CTC.
+                </p>
               </div>
 
               <div>

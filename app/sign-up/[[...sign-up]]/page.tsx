@@ -206,7 +206,7 @@ export default function SignUpPage() {
                       type="email"
                       variant="primary"
                       value={email}
-                      placeholder="student@uonbi.ac.ke"
+                      placeholder="you@example.com"
                       onChange={(e) => {
                         setEmail(e.target.value);
                         if (touched.email) setFieldErrors((prev) => ({ ...prev, email: validateEmail(e.target.value) }));
