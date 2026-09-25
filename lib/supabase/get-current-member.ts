@@ -210,13 +210,48 @@ export function isExistingClubMember(member: {
   phoneNumber?: string | null;
   communitySlugs?: string[] | null;
 }): boolean {
+  return hasCompletedClubRegistration(member);
+}
+
+/**
+ * True when the membership registration wizard was finished
+ * (not just a bare Google/auth profile with name + email).
+ */
+export function hasCompletedClubRegistration(member: {
+  role?: string | null;
+  membershipStatus?: string | null;
+  studentId?: string | null;
+  mpesaReference?: string | null;
+  phoneNumber?: string | null;
+  communitySlugs?: string[] | null;
+} | null | undefined): boolean {
   if (!member) return false;
   if (member.role === "member" || member.role === "exec" || member.role === "admin") return true;
   if (member.membershipStatus === "approved" || member.membershipStatus === "rejected") return true;
-  if (member.studentId?.trim()) return true;
-  if (member.mpesaReference?.trim()) return true;
-  if ((member.communitySlugs?.length ?? 0) > 0) return true;
-  // Pending application with contact details filled
-  if (member.membershipStatus === "pending" && member.phoneNumber?.trim()) return true;
+  // Full application: academic ID + contact + (tracks or payment proof)
+  const hasAcademic = Boolean(member.studentId?.trim());
+  const hasContact = Boolean(member.phoneNumber?.trim());
+  const hasTracksOrPayment =
+    (member.communitySlugs?.length ?? 0) > 0 || Boolean(member.mpesaReference?.trim());
+  return hasAcademic && hasContact && hasTracksOrPayment;
+}
+
+/**
+ * Events tab + RSVP: only fully registered AND leadership-approved members
+ * (exec/admin always allowed).
+ */
+export function canAccessMemberEvents(member: {
+  role?: string | null;
+  membershipStatus?: string | null;
+  studentId?: string | null;
+  mpesaReference?: string | null;
+  phoneNumber?: string | null;
+  communitySlugs?: string[] | null;
+} | null | undefined): boolean {
+  if (!member) return false;
+  if (member.role === "exec" || member.role === "admin") return true;
+  if (member.membershipStatus === "approved") return true;
+  // Role promoted to member implies approval even if status column lags
+  if (member.role === "member" && hasCompletedClubRegistration(member)) return true;
   return false;
 }

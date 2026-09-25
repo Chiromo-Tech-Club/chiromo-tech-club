@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { RegistrationWizard } from "@/features/membership/RegistrationWizard";
+import { RegisterPageClient } from "@/features/membership/RegisterPageClient";
 import { getAuthUserId } from "@/lib/supabase/auth-helpers";
-import { getCurrentMember } from "@/lib/supabase/get-current-member";
+import {
+  getCurrentMember,
+  hasCompletedClubRegistration,
+} from "@/lib/supabase/get-current-member";
 import { ROUTES } from "@/constants/routes";
 
 export const metadata = {
@@ -24,6 +27,7 @@ export default async function RegisterPage() {
     getCurrentMember({ createIfMissing: false }).catch(() => null),
   ]);
 
+  const registrationComplete = hasCompletedClubRegistration(currentMember);
   const initialUser = currentMember
     ? { fullName: currentMember.fullName, email: currentMember.email }
     : null;
@@ -43,7 +47,7 @@ export default async function RegisterPage() {
           Back to Home
         </Link>
 
-        {userId && (
+        {userId && registrationComplete && (
           <Link href={ROUTES.dashboard} className="text-xs font-bold text-sky hover:underline">
             Go to dashboard →
           </Link>
@@ -55,11 +59,17 @@ export default async function RegisterPage() {
           Chiromo Tech Club Membership Portal
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-ink-2">
-          Complete your membership application below.
+          {registrationComplete
+            ? "Your application is on file — edit details anytime."
+            : "Complete your membership application below."}
         </p>
       </div>
 
-      <RegistrationWizard initialUser={initialUser} isSignedIn={Boolean(userId)} />
+      <RegisterPageClient
+        isSignedIn={Boolean(userId)}
+        registrationComplete={registrationComplete}
+        initialUser={initialUser}
+      />
     </main>
   );
 }

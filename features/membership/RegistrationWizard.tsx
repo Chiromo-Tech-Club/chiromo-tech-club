@@ -304,7 +304,7 @@ export function RegistrationWizard({
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.dashboard)}`,
+        redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.register)}`,
         queryParams: { prompt: "select_account" },
       },
     });
@@ -325,7 +325,7 @@ export function RegistrationWizard({
       const { error } = await supabase.auth.linkIdentity({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.dashboard)}`,
+          redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.register)}`,
         },
       });
       if (error) {
@@ -333,7 +333,7 @@ export function RegistrationWizard({
         const { error: oauthError } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.dashboard)}`,
+            redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.register)}`,
             queryParams: { prompt: "select_account" },
           },
         });
@@ -348,7 +348,7 @@ export function RegistrationWizard({
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.dashboard)}`,
+        redirectTo: `${window.location.origin}/auth/callback?intent=register&next=${encodeURIComponent(ROUTES.register)}`,
         queryParams: { prompt: "select_account" },
       },
     });

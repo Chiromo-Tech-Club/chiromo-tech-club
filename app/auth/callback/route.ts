@@ -1,10 +1,10 @@
-// Supabase OAuth returns here with ?code=...
-// intent=signin → reject brand-new Google accounts (no silent sign-up)
-// intent=signup | register → allow new accounts (open signup / membership flow)
-
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
+import {
+  getCurrentMember,
+  hasCompletedClubRegistration,
+} from "@/lib/supabase/get-current-member";
 import { ROUTES } from "@/constants/routes";
 
 const NEW_USER_WINDOW_MS = 90_000;
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const intent = searchParams.get("intent") ?? "signin";
-  const next = searchParams.get("next") ?? ROUTES.dashboard;
+  const next = searchParams.get("next");
 
   if (!code) {
     return NextResponse.redirect(`${origin}${ROUTES.signIn}?error=auth_failed`);
@@ -65,11 +65,34 @@ export async function GET(request: Request) {
     return rejectAndCleanup(user.id, origin, "no_account");
   }
 
-  // Open signup & registration — land on dashboard (no forced /register bounce).
-  if (intent === "signup" || intent === "register") {
+  // Membership Google flow: finish the registration form on /register
+  // unless they already completed it (then dashboard).
+  if (intent === "register") {
+    const member = await getCurrentMember({ createIfMissing: true }).catch(() => null);
+    if (member && hasCompletedClubRegistration(member)) {
+      return NextResponse.redirect(`${origin}${ROUTES.dashboard}`);
+    }
+    return NextResponse.redirect(`${origin}${ROUTES.register}`);
+  }
+
+  if (intent === "signup") {
     const destination = next || ROUTES.dashboard;
     return NextResponse.redirect(`${origin}${destination}`);
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  // After normal sign-in: incomplete applications must finish /register first
+  if (intent === "signin") {
+    const member = await getCurrentMember({ createIfMissing: false }).catch(() => null);
+    const role = member?.role;
+    const isExecOrAdmin = role === "exec" || role === "admin";
+    if (!isExecOrAdmin && member && !hasCompletedClubRegistration(member)) {
+      return NextResponse.redirect(`${origin}${ROUTES.register}`);
+    }
+    if (!isExecOrAdmin && !member) {
+      // Auth exists but no club application yet
+      return NextResponse.redirect(`${origin}${ROUTES.register}`);
+    }
+  }
+
+  return NextResponse.redirect(`${origin}${next || ROUTES.dashboard}`);
 }

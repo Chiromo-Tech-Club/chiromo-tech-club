@@ -171,6 +171,8 @@ export const events = pgTable("events", {
   organizerName: text("organizer_name"),
   /** Guest speaker shown on event cards (free text; may mirror guest_speakers). */
   guestSpeakerName: text("guest_speaker_name"),
+  /** hackathon | workshop | buildathon | bootcamp | meetup */
+  category: text("category").default("meetup"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),

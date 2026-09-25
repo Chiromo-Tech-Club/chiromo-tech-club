@@ -11,9 +11,8 @@ export const CATEGORY_META: Record<EventCategory, { label: string; tone: string 
 export const CATEGORY_ORDER: EventCategory[] = ["hackathon", "workshop", "buildathon", "bootcamp", "meetup"];
 
 /**
- * Derives a category from the event title by keyword match. Works without any
- * schema change — if `events` ever gets a real `category` column, prefer that
- * value and fall back to this only when it's missing.
+ * Derives a category from the event title by keyword match.
+ * Used as fallback when `events.category` is missing.
  */
 export function inferEventCategory(title: string): EventCategory {
   const t = title.toLowerCase();
@@ -22,6 +21,17 @@ export function inferEventCategory(title: string): EventCategory {
   if (t.includes("bootcamp")) return "bootcamp";
   if (t.includes("workshop")) return "workshop";
   return "meetup";
+}
+
+/**
+ * Prefer a stored `events.category` value; fall back to title keyword match
+ * for older rows that predate the column.
+ */
+export function resolveEventCategory(title: string, stored?: string | null): EventCategory {
+  if (stored && CATEGORY_ORDER.includes(stored as EventCategory)) {
+    return stored as EventCategory;
+  }
+  return inferEventCategory(title);
 }
 
 /**

@@ -6,9 +6,14 @@ import { getDb } from "@/lib/drizzle/client";
 import { eventRegistrations } from "@/lib/drizzle/schema";
 import { getClubEventBySlug } from "@/lib/events/queries";
 import { formatEventDate, formatEventTime } from "@/lib/utils/format-date";
-import { CATEGORY_META, inferEventCategory } from "@/features/events/categorize";
+import { CATEGORY_META, resolveEventCategory } from "@/features/events/categorize";
 import { EventRegistrationForm } from "@/features/events/event-registration";
 import { getAuthUserId } from "@/lib/supabase/auth-helpers";
+import {
+  getCurrentMember,
+  canAccessMemberEvents,
+  hasCompletedClubRegistration,
+} from "@/lib/supabase/get-current-member";
 import { ROUTES } from "@/constants/routes";
 import type { ClubEvent } from "@/types/event";
 
@@ -17,6 +22,7 @@ type EventDetail = Pick<ClubEvent, "slug" | "title" | "description" | "startsAt"
   coverImageUrl: string | null;
   hostInstitution: string;
   guestSpeakerName: string | null;
+  category: string | null;
 };
 
 async function getEvent(slug: string): Promise<EventDetail | null> {
@@ -34,6 +40,7 @@ async function getEvent(slug: string): Promise<EventDetail | null> {
     coverImageUrl: row.coverImageUrl,
     hostInstitution: row.organizerName || "Chiromo Tech Club",
     guestSpeakerName: row.guestSpeakerName,
+    category: row.category,
   };
 }
 
@@ -42,9 +49,24 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   const event = await getEvent(slug);
   if (!event) notFound();
 
-  const category = inferEventCategory(event.title);
+  const category = resolveEventCategory(event.title, event.category);
   const meta = CATEGORY_META[category];
   const userId = await getAuthUserId().catch(() => null);
+  const member = userId
+    ? await getCurrentMember({ createIfMissing: false }).catch(() => null)
+    : null;
+
+  const canRsvp = canAccessMemberEvents(member);
+  let eligibilityMessage: string | null = null;
+  if (userId && !canRsvp) {
+    if (!member || !hasCompletedClubRegistration(member)) {
+      eligibilityMessage =
+        "Finish your CTC membership registration before you can RSVP for events.";
+    } else {
+      eligibilityMessage =
+        "Only approved club members can RSVP. Your application is still pending leadership review.";
+    }
+  }
 
   let alreadyRegistered = false;
   let spotsLeft: number | null = event.capacity ?? null;
@@ -126,6 +148,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
           isSignedIn={Boolean(userId)}
           alreadyRegistered={alreadyRegistered}
           spotsLeft={spotsLeft}
+          canRsvp={canRsvp}
+          eligibilityMessage={eligibilityMessage}
         />
       </div>
     </main>

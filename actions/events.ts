@@ -5,6 +5,10 @@ import { eq, and, count, isNull } from "drizzle-orm";
 import { getDb } from "../lib/drizzle/client";
 import { events, eventRegistrations, members } from "../lib/drizzle/schema";
 import { getAuthUserId } from "../lib/supabase/auth-helpers";
+import {
+  canAccessMemberEvents,
+  hasCompletedClubRegistration,
+} from "../lib/supabase/get-current-member";
 import { sendEventReminder } from "../services/email";
 import { formatEventDate } from "../lib/utils/format-date";
 import { ROUTES } from "../constants/routes";
@@ -26,7 +30,39 @@ export async function registerForEvent(eventSlug: string): Promise<ActionResult>
   if (!event) return { success: false, error: "Event not found." };
 
   const [member] = await db.select().from(members).where(eq(members.id, userId)).limit(1);
-  if (!member) return { success: false, error: "Complete your club profile before registering." };
+  if (!member) {
+    return { success: false, error: "Complete your club membership registration before RSVPing." };
+  }
+
+  // Load communities for completion check
+  let communitySlugs: string[] = [];
+  try {
+    const { memberCommunities } = await import("../lib/drizzle/schema");
+    const rows = await db
+      .select({ communitySlug: memberCommunities.communitySlug })
+      .from(memberCommunities)
+      .where(eq(memberCommunities.memberId, member.id));
+    communitySlugs = rows.map((r) => r.communitySlug);
+  } catch {
+    // ignore
+  }
+
+  const memberForGate = { ...member, communitySlugs };
+
+  if (!hasCompletedClubRegistration(memberForGate)) {
+    return {
+      success: false,
+      error: "Finish your membership registration on /register before you can RSVP for events.",
+    };
+  }
+
+  if (!canAccessMemberEvents(memberForGate)) {
+    return {
+      success: false,
+      error:
+        "Only approved club members can RSVP. Your application is still pending leadership review.",
+    };
+  }
 
   try {
     const [existing] = await db

@@ -3,24 +3,34 @@ import { UserPen, Compass, CalendarPlus, MessageCircle } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { SITE_CONFIG } from "@/config/site";
 
-const ACTIONS = [
+const BASE_ACTIONS = [
   { href: ROUTES.dashboardProfile, label: "Edit My Profile", icon: UserPen, external: false },
   { href: ROUTES.communities, label: "Browse Communities", icon: Compass, external: false },
-  { href: ROUTES.events, label: "Find an Event", icon: CalendarPlus, external: false },
   {
     href: SITE_CONFIG.socials.whatsapp,
     label: "Join CTC WhatsApp",
     icon: MessageCircle,
     external: true,
   },
-];
+] as const;
 
-export function MemberQuickActions() {
+const EVENTS_ACTION = {
+  href: ROUTES.events,
+  label: "Find an Event",
+  icon: CalendarPlus,
+  external: false,
+} as const;
+
+export function MemberQuickActions({ showEvents = true }: { showEvents?: boolean }) {
+  const actions = showEvents
+    ? [BASE_ACTIONS[0], BASE_ACTIONS[1], EVENTS_ACTION, BASE_ACTIONS[2]]
+    : [...BASE_ACTIONS];
+
   return (
     <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
       <h3 className="mb-4 font-display text-sm font-bold text-ink">Quick Actions</h3>
       <div className="flex flex-col gap-2">
-        {ACTIONS.map((action) =>
+        {actions.map((action) =>
           action.external ? (
             <a
               key={action.href}

@@ -4,7 +4,7 @@ import { listClubEvents } from "@/lib/events/queries";
 import {
   CATEGORY_META,
   CATEGORY_ORDER,
-  inferEventCategory,
+  resolveEventCategory,
   type EventCategory,
 } from "@/features/events/categorize";
 import { formatEventDate, formatEventTime } from "@/lib/utils/format-date";
@@ -190,7 +190,7 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
     coverImageUrl: r.coverImageUrl,
     organizerName: r.organizerName,
     guestSpeakerName: r.guestSpeakerName,
-    category: inferEventCategory(r.title),
+    category: resolveEventCategory(r.title, r.category),
   }));
 
   const filtered = categoryParam === "all" ? all : all.filter((e) => e.category === categoryParam);

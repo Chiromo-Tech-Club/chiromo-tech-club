@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCurrentRole, getCurrentExecTitle } from "@/lib/supabase/auth-helpers";
-import { getCurrentMember } from "@/lib/supabase/get-current-member";
+import {
+  getCurrentMember,
+  hasCompletedClubRegistration,
+} from "@/lib/supabase/get-current-member";
 import { UserMenu } from "@/components/dashboard/UserMenu";
 import { ExecDashboardShell } from "@/components/dashboard/ExecDashboard";
 import { DashboardAccessGate } from "@/components/dashboard/DashboardAccessGate";
@@ -10,7 +14,8 @@ import { ROUTES } from "@/constants/routes";
 export const metadata = { title: "Dashboard" };
 
 /**
- * No redirects to /register. Signed-in users with a profile see the dashboard.
+ * Incomplete membership applications are sent back to /register to finish.
+ * Exec/admin seats are never blocked by this gate.
  */
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   try {
@@ -25,6 +30,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const member = await getCurrentMember();
   const isDeactivated = Boolean(member?.deactivatedAt);
+
+  if (!isExecOrAdmin && !hasCompletedClubRegistration(member)) {
+    redirect(ROUTES.register);
+  }
 
   if (!isExecOrAdmin) {
     return (

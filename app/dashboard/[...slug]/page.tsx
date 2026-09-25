@@ -649,6 +649,7 @@ async function CorporateAffairsEventManager() {
       coverImageUrl: r.coverImageUrl,
       organizerName: r.organizerName,
       guestSpeakerName: r.guestSpeakerName,
+      category: r.category,
       attendeeNames,
       rsvpCount: attendeeNames.length,
     };

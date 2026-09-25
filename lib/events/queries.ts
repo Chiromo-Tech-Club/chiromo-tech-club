@@ -14,6 +14,7 @@ export type ClubEventRow = {
   coverImageUrl: string | null;
   organizerName: string | null;
   guestSpeakerName: string | null;
+  category: string | null;
   deletedAt: Date | null;
 };
 
@@ -42,6 +43,7 @@ function mapCoreRow(row: {
     ...row,
     organizerName: null,
     guestSpeakerName: null,
+    category: null,
   };
 }
 
@@ -82,6 +84,7 @@ export async function listClubEvents(opts?: {
         coverImageUrl: events.coverImageUrl,
         organizerName: events.organizerName,
         guestSpeakerName: events.guestSpeakerName,
+        category: events.category,
         deletedAt: events.deletedAt,
       })
       .from(events)
@@ -135,6 +138,7 @@ export async function getClubEventBySlug(slug: string): Promise<ClubEventRow | n
         coverImageUrl: events.coverImageUrl,
         organizerName: events.organizerName,
         guestSpeakerName: events.guestSpeakerName,
+        category: events.category,
         deletedAt: events.deletedAt,
       })
       .from(events)

@@ -379,11 +379,27 @@ export async function MemberOverview({ member }: { member: Member }) {
       {/* Communities & Events */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <MyCommunitiesWidget communitySlugs={member.communitySlugs} />
-        <UpcomingEventsWidget
-          events={data.upcomingEvents}
-          registeredEventIds={data.registeredEventIds}
-          canRsvp
-        />
+        {isApproved ? (
+          <UpcomingEventsWidget
+            events={data.upcomingEvents}
+            registeredEventIds={data.registeredEventIds}
+            canRsvp
+          />
+        ) : (
+          <div className="rounded-[var(--radius-card-sm)] border border-amber-200/80 bg-amber-50/60 p-6">
+            <h3 className="font-display text-sm font-bold text-ink">Upcoming Events</h3>
+            <p className="mt-2 text-sm leading-relaxed text-ink-2">
+              Events and RSVP open after leadership approves your membership. You&apos;ll see this
+              section once your status is <span className="font-semibold text-ink">Approved</span>.
+            </p>
+            <p className="mt-3 text-[11px] text-muted">
+              Current status:{" "}
+              <span className="font-semibold text-amber-800">
+                {membershipStatus === "rejected" ? "Rejected" : "Pending review"}
+              </span>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Projects & Announcements */}
@@ -393,7 +409,7 @@ export async function MemberOverview({ member }: { member: Member }) {
       </div>
 
       {/* Quick Actions */}
-      <MemberQuickActions />
+      <MemberQuickActions showEvents={isApproved} />
     </div>
   );
 }

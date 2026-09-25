@@ -14,14 +14,21 @@ import {
   UserRound,
   ChevronDown,
   ChevronUp,
+  UserX,
 } from "lucide-react";
-import { createEvent, updateEvent, deleteEvent } from "@/actions/dashboard/events";
+import { createEvent, updateEvent, deleteEvent, purgeIneligibleEventRsvps } from "@/actions/dashboard/events";
 import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
 import { ImageCropDialog } from "@/components/media/ImageCropDialog";
 import { ROUTES } from "@/constants/routes";
 import { IMAGE_CROP } from "@/constants/image-crop";
 import { LIMITS } from "@/constants/limits";
+import {
+  CATEGORY_META,
+  CATEGORY_ORDER,
+  type EventCategory,
+} from "@/features/events/categorize";
+import { UserX } from "lucide-react";
 
 export interface EventManagerItem {
   id: string;
@@ -34,6 +41,7 @@ export interface EventManagerItem {
   coverImageUrl?: string | null;
   organizerName?: string | null;
   guestSpeakerName?: string | null;
+  category?: EventCategory | string | null;
   attendeeNames?: string[];
   rsvpCount?: number;
 }
@@ -60,6 +68,11 @@ function EventForm({
   const [capacity, setCapacity] = useState(initial?.capacity ? String(initial.capacity) : "");
   const [organizerName, setOrganizerName] = useState(initial?.organizerName ?? "Chiromo Tech Club");
   const [guestSpeakerName, setGuestSpeakerName] = useState(initial?.guestSpeakerName ?? "");
+  const [category, setCategory] = useState<EventCategory>(
+    (CATEGORY_ORDER.includes(initial?.category as EventCategory)
+      ? (initial?.category as EventCategory)
+      : "meetup"),
+  );
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [posterPreview, setPosterPreview] = useState<string | null>(initial?.coverImageUrl ?? null);
   const [cropSource, setCropSource] = useState<File | null>(null);
@@ -98,6 +111,7 @@ function EventForm({
       if (capacity) formData.set("capacity", capacity);
       formData.set("organizerName", organizerName);
       formData.set("guestSpeakerName", guestSpeakerName);
+      formData.set("category", category);
       if (posterFile) formData.set("poster", posterFile);
 
       const result = initial ? await updateEvent(formData) : await createEvent(formData);
@@ -111,6 +125,7 @@ function EventForm({
           setCapacity("");
           setOrganizerName("Chiromo Tech Club");
           setGuestSpeakerName("");
+          setCategory("meetup");
           setPosterFile(null);
           setPosterPreview(null);
           if (fileRef.current) fileRef.current.value = "";
@@ -164,6 +179,21 @@ function EventForm({
             value={guestSpeakerName}
             onChange={(e) => setGuestSpeakerName(e.target.value)}
           />
+          <label className="flex flex-col gap-1 sm:col-span-2">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-muted">Event category</span>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as EventCategory)}
+              required
+              className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink focus:outline-none"
+            >
+              {CATEGORY_ORDER.map((c) => (
+                <option key={c} value={c}>
+                  {CATEGORY_META[c].label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <textarea
           placeholder="What's this event about? (shown on cards and the public event page)"
@@ -265,6 +295,8 @@ export function EventManager({ events }: { events: EventManagerItem[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [purgeMessage, setPurgeMessage] = useState<string | null>(null);
+  const [purging, setPurging] = useState(false);
 
   function handleDelete(id: string) {
     if (!confirm("Delete this event? Members will no longer see it.")) return;
@@ -276,12 +308,57 @@ export function EventManager({ events }: { events: EventManagerItem[] }) {
     });
   }
 
+  function handlePurgeIneligible() {
+    if (
+      !confirm(
+        "Remove RSVPs from people who have not finished registration or are not approved members? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+    setPurging(true);
+    setPurgeMessage(null);
+    startTransition(async () => {
+      const res = await purgeIneligibleEventRsvps();
+      setPurging(false);
+      if (!res.success) {
+        setPurgeMessage(res.error ?? "Could not remove ineligible RSVPs.");
+        return;
+      }
+      const removed = res.data?.removed ?? 0;
+      const names = res.data?.names ?? [];
+      if (removed === 0) {
+        setPurgeMessage("No ineligible RSVPs found — all attendees are approved members.");
+      } else {
+        setPurgeMessage(
+          `Removed ${removed} RSVP${removed === 1 ? "" : "s"} (${names.slice(0, 5).join(", ")}${names.length > 5 ? "…" : ""}).`,
+        );
+      }
+    });
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-xs text-muted">
-        Create CTC events like Luma — poster ({IMAGE_CROP.eventPoster.label}), organizer, guest speaker, description —
-        then track who RSVPs below.
-      </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <p className="text-xs text-muted">
+          Create CTC events like Luma — poster ({IMAGE_CROP.eventPoster.label}), organizer, guest speaker, description —
+          then track who RSVPs below. Only approved members should appear on RSVP lists.
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={purging || isPending}
+          onClick={handlePurgeIneligible}
+          className="shrink-0 rounded-xl border-amber-300 text-xs text-amber-900 hover:bg-amber-50"
+        >
+          <UserX size={14} />
+          {purging ? "Removing…" : "Kick incomplete RSVPs"}
+        </Button>
+      </div>
+      {purgeMessage && (
+        <p className="rounded-xl border border-line bg-cream/50 px-3 py-2 text-xs text-ink-2">{purgeMessage}</p>
+      )}
       <EventForm />
 
       <div className="rounded-[var(--radius-card-sm)] border border-line bg-surface p-6">
@@ -315,7 +392,16 @@ export function EventManager({ events }: { events: EventManagerItem[] }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-ink">{e.title}</div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="text-sm font-semibold text-ink">{e.title}</div>
+                          {e.category && CATEGORY_META[e.category as EventCategory] && (
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${CATEGORY_META[e.category as EventCategory].tone}`}
+                            >
+                              {CATEGORY_META[e.category as EventCategory].label}
+                            </span>
+                          )}
+                        </div>
                         <p className="mt-1 text-xs text-ink-2 line-clamp-2">{e.description}</p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted">
                           <span className="font-mono text-green">{new Date(e.startsAt).toLocaleString()}</span>

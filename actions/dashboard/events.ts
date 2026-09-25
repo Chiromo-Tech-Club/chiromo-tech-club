@@ -1,16 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/drizzle/client";
-import { events } from "@/lib/drizzle/schema";
+import { events, eventRegistrations, members, memberCommunities } from "@/lib/drizzle/schema";
 import { canAccessExecSection } from "@/lib/supabase/auth-helpers";
+import { canAccessMemberEvents } from "@/lib/supabase/get-current-member";
 import { slugify } from "@/lib/utils/slugify";
 import { uploadEventCover } from "@/services/upload";
 import { ensureEventsColumns } from "@/lib/drizzle/ensure-events-columns";
+import { CATEGORY_ORDER, type EventCategory } from "@/features/events/categorize";
 import { ROUTES } from "@/constants/routes";
 import type { ActionResult } from "@/actions/membership";
+
+const categoryEnum = z.enum(CATEGORY_ORDER as [EventCategory, ...EventCategory[]]);
 
 const fieldsSchema = z.object({
   title: z.string().min(3).max(160),
@@ -20,6 +24,7 @@ const fieldsSchema = z.object({
   capacity: z.number().int().positive().optional().nullable(),
   organizerName: z.string().max(120).optional().nullable(),
   guestSpeakerName: z.string().max(120).optional().nullable(),
+  category: categoryEnum.default("meetup"),
 });
 
 function revalidateEventPaths(slug?: string) {
@@ -34,6 +39,7 @@ function parseEventFields(formData: FormData) {
   const capacityRaw = String(formData.get("capacity") ?? "").trim();
   const organizerName = String(formData.get("organizerName") ?? "").trim();
   const guestSpeakerName = String(formData.get("guestSpeakerName") ?? "").trim();
+  const categoryRaw = String(formData.get("category") ?? "meetup").trim();
   return fieldsSchema.safeParse({
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
@@ -42,6 +48,7 @@ function parseEventFields(formData: FormData) {
     capacity: capacityRaw ? Number(capacityRaw) : null,
     organizerName: organizerName || null,
     guestSpeakerName: guestSpeakerName || null,
+    category: categoryRaw || "meetup",
   });
 }
 
@@ -86,6 +93,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult> {
         capacity: parsed.data.capacity || null,
         organizerName: parsed.data.organizerName ?? null,
         guestSpeakerName: parsed.data.guestSpeakerName ?? null,
+        category: parsed.data.category,
         coverImageUrl,
       });
     revalidateEventPaths(slug);
@@ -142,6 +150,7 @@ export async function updateEvent(formData: FormData): Promise<ActionResult> {
         capacity: parsed.data.capacity || null,
         organizerName: parsed.data.organizerName ?? null,
         guestSpeakerName: parsed.data.guestSpeakerName ?? null,
+        category: parsed.data.category,
         coverImageUrl,
         updatedAt: new Date(),
       })
@@ -176,5 +185,87 @@ export async function deleteEvent(eventId: string): Promise<ActionResult> {
   } catch (err) {
     console.error("deleteEvent failed:", err);
     return { success: false, error: "Could not delete this event." };
+  }
+}
+
+/**
+ * Remove RSVPs from people who never finished registration or are not approved.
+ * Keeps only approved members (and exec/admin) on event attendee lists.
+ */
+export async function purgeIneligibleEventRsvps(): Promise<
+  ActionResult<{ removed: number; names: string[] }>
+> {
+  const allowed = await canAccessExecSection("corporate_affairs");
+  if (!allowed) return { success: false, error: "Corporate Affairs access required." };
+
+  try {
+    const db = getDb();
+
+    const regs = await db
+      .select({
+        registrationId: eventRegistrations.id,
+        memberId: members.id,
+        fullName: members.fullName,
+        email: members.email,
+        role: members.role,
+        membershipStatus: members.membershipStatus,
+        studentId: members.studentId,
+        mpesaReference: members.mpesaReference,
+        phoneNumber: members.phoneNumber,
+      })
+      .from(eventRegistrations)
+      .innerJoin(members, eq(eventRegistrations.memberId, members.id));
+
+    if (regs.length === 0) {
+      return { success: true, data: { removed: 0, names: [] } };
+    }
+
+    const memberIds = [...new Set(regs.map((r) => r.memberId))];
+    const communityRows = await db
+      .select({
+        memberId: memberCommunities.memberId,
+        communitySlug: memberCommunities.communitySlug,
+      })
+      .from(memberCommunities)
+      .where(inArray(memberCommunities.memberId, memberIds));
+
+    const communitiesByMember = new Map<string, string[]>();
+    for (const row of communityRows) {
+      const list = communitiesByMember.get(row.memberId) ?? [];
+      list.push(row.communitySlug);
+      communitiesByMember.set(row.memberId, list);
+    }
+
+    const toRemove: { registrationId: string; fullName: string }[] = [];
+    for (const reg of regs) {
+      const eligible = canAccessMemberEvents({
+        role: reg.role,
+        membershipStatus: reg.membershipStatus,
+        studentId: reg.studentId,
+        mpesaReference: reg.mpesaReference,
+        phoneNumber: reg.phoneNumber,
+        communitySlugs: communitiesByMember.get(reg.memberId) ?? [],
+      });
+      if (!eligible) {
+        toRemove.push({ registrationId: reg.registrationId, fullName: reg.fullName });
+      }
+    }
+
+    if (toRemove.length === 0) {
+      return { success: true, data: { removed: 0, names: [] } };
+    }
+
+    const ids = toRemove.map((r) => r.registrationId);
+    await db.delete(eventRegistrations).where(inArray(eventRegistrations.id, ids));
+
+    revalidateEventPaths();
+    revalidatePath("/events");
+    revalidatePath(ROUTES.dashboard);
+
+    const names = [...new Set(toRemove.map((r) => r.fullName))];
+    return { success: true, data: { removed: toRemove.length, names } };
+  } catch (err) {
+    console.error("purgeIneligibleEventRsvps failed:", err);
+    return { success: false, error: "Could not remove ineligible RSVPs." };
   }
 }

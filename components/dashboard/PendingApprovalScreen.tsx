@@ -32,35 +32,18 @@ export function PendingApprovalScreen({
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Link
-            href={ROUTES.events}
-            className="inline-flex items-center justify-center rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky"
-          >
-            Browse public events
-          </Link>
-          <Link
             href={ROUTES.home}
-            className="inline-flex items-center justify-center rounded-full border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink hover:bg-cream-2"
+            className="inline-flex items-center justify-center rounded-full bg-navy px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky"
           >
             Back to home
           </Link>
+          <Link
+            href={ROUTES.register}
+            className="inline-flex items-center justify-center rounded-full border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink hover:bg-cream-2"
+          >
+            {alreadyApplied ? "Update application" : "Complete registration"}
+          </Link>
         </div>
-
-        {!alreadyApplied && (
-          <p className="mt-6 text-[11px] text-muted">
-            <Link href={ROUTES.register} className="font-semibold text-sky hover:underline">
-              Complete your membership application
-            </Link>
-          </p>
-        )}
-
-        {alreadyApplied && (
-          <p className="mt-6 text-[11px] text-muted">
-            Need a correction?{" "}
-            <Link href={ROUTES.register} className="font-semibold text-sky hover:underline">
-              Update application
-            </Link>
-          </p>
-        )}
 
         <div className="mt-4">
           <Link href={ROUTES.signIn} className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-ink">

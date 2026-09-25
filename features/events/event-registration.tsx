@@ -10,11 +10,16 @@ export function EventRegistrationForm({
   isSignedIn = false,
   alreadyRegistered,
   spotsLeft,
+  canRsvp = false,
+  eligibilityMessage,
 }: {
   eventSlug: string;
   isSignedIn?: boolean;
   alreadyRegistered?: boolean;
   spotsLeft?: number | null;
+  /** Only approved, fully registered members may RSVP. */
+  canRsvp?: boolean;
+  eligibilityMessage?: string | null;
 }) {
   const { status, error, register } = useEventRegistration(eventSlug);
 
@@ -31,7 +36,9 @@ export function EventRegistrationForm({
     return (
       <div className="rounded-2xl border border-line bg-cream/40 p-5">
         <p className="text-sm font-semibold text-ink">Register for this event</p>
-        <p className="mt-1 text-xs text-ink-2">Sign in with your CTC account to RSVP.</p>
+        <p className="mt-1 text-xs text-ink-2">
+          Sign in with an approved CTC membership account to RSVP.
+        </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button asChild variant="primary" size="sm">
             <Link href={`${ROUTES.signIn}?returnBackUrl=${encodeURIComponent(ROUTES.event(eventSlug))}`}>
@@ -39,7 +46,27 @@ export function EventRegistrationForm({
             </Link>
           </Button>
           <Button asChild variant="ghost" size="sm">
-            <Link href={ROUTES.register}>Create account</Link>
+            <Link href={ROUTES.register}>Apply for membership</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canRsvp) {
+    return (
+      <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
+        <p className="text-sm font-semibold text-ink">RSVP locked</p>
+        <p className="mt-1 text-xs leading-relaxed text-ink-2">
+          {eligibilityMessage ??
+            "Only registered and approved club members can RSVP for events. Finish your application and wait for leadership approval."}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button asChild variant="primary" size="sm">
+            <Link href={ROUTES.register}>Complete / check registration</Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link href={ROUTES.dashboard}>Dashboard</Link>
           </Button>
         </div>
       </div>
@@ -56,7 +83,7 @@ export function EventRegistrationForm({
           ? full
             ? "This event is full."
             : `${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} left`
-          : "One-click RSVP for Chiromo Tech Club members."}
+          : "One-click RSVP for approved Chiromo Tech Club members."}
       </p>
       <Button
         variant="primary"
