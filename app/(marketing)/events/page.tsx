@@ -8,6 +8,7 @@ import {
   type EventCategory,
 } from "@/features/events/categorize";
 import { formatEventDate, formatEventTime } from "@/lib/utils/format-date";
+import { EventPageNav } from "@/features/events/EventPageNav";
 import { ROUTES } from "@/constants/routes";
 
 export const metadata = {
@@ -115,55 +116,53 @@ function CategoryFilters({ active, scope }: { active: string; scope: Scope }) {
 
 function EventCardLink({ event }: { event: EventCard }) {
   const meta = CATEGORY_META[event.category];
-  const date = new Date(event.startsAt);
+  const starts = new Date(event.startsAt);
+  const month = starts.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+  const day = starts.toLocaleDateString("en-US", { day: "numeric" });
 
   return (
     <Link
       href={ROUTES.event(event.slug)}
-      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-line bg-surface shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-sky/40 hover:shadow-lg"
+      className="group flex h-full flex-col overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_8px_30px_rgba(23,20,15,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(23,20,15,0.08)]"
     >
-      <div className="relative aspect-[1080/1350] overflow-hidden">
+      <div className="relative aspect-[4/5] overflow-hidden bg-cream">
         <Poster
           src={event.coverImageUrl}
           title={event.title}
           className="transition-transform duration-500 group-hover:scale-[1.03]"
         />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/70 to-transparent p-3 pt-10">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-white/90">
-            {formatEventDate(event.startsAt)} · {formatEventTime(event.startsAt)}
-          </p>
-        </div>
-        <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold ${meta.tone}`}>
+        <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-bold shadow-sm ${meta.tone}`}>
           {meta.label}
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-4 sm:p-5">
-        <h3 className="font-display text-lg font-bold leading-snug text-ink group-hover:text-sky">{event.title}</h3>
-        <p className="line-clamp-3 text-sm leading-relaxed text-ink-2">{event.description}</p>
-
-        <div className="mt-auto space-y-1.5 pt-3 text-[11px] text-muted">
-          <p className="inline-flex items-center gap-1.5">
-            <MapPin size={12} className="text-sky" /> {event.location}
-          </p>
-          {event.organizerName ? (
-            <p className="inline-flex items-center gap-1.5">
-              <UserRound size={12} /> Hosted by {event.organizerName}
-            </p>
-          ) : null}
-          {event.guestSpeakerName ? (
-            <p className="inline-flex items-center gap-1.5">
-              <Mic2 size={12} /> {event.guestSpeakerName}
-            </p>
-          ) : null}
-          <p className="font-mono text-[10px] uppercase tracking-wide text-ink/40">
-            {date.toLocaleDateString("en-KE", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
-          </p>
+      <div className="flex flex-1 gap-3 p-4">
+        <div className="flex w-12 shrink-0 flex-col items-center overflow-hidden rounded-xl border border-line bg-cream text-center">
+          <span className="w-full bg-navy py-0.5 font-mono text-[9px] font-bold tracking-wider text-white">{month}</span>
+          <span className="py-1 font-display text-lg font-extrabold leading-none text-ink">{day}</span>
         </div>
-
-        <span className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-full bg-navy px-4 py-2.5 text-xs font-bold text-white transition-colors group-hover:bg-sky">
-          RSVP / details <ArrowUpRight size={14} />
-        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="line-clamp-2 font-display text-base font-semibold leading-snug text-ink group-hover:text-sky">
+            {event.title}
+          </h3>
+          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-ink-2">{event.description}</p>
+          <div className="mt-2 space-y-1 text-[11px] text-muted">
+            <p className="inline-flex items-center gap-1.5">
+              <MapPin size={11} /> {event.location}
+            </p>
+            {event.organizerName ? (
+              <p className="flex items-center gap-1.5">
+                <UserRound size={11} /> {event.organizerName}
+              </p>
+            ) : null}
+            {event.guestSpeakerName ? (
+              <p className="flex items-center gap-1.5">
+                <Mic2 size={11} /> {event.guestSpeakerName}
+              </p>
+            ) : null}
+            <p className="font-mono text-[10px] text-ink/45">{formatEventTime(event.startsAt)}</p>
+          </div>
+        </div>
       </div>
     </Link>
   );
@@ -214,6 +213,11 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
         />
       </div>
 
+      <EventPageNav
+        variant="list"
+        filtered={scope !== "upcoming" || categoryParam !== "all" || pageParam > 1}
+      />
+
       <header className="max-w-2xl">
         <p className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-sky">
           <CalendarDays size={12} /> Chiromo Tech Club
@@ -251,14 +255,14 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
       {featured ? (
         <Link
           href={ROUTES.event(featured.slug)}
-          className="group relative mt-10 grid overflow-hidden rounded-[1.75rem] border border-line bg-navy text-white shadow-xl lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
+          className="group relative mt-10 grid overflow-hidden rounded-[28px] border border-line bg-surface shadow-[0_16px_50px_rgba(23,20,15,0.06)] lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]"
         >
-          <div className="relative aspect-[1080/1350] max-h-[420px] lg:aspect-auto lg:min-h-[360px]">
+          <div className="relative aspect-[4/5] max-h-[460px] bg-cream lg:aspect-auto lg:max-h-none lg:min-h-[380px]">
             <Poster src={featured.coverImageUrl} title={featured.title} />
           </div>
           <div className="relative flex flex-col justify-center gap-4 p-6 sm:p-10">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-sky/20 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-sky">
+              <span className="rounded-full bg-navy px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-white">
                 Up next
               </span>
               {featuredMeta ? (
@@ -267,9 +271,11 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                 </span>
               ) : null}
             </div>
-            <h2 className="font-display text-2xl font-bold leading-tight sm:text-3xl">{featured.title}</h2>
-            <p className="line-clamp-3 text-sm leading-relaxed text-white/75 sm:text-base">{featured.description}</p>
-            <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-white/65">
+            <h2 className="font-display text-2xl font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-3xl">
+              {featured.title}
+            </h2>
+            <p className="line-clamp-3 text-sm leading-relaxed text-ink-2 sm:text-base">{featured.description}</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted">
               <span>
                 {formatEventDate(featured.startsAt)} · {formatEventTime(featured.startsAt)}
               </span>
@@ -287,8 +293,8 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
                 </span>
               ) : null}
             </div>
-            <span className="mt-2 inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-navy transition-transform group-hover:-translate-y-0.5">
-              RSVP now <ArrowUpRight size={16} />
+            <span className="mt-2 inline-flex w-fit items-center gap-2 rounded-full bg-navy px-5 py-2.5 text-sm font-bold text-white transition-transform group-hover:-translate-y-0.5 group-hover:bg-sky">
+              View event <ArrowUpRight size={16} />
             </span>
           </div>
         </Link>
