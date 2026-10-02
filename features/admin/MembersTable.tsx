@@ -62,6 +62,7 @@ export interface ExtendedMemberRow {
   membershipFeeStatus?: "unpaid" | "deposit_paid" | "fully_paid" | string | null;
   feeAmountPaid?: number;
   mpesaReference?: string | null;
+  mpesaReference2?: string | null;
   mpesaPhoneNumber?: string | null;
   cardTheme?: string | null;
   communitySlugs?: string[];
@@ -214,11 +215,19 @@ function MemberProfileDetails({ m }: { m: ExtendedMemberRow }) {
         <p className="text-[10px] font-bold uppercase tracking-wide text-amber-800">Payment details (from registration)</p>
         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">M-Pesa code</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">First M-Pesa code</p>
             {m.mpesaReference ? (
               <p className="mt-0.5 font-mono text-base font-extrabold tracking-wide text-ink">{m.mpesaReference}</p>
             ) : (
-              <p className="mt-0.5 text-sm text-muted">No M-Pesa code submitted.</p>
+              <p className="mt-0.5 text-sm text-muted">No first code yet.</p>
+            )}
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">Second M-Pesa code</p>
+            {m.mpesaReference2 ? (
+              <p className="mt-0.5 font-mono text-base font-extrabold tracking-wide text-ink">{m.mpesaReference2}</p>
+            ) : (
+              <p className="mt-0.5 text-sm text-muted">No second payment yet.</p>
             )}
           </div>
           <div>
@@ -267,18 +276,31 @@ function PaymentControls({
 }: {
   member: ExtendedMemberRow;
   busy: boolean;
-  onPayment: (status: PaymentStatus, amount: number, mpesaRef?: string) => void;
+  onPayment: (status: PaymentStatus, amount: number, firstCode?: string, secondCode?: string) => void;
 }) {
-  const [mpesaCode, setMpesaCode] = useState(m.mpesaReference ?? "");
+  const [firstCode, setFirstCode] = useState(m.mpesaReference ?? "");
+  const [secondCode, setSecondCode] = useState(m.mpesaReference2 ?? "");
+  const firstChanged = firstCode.trim().toUpperCase() !== (m.mpesaReference ?? "");
+  const secondChanged = secondCode.trim().toUpperCase() !== (m.mpesaReference2 ?? "");
 
   return (
     <div className="space-y-2 rounded-xl border border-line/70 bg-cream/30 p-3">
       <label className="block space-y-1">
-        <span className="text-[10px] font-bold uppercase tracking-wide text-muted">Update / save M-Pesa code</span>
+        <span className="text-[10px] font-bold uppercase tracking-wide text-muted">First payment code</span>
         <Input
-          value={mpesaCode}
-          onChange={(e) => setMpesaCode(e.target.value.toUpperCase())}
-          placeholder="e.g. QH7X9K2L3M"
+          value={firstCode}
+          onChange={(e) => setFirstCode(e.target.value.toUpperCase())}
+          placeholder="First M-Pesa code"
+          className="rounded-xl font-mono text-xs uppercase"
+          maxLength={20}
+        />
+      </label>
+      <label className="block space-y-1">
+        <span className="text-[10px] font-bold uppercase tracking-wide text-muted">Second payment code</span>
+        <Input
+          value={secondCode}
+          onChange={(e) => setSecondCode(e.target.value.toUpperCase())}
+          placeholder="Balance / second M-Pesa code"
           className="rounded-xl font-mono text-xs uppercase"
           maxLength={20}
         />
@@ -289,30 +311,37 @@ function PaymentControls({
             <button
               type="button"
               disabled={busy}
-              onClick={() => onPayment("deposit_paid", 250, mpesaCode)}
+              onClick={() => onPayment("deposit_paid", 250, firstCode, secondCode)}
               className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-xs font-semibold text-ink hover:bg-cream-2"
             >
-              Record KES 250 Deposit
+              Record KES 250 deposit
             </button>
           )}
           <button
             type="button"
             disabled={busy}
-            onClick={() => onPayment("fully_paid", 500, mpesaCode)}
+            onClick={() => onPayment("fully_paid", 500, firstCode, secondCode)}
             className="w-full rounded-xl border border-green/30 bg-green/10 px-3 py-2.5 text-xs font-bold text-green hover:bg-green/15"
           >
-            {m.membershipFeeStatus === "deposit_paid" ? "Upgrade to KES 500 Fully Paid" : "Record KES 500 Fully Paid"}
+            {m.membershipFeeStatus === "deposit_paid" ? "Save second payment as KES 500" : "Record KES 500 fully paid"}
           </button>
         </div>
       )}
-      {m.membershipFeeStatus === "fully_paid" && mpesaCode.trim() && mpesaCode.trim() !== (m.mpesaReference ?? "") && (
+      {(firstChanged || secondChanged) && m.membershipFeeStatus && m.membershipFeeStatus !== "unpaid" && (
         <button
           type="button"
           disabled={busy}
-          onClick={() => onPayment("fully_paid", m.feeAmountPaid || 500, mpesaCode)}
+          onClick={() =>
+            onPayment(
+              m.membershipFeeStatus === "deposit_paid" ? "deposit_paid" : "fully_paid",
+              m.membershipFeeStatus === "deposit_paid" ? m.feeAmountPaid || 250 : m.feeAmountPaid || 500,
+              firstCode,
+              secondCode,
+            )
+          }
           className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink hover:bg-cream-2"
         >
-          Save M-Pesa code
+          Save both M-Pesa codes
         </button>
       )}
     </div>
@@ -364,7 +393,8 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
       const matchId = m.studentId?.toLowerCase().includes(q);
       const matchCourse = m.course?.toLowerCase().includes(q);
       const matchPhone = m.phoneNumber?.toLowerCase().includes(q);
-      const matchMpesa = m.mpesaReference?.toLowerCase().includes(q);
+      const matchMpesa =
+        m.mpesaReference?.toLowerCase().includes(q) || m.mpesaReference2?.toLowerCase().includes(q);
       const matchTrack = m.communitySlugs?.some(
         (slug) => trackLabel(slug).toLowerCase().includes(q) || slug.includes(q),
       );
@@ -439,11 +469,12 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
     memberId: string,
     status: PaymentStatus,
     amount: number,
-    mpesaRef?: string,
+    firstCode?: string,
+    secondCode?: string,
   ) => {
     setActionInProgress(memberId);
     startTransition(async () => {
-      await updateMemberPaymentStatus(memberId, status, amount, mpesaRef);
+      await updateMemberPaymentStatus(memberId, status, amount, firstCode, secondCode);
       setActionInProgress(null);
     });
   };
@@ -605,7 +636,9 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
               busy={actionInProgress === m.id}
               onApprove={() => handleApprove(m.id)}
               onReject={() => handleReject(m.id)}
-              onPayment={(status, amount, mpesa) => handlePaymentUpdate(m.id, status, amount, mpesa)}
+              onPayment={(status, amount, firstCode, secondCode) =>
+                handlePaymentUpdate(m.id, status, amount, firstCode, secondCode)
+              }
             />
           ))}
         </div>
@@ -615,7 +648,7 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky">Member roster</p>
             <p className="mt-1 text-sm font-semibold text-ink">Full details, M-Pesa codes, fee upgrades &amp; exec seats</p>
             <p className="mt-0.5 text-xs text-muted">
-              For deposit (KES 250) members, use <span className="font-semibold text-ink">Upgrade to KES 500 Fully Paid</span> when the balance clears.
+              For a second payment, keep the first M-Pesa code and enter the new one beside it, then save both.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:gap-5">
@@ -624,7 +657,9 @@ export function MembersTable({ members }: { members: ExtendedMemberRow[] }) {
                 key={m.id}
                 member={m}
                 busy={actionInProgress === m.id}
-                onPayment={(status, amount, mpesa) => handlePaymentUpdate(m.id, status, amount, mpesa)}
+                onPayment={(status, amount, firstCode, secondCode) =>
+                handlePaymentUpdate(m.id, status, amount, firstCode, secondCode)
+              }
                 onApprove={() => handleApprove(m.id)}
                 onReject={() => handleReject(m.id)}
                 onDelete={() => handleDelete(m.id)}
@@ -649,7 +684,7 @@ function PendingApprovalCard({
   busy: boolean;
   onApprove: () => void;
   onReject: () => void;
-  onPayment: (status: PaymentStatus, amount: number, mpesaRef?: string) => void;
+  onPayment: (status: PaymentStatus, amount: number, firstCode?: string, secondCode?: string) => void;
 }) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-line/80 bg-surface p-4 shadow-sm transition-all hover:border-sky/40 sm:p-6">
@@ -717,7 +752,7 @@ function RosterMemberCard({
 }: {
   member: ExtendedMemberRow;
   busy: boolean;
-  onPayment: (status: PaymentStatus, amount: number, mpesaRef?: string) => void;
+  onPayment: (status: PaymentStatus, amount: number, firstCode?: string, secondCode?: string) => void;
   onApprove: () => void;
   onReject: () => void;
   onDelete: () => void;

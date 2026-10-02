@@ -29,6 +29,12 @@ import { checkEmailAvailability } from "@/actions/check-email-availability";
 import { NameMatchModal } from "@/features/membership/NameMatchModal";
 import type { SimilarMemberCandidate } from "@/lib/membership/name-match";
 import { type FullRegistrationInput, OTHER_CAMPUS_LABEL } from "@/lib/validations/registration";
+import {
+  clearRegistrationDraft,
+  loadRegistrationDraft,
+  saveRegistrationDraft,
+  type RegistrationSeed,
+} from "@/features/membership/registration-draft";
 import { Button } from "@/components/alignui/button";
 import { Input } from "@/components/alignui/input";
 import { ROUTES } from "@/constants/routes";
@@ -54,9 +60,14 @@ const YEAR_OPTIONS = ["Year 1 (Freshman)", "Year 2 (Sophomore)", "Year 3 (Junior
 export function RegistrationWizard({
   initialUser,
   isSignedIn = false,
+  startStep,
+  savedProfile,
 }: {
   initialUser?: { fullName?: string; email?: string } | null;
   isSignedIn?: boolean;
+  /** Open this step instead of step 1. Used when editing one part of a saved application. */
+  startStep?: number;
+  savedProfile?: RegistrationSeed | null;
 }) {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
@@ -110,6 +121,7 @@ export function RegistrationWizard({
   const [passError, setPassError] = useState<string | null>(null);
   const [passBusy, setPassBusy] = useState(false);
   const stkPoll = useRef(0);
+  const [draftReady, setDraftReady] = useState(false);
 
   const totalSteps = 5;
   const isOtherCampus = formData.campus === OTHER_CAMPUS_LABEL || (!formData.isChiromo && formData.campus.toLowerCase().includes("other"));
@@ -132,6 +144,55 @@ export function RegistrationWizard({
     if (!saved) return;
     setFormData((prev) => (prev.promoToken ? prev : { ...prev, promoToken: saved }));
   }, []);
+
+  useEffect(() => {
+    const draft = loadRegistrationDraft();
+    const draftEmail = draft?.form.email?.trim().toLowerCase();
+    const accountEmail = initialUser?.email?.trim().toLowerCase();
+    const sameAccount = !accountEmail || !draftEmail || draftEmail === accountEmail;
+
+    if (savedProfile) {
+      setFormData((prev) => ({
+        ...prev,
+        ...savedProfile,
+        password: "",
+        promoToken: prev.promoToken,
+        agreedToCodeOfConduct: true,
+      }));
+      const phone = savedProfile.mpesaPhoneNumber || savedProfile.phoneNumber;
+      if (phone) setPayPhone(phone);
+    }
+
+    if (sameAccount && draft?.form) {
+      setFormData((prev) => ({
+        ...prev,
+        ...draft.form,
+        paymentOption: draft.form.paymentOption === "deposit_250" ? "deposit_250" : "full_500",
+        password: "",
+        promoToken: prev.promoToken,
+        email: accountEmail || draft.form.email || prev.email,
+        fullName: draft.form.fullName || initialUser?.fullName || prev.fullName,
+      }));
+      if (draft.payPhone) setPayPhone(draft.payPhone);
+      if (draft.form.mpesaReference) {
+        setStkPhase("success");
+        setStkMessage("Your M-Pesa code is still saved on this device.");
+      }
+    }
+
+    if (startStep && startStep >= 1 && startStep <= 5) {
+      setCurrentStep(startStep);
+    } else if (sameAccount && draft?.step) {
+      setCurrentStep(Math.min(5, Math.max(1, draft.step)));
+    }
+
+    setDraftReady(true);
+  }, [savedProfile, startStep, initialUser?.email, initialUser?.fullName]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    saveRegistrationDraft({ step: currentStep, payPhone, form: formData });
+  }, [draftReady, currentStep, payPhone, formData]);
 
   // Debounced live email check — any domain OK; must not already exist
   useEffect(() => {
@@ -311,6 +372,7 @@ export function RegistrationWizard({
         }
       }
       setRegistrationResult(res.data ?? null);
+      clearRegistrationDraft();
       setStatus("success");
     } else {
       setStatus("error");
@@ -613,6 +675,10 @@ export function RegistrationWizard({
     setPassInput("");
     setFieldErrors((prev) => ({ ...prev, mpesaReference: "" }));
   };
+
+  if (!draftReady) {
+    return <div className="mx-auto min-h-[320px] max-w-3xl" />;
+  }
 
   return (
     <div className="mx-auto max-w-3xl">

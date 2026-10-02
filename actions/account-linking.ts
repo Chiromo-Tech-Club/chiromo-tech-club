@@ -232,16 +232,27 @@ async function executeMemberMerge(
 
     const primaryPaid = primary.feeAmountPaid ?? 0;
     const secondaryPaid = secondary.feeAmountPaid ?? 0;
-    // Keep the higher payment; if equal, keep primary's M-Pesa but note both were paid
+    const uniqueCodes = [
+      ...new Set(
+        [primary.mpesaReference, primary.mpesaReference2, secondary.mpesaReference, secondary.mpesaReference2]
+          .map((code) => code?.trim().toUpperCase())
+          .filter((code): code is string => Boolean(code)),
+      ),
+    ];
+    const keptCodes = {
+      mpesaReference: uniqueCodes[0] ?? null,
+      mpesaReference2: uniqueCodes[1] ?? null,
+    };
+    // Keep the higher payment and up to two distinct M-Pesa codes.
     const feePatch =
       secondaryPaid > primaryPaid
         ? {
             feeAmountPaid: secondaryPaid,
             membershipFeeStatus: secondary.membershipFeeStatus,
-            mpesaReference: secondary.mpesaReference ?? primary.mpesaReference,
+            ...keptCodes,
           }
         : primaryPaid === 0 && secondaryPaid === 0
-          ? {}
+          ? keptCodes
           : {
               feeAmountPaid: Math.max(primaryPaid, secondaryPaid),
               membershipFeeStatus:
@@ -252,7 +263,7 @@ async function executeMemberMerge(
                       secondary.membershipFeeStatus === "deposit_paid"
                     ? "deposit_paid"
                     : primary.membershipFeeStatus,
-              mpesaReference: primary.mpesaReference || secondary.mpesaReference,
+              ...keptCodes,
             };
 
     const membershipStatus =

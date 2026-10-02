@@ -970,6 +970,7 @@ export default async function DashboardCatchAllPage({ params }: DashboardCatchAl
           membershipFeeStatus: members.membershipFeeStatus,
           feeAmountPaid: members.feeAmountPaid,
           mpesaReference: members.mpesaReference,
+          mpesaReference2: members.mpesaReference2,
           createdAt: members.createdAt,
           deactivatedAt: members.deactivatedAt,
           purgeScheduledAt: members.purgeScheduledAt,

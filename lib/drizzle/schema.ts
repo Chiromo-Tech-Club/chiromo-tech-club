@@ -93,6 +93,8 @@ export const members = pgTable(
     membershipFeeStatus: text("membership_fee_status").default("unpaid"), // 'unpaid' | 'deposit_paid' | 'fully_paid'
     feeAmountPaid: integer("fee_amount_paid").default(0), // KES (500 full, 250 deposit, etc)
     mpesaReference: text("mpesa_reference"),
+    /** Second M-Pesa receipt when the member pays the balance separately. */
+    mpesaReference2: text("mpesa_reference_2"),
     reviewedById: uuid("reviewed_by_id"),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     reviewNotes: text("review_notes"),

@@ -6,6 +6,7 @@ import {
   hasCompletedClubRegistration,
 } from "@/lib/supabase/get-current-member";
 import { ROUTES } from "@/constants/routes";
+import type { RegistrationSeed } from "@/features/membership/registration-draft";
 
 export const metadata = {
   title: "Register for Club Membership | Chiromo Tech Club",
@@ -30,6 +31,36 @@ export default async function RegisterPage() {
   const registrationComplete = hasCompletedClubRegistration(currentMember);
   const initialUser = currentMember
     ? { fullName: currentMember.fullName, email: currentMember.email }
+    : null;
+  const experience = currentMember?.experienceLevel;
+  const savedProfile: RegistrationSeed | null = currentMember
+    ? {
+        fullName: currentMember.fullName,
+        email: currentMember.email,
+        phoneNumber: currentMember.phoneNumber ?? "",
+        githubHandle: currentMember.githubHandle ?? "",
+        bio: currentMember.bio ?? "",
+        studentId: currentMember.studentId ?? "",
+        campus: currentMember.campus ?? "",
+        isChiromo: currentMember.isChiromo ?? true,
+        institutionName: currentMember.institutionName ?? "",
+        department: currentMember.department ?? "",
+        course: currentMember.course ?? "",
+        yearOfStudy: currentMember.yearOfStudy ?? "",
+        communitySlugs: currentMember.communitySlugs ?? [],
+        experienceLevel:
+          experience === "intermediate" || experience === "advanced" || experience === "beginner"
+            ? experience
+            : "beginner",
+        learningGoals: currentMember.learningGoals ?? "",
+        paymentOption:
+          currentMember.membershipFeeStatus === "deposit_paid" || currentMember.feeAmountPaid === 250
+            ? "deposit_250"
+            : "full_500",
+        mpesaReference: currentMember.mpesaReference ?? "",
+        mpesaPhoneNumber: currentMember.mpesaPhoneNumber ?? currentMember.phoneNumber ?? "",
+        agreedToCodeOfConduct: true,
+      }
     : null;
 
   return (
@@ -69,6 +100,7 @@ export default async function RegisterPage() {
         isSignedIn={Boolean(userId)}
         registrationComplete={registrationComplete}
         initialUser={initialUser}
+        savedProfile={savedProfile}
       />
     </main>
   );

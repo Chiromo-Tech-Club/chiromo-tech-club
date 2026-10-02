@@ -68,8 +68,13 @@ export async function GET(request: Request) {
   // Membership Google flow: finish the registration form on /register
   // unless they already completed it (then dashboard).
   if (intent === "register") {
-    const member = await getCurrentMember({ createIfMissing: true }).catch(() => null);
-    if (member && hasCompletedClubRegistration(member)) {
+    try {
+      const member = await getCurrentMember({ createIfMissing: true });
+      if (member && hasCompletedClubRegistration(member)) {
+        return NextResponse.redirect(`${origin}${ROUTES.dashboard}`);
+      }
+    } catch (err) {
+      console.error("Could not load the member profile after register sign-in:", err);
       return NextResponse.redirect(`${origin}${ROUTES.dashboard}`);
     }
     return NextResponse.redirect(`${origin}${ROUTES.register}`);
@@ -82,15 +87,18 @@ export async function GET(request: Request) {
 
   // After normal sign-in: incomplete applications must finish /register first
   if (intent === "signin") {
-    const member = await getCurrentMember({ createIfMissing: false }).catch(() => null);
-    const role = member?.role;
-    const isExecOrAdmin = role === "exec" || role === "admin";
-    if (!isExecOrAdmin && member && !hasCompletedClubRegistration(member)) {
-      return NextResponse.redirect(`${origin}${ROUTES.register}`);
-    }
-    if (!isExecOrAdmin && !member) {
-      // Auth exists but no club application yet
-      return NextResponse.redirect(`${origin}${ROUTES.register}`);
+    try {
+      const member = await getCurrentMember({ createIfMissing: false });
+      const role = member?.role;
+      const isExecOrAdmin = role === "exec" || role === "admin";
+      if (!isExecOrAdmin && member && !hasCompletedClubRegistration(member)) {
+        return NextResponse.redirect(`${origin}${ROUTES.register}`);
+      }
+      if (!isExecOrAdmin && !member) {
+        return NextResponse.redirect(`${origin}${ROUTES.register}`);
+      }
+    } catch (err) {
+      console.error("Could not load the member profile after sign-in:", err);
     }
   }
 

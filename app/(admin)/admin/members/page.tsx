@@ -46,6 +46,7 @@ async function getMembers(): Promise<ExtendedMemberRow[]> {
       membershipFeeStatus: members.membershipFeeStatus,
       feeAmountPaid: members.feeAmountPaid,
       mpesaReference: members.mpesaReference,
+      mpesaReference2: members.mpesaReference2,
       mpesaPhoneNumber: members.mpesaPhoneNumber,
       cardTheme: members.cardTheme,
       createdAt: members.createdAt,

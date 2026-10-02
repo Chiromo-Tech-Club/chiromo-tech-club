@@ -28,10 +28,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const isExecOrAdmin = role === "exec" || role === "admin";
   const isAdmin = role === "admin";
 
-  const member = await getCurrentMember();
+  let member = null;
+  let memberLookupFailed = false;
+  try {
+    member = await getCurrentMember();
+  } catch (err) {
+    memberLookupFailed = true;
+    console.error("Could not load the member profile:", err);
+  }
   const isDeactivated = Boolean(member?.deactivatedAt);
 
-  if (!isExecOrAdmin && !hasCompletedClubRegistration(member)) {
+  if (!memberLookupFailed && !isExecOrAdmin && !hasCompletedClubRegistration(member)) {
     redirect(ROUTES.register);
   }
 

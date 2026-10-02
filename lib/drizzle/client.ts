@@ -3,15 +3,17 @@ import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
 
 /**
- * Lazily-constructed singleton. Importing this module never touches the
- * network or throws — the connection is only opened the first time
- * `getDb()` is actually called, so pages/build steps that don't query the
- * database stay unaffected by a missing DATABASE_URL.
+ * One shared client for the whole Node process, including hot reload.
+ * Supabase session mode only allows a small pool (often 15). A fresh client
+ * on every reload fills that pool, later queries fail, and login then looks
+ * like the member row does not exist.
  */
-let dbInstance: PostgresJsDatabase<typeof schema> | null = null;
+const globalForDb = globalThis as unknown as {
+  ctcDb?: PostgresJsDatabase<typeof schema>;
+};
 
 export function getDb() {
-  if (dbInstance) return dbInstance;
+  if (globalForDb.ctcDb) return globalForDb.ctcDb;
 
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
@@ -20,9 +22,14 @@ export function getDb() {
     );
   }
 
-  const client = postgres(connectionString, { prepare: false });
-  dbInstance = drizzle(client, { schema });
-  return dbInstance;
+  const client = postgres(connectionString, {
+    prepare: false,
+    max: 1,
+    idle_timeout: 5,
+    connect_timeout: 10,
+  });
+  globalForDb.ctcDb = drizzle(client, { schema });
+  return globalForDb.ctcDb;
 }
 
 export type Database = ReturnType<typeof getDb>;

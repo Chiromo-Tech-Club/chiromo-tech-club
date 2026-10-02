@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/drizzle/client";
+import { ensureMembersColumns } from "@/lib/drizzle/ensure-members-columns";
 import { members } from "@/lib/drizzle/schema";
 import { requireRole, setUserRole, getAuthUserId, getCurrentRole, getCurrentExecTitle } from "@/lib/supabase/auth-helpers";
 import { ROLES } from "@/constants/roles";
@@ -150,28 +151,34 @@ export async function updateMemberPaymentStatus(
   memberId: string,
   feeStatus: "unpaid" | "deposit_paid" | "fully_paid",
   amountPaid: number,
-  mpesaRef?: string,
+  firstCode?: string,
+  secondCode?: string,
 ): Promise<ActionResult> {
   const isAllowed = await canManageApprovals();
   if (!isAllowed) return { success: false, error: "Executive or Admin access required." };
 
   const db = getDb();
   try {
+    await ensureMembersColumns();
     const patch: {
       membershipFeeStatus: string;
       feeAmountPaid: number;
       updatedAt: Date;
       mpesaReference?: string | null;
+      mpesaReference2?: string | null;
     } = {
       membershipFeeStatus: feeStatus,
       feeAmountPaid: amountPaid,
       updatedAt: new Date(),
     };
 
-    // Only overwrite M-Pesa code when a new value is explicitly provided
-    if (typeof mpesaRef === "string") {
-      const trimmed = mpesaRef.trim().toUpperCase();
+    if (typeof firstCode === "string") {
+      const trimmed = firstCode.trim().toUpperCase();
       patch.mpesaReference = trimmed || null;
+    }
+    if (typeof secondCode === "string") {
+      const trimmed = secondCode.trim().toUpperCase();
+      patch.mpesaReference2 = trimmed || null;
     }
 
     await db.update(members).set(patch).where(eq(members.id, memberId));

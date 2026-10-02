@@ -29,6 +29,7 @@ export async function ensureMembersColumns(): Promise<void> {
       ADD COLUMN IF NOT EXISTS "membership_fee_status" text DEFAULT 'unpaid',
       ADD COLUMN IF NOT EXISTS "fee_amount_paid" integer DEFAULT 0,
       ADD COLUMN IF NOT EXISTS "mpesa_reference" text,
+      ADD COLUMN IF NOT EXISTS "mpesa_reference_2" text,
       ADD COLUMN IF NOT EXISTS "mpesa_phone_number" text,
       ADD COLUMN IF NOT EXISTS "experience_level" text,
       ADD COLUMN IF NOT EXISTS "learning_goals" text,
