@@ -71,7 +71,7 @@ export interface ExtendedMemberRow {
   purgeScheduledAt?: string | null;
 }
 
-type PaymentStatus = "fully_paid" | "deposit_paid";
+type PaymentStatus = "fully_paid" | "deposit_paid" | "unpaid";
 
 function trackLabel(slug: string): string {
   return getCommunityBySlug(slug)?.name ?? slug.replace(/-/g, " ");
@@ -294,6 +294,25 @@ function PaymentControls({
           className="rounded-xl font-mono text-xs uppercase"
           maxLength={20}
         />
+        <button
+          type="button"
+          disabled={busy || !firstChanged || firstCode.trim().length < 4}
+          onClick={() =>
+            onPayment(
+              m.membershipFeeStatus === "fully_paid"
+                ? "fully_paid"
+                : m.membershipFeeStatus === "deposit_paid"
+                  ? "deposit_paid"
+                  : "unpaid",
+              m.feeAmountPaid ?? 0,
+              firstCode,
+              m.mpesaReference2 ?? "",
+            )
+          }
+          className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink hover:bg-cream-2 disabled:opacity-50"
+        >
+          Update first code
+        </button>
       </label>
       <label className="block space-y-1">
         <span className="text-[10px] font-bold uppercase tracking-wide text-muted">Second payment code</span>
