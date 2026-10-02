@@ -13,10 +13,11 @@ export const SITE_CONFIG = {
    * Override with NEXT_PUBLIC_GOOGLE_CALENDAR_SRC (comma-separated for multiple).
    */
   googleCalendarSrc: "ctc.uonbi@gmail.com",
-  /** Membership fee payment (M-Pesa Pochi la Biashara). */
+  /** Membership fee — M-Pesa Paybill via PayHero STK (channel 13425). */
   payment: {
-    method: "Pochi la Biashara",
-    tillOrPhone: "0143184616",
+    method: "M-Pesa Paybill",
+    channelId: 13425,
+    lipwaUrl: "https://lipwa.link/7133",
     fullFeeKes: 500,
     depositKes: 250,
   },

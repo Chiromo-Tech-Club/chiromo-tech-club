@@ -100,6 +100,11 @@ export function RegistrationWizard({
   const [emailCheck, setEmailCheck] = useState<EmailCheckStatus>("idle");
   const [emailCheckMessage, setEmailCheckMessage] = useState<string | null>(null);
   const emailCheckSeq = useRef(0);
+  const [payPhone, setPayPhone] = useState("");
+  const [stkPhase, setStkPhase] = useState<"idle" | "sending" | "waiting" | "success" | "failed">("idle");
+  const [stkMessage, setStkMessage] = useState<string | null>(null);
+  const [stkReference, setStkReference] = useState<string | null>(null);
+  const stkPoll = useRef(0);
 
   const totalSteps = 5;
   const isOtherCampus = formData.campus === OTHER_CAMPUS_LABEL || (!formData.isChiromo && formData.campus.toLowerCase().includes("other"));
@@ -111,6 +116,11 @@ export function RegistrationWizard({
       if (data.user?.id) setSignedInMemberId(data.user.id);
     });
   }, [isSignedIn]);
+
+  useEffect(() => {
+    if (currentStep !== 4) return;
+    setPayPhone((current) => current || formData.phoneNumber);
+  }, [currentStep, formData.phoneNumber]);
 
   // Debounced live email check — any domain OK; must not already exist
   useEffect(() => {
@@ -208,7 +218,7 @@ export function RegistrationWizard({
       }
     } else if (step === 4) {
       if (!formData.mpesaReference || formData.mpesaReference.trim().length < 4) {
-        errors.mpesaReference = "Please provide the M-Pesa transaction code.";
+        errors.mpesaReference = "Send the M-Pesa prompt and wait for the code to appear.";
       }
     }
 
@@ -475,6 +485,107 @@ export function RegistrationWizard({
       </div>
     );
   }
+
+  const feeKes =
+    formData.paymentOption === "deposit_250"
+      ? SITE_CONFIG.payment.depositKes
+      : SITE_CONFIG.payment.fullFeeKes;
+
+  const clearPayment = () => {
+    stkPoll.current += 1;
+    setStkReference(null);
+    setStkPhase("idle");
+    setStkMessage(null);
+    setFormData((prev) => ({ ...prev, mpesaReference: "" }));
+  };
+
+  const watchPayment = async (reference: string, phone: string, generation: number) => {
+    const started = Date.now();
+    while (stkPoll.current === generation && Date.now() - started < 90_000) {
+      await new Promise((resolve) => window.setTimeout(resolve, 2000));
+      if (stkPoll.current !== generation) return;
+      try {
+        const statusRes = await fetch(
+          `/api/payments/stk/status?reference=${encodeURIComponent(reference)}`,
+        );
+        const status = (await statusRes.json()) as {
+          status?: string;
+          receipt?: string | null;
+          error?: string;
+        };
+        if (stkPoll.current !== generation) return;
+        if (status.status === "SUCCESS" && status.receipt) {
+          setFormData((prev) => ({
+            ...prev,
+            mpesaReference: status.receipt!.toUpperCase(),
+            mpesaPhoneNumber: phone,
+          }));
+          setStkPhase("success");
+          setStkMessage("Payment received. Continue to the next step.");
+          return;
+        }
+        if (status.status === "FAILED") {
+          setStkPhase("failed");
+          setStkMessage(status.error || "The prompt was cancelled. You can send it again.");
+          return;
+        }
+      } catch {
+        // Keep polling. A single network blip should not drop a payment in progress.
+      }
+    }
+    if (stkPoll.current === generation) {
+      setStkPhase("failed");
+      setStkMessage("Still waiting on M-Pesa. If you already entered your PIN, check again.");
+    }
+  };
+
+  const sendStkPush = async () => {
+    const generation = stkPoll.current + 1;
+    stkPoll.current = generation;
+    setStkPhase("sending");
+    setStkMessage(null);
+    setFieldErrors((prev) => ({ ...prev, mpesaReference: "" }));
+    setFormData((prev) => ({ ...prev, mpesaReference: "", mpesaPhoneNumber: payPhone }));
+
+    try {
+      const res = await fetch("/api/payments/stk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: payPhone,
+          amount: feeKes,
+          customerName: formData.fullName,
+        }),
+      });
+      const data = (await res.json()) as { reference?: string; phone?: string; error?: string };
+      if (stkPoll.current !== generation) return;
+      if (!res.ok || !data.reference) {
+        setStkPhase("failed");
+        setStkMessage(data.error || "Could not send the M-Pesa prompt.");
+        return;
+      }
+      const phone = data.phone || payPhone;
+      setPayPhone(phone);
+      setStkReference(data.reference);
+      setFormData((prev) => ({ ...prev, mpesaPhoneNumber: phone }));
+      setStkPhase("waiting");
+      setStkMessage("Check your phone and enter your M-Pesa PIN. The code fills in here.");
+      await watchPayment(data.reference, phone, generation);
+    } catch {
+      if (stkPoll.current !== generation) return;
+      setStkPhase("failed");
+      setStkMessage("Could not reach M-Pesa. Try again.");
+    }
+  };
+
+  const checkPaymentAgain = () => {
+    if (!stkReference) return;
+    const generation = stkPoll.current + 1;
+    stkPoll.current = generation;
+    setStkPhase("waiting");
+    setStkMessage("Checking M-Pesa again…");
+    void watchPayment(stkReference, payPhone, generation);
+  };
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -967,7 +1078,15 @@ export function RegistrationWizard({
                 return (
                   <div
                     key={tier.id}
-                    onClick={() => setFormData({ ...formData, paymentOption: tier.id as any })}
+                    onClick={() => {
+                      if (formData.paymentOption === tier.id) return;
+                      clearPayment();
+                      setFormData((prev) => ({
+                        ...prev,
+                        paymentOption: tier.id as FullRegistrationInput["paymentOption"],
+                        mpesaReference: "",
+                      }));
+                    }}
                     className={`relative cursor-pointer rounded-2xl border p-4 transition-all ${
                       isSelected
                         ? "border-sky bg-sky/5 shadow-md ring-2 ring-sky"
@@ -985,7 +1104,6 @@ export function RegistrationWizard({
               })}
             </div>
 
-            {/* Pochi la Biashara payment steps */}
             <div className="rounded-2xl border border-green/30 bg-gradient-to-br from-green/5 via-surface to-surface p-5">
               <div className="flex flex-wrap items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green/10 text-green">
@@ -993,65 +1111,103 @@ export function RegistrationWizard({
                 </div>
                 <div className="min-w-0 flex-1">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-green">
-                    How to pay — {SITE_CONFIG.payment.method}
+                    Pay KES {feeKes} — {SITE_CONFIG.payment.method}
                   </h4>
                   <p className="mt-1 text-sm text-ink">
-                    Send{" "}
-                    <strong className="font-mono">
-                      KES {formData.paymentOption === "deposit_250" ? SITE_CONFIG.payment.depositKes : SITE_CONFIG.payment.fullFeeKes}
-                    </strong>{" "}
-                    to:
+                    Enter the Safaricom number that should receive the M-Pesa prompt. After you enter your PIN, the confirmation code appears here.
                   </p>
-                  <p className="mt-1 font-mono text-2xl font-extrabold tracking-wide text-ink">
-                    {SITE_CONFIG.payment.tillOrPhone}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted">Pochi la Biashara · Chiromo Tech Club (CTC)</p>
                 </div>
               </div>
 
-              <ol className="mt-4 space-y-2.5 border-t border-line pt-4">
-                {[
-                  "Open M-Pesa on your phone",
-                  "Choose Lipa na M-Pesa → Pochi la Biashara",
-                  `Enter number ${SITE_CONFIG.payment.tillOrPhone}`,
-                  `Enter amount (KES ${formData.paymentOption === "deposit_250" ? SITE_CONFIG.payment.depositKes : SITE_CONFIG.payment.fullFeeKes})`,
-                  "Enter your M-Pesa PIN and confirm",
-                  "Copy the M-Pesa confirmation code (SMS) into the form below",
-                ].map((step, i) => (
-                  <li key={step} className="flex gap-3 text-sm text-ink-2">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green/15 text-[11px] font-bold text-green">
-                      {i + 1}
-                    </span>
-                    <span className="pt-0.5">{step}</span>
-                  </li>
-                ))}
-              </ol>
-
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-text-3">
-                    M-Pesa Transaction Code
-                  </label>
-                  <Input
-                    value={formData.mpesaReference ?? ""}
-                    onChange={(e) => setFormData({ ...formData, mpesaReference: e.target.value.toUpperCase() })}
-                    placeholder="e.g. SLK82910XZ"
-                    className="rounded-xl uppercase font-mono"
-                  />
-                  {fieldErrors.mpesaReference && <p className="mt-1 text-xs text-red-500">{fieldErrors.mpesaReference}</p>}
+              <div className="mt-4 border-t border-line pt-4">
+                <label className="mb-1 block text-xs font-semibold text-text-3" htmlFor="pay-phone">
+                  M-Pesa phone number
+                </label>
+                <Input
+                  id="pay-phone"
+                  value={payPhone}
+                  onChange={(e) => {
+                    setPayPhone(e.target.value);
+                    if (formData.mpesaReference) clearPayment();
+                  }}
+                  placeholder="0712 345 678"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  className="rounded-xl"
+                  disabled={stkPhase === "sending" || stkPhase === "waiting"}
+                />
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={() => void sendStkPush()}
+                    disabled={stkPhase === "sending" || stkPhase === "waiting" || stkPhase === "success"}
+                    className="rounded-xl bg-green px-5 py-2.5 font-semibold text-white hover:bg-green/90 disabled:opacity-50"
+                  >
+                    {stkPhase === "sending" || stkPhase === "waiting" ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 size={16} className="animate-spin" />
+                        {stkPhase === "sending" ? "Sending prompt…" : "Waiting for PIN…"}
+                      </span>
+                    ) : stkPhase === "success" ? (
+                      "Prompt sent"
+                    ) : (
+                      `Send KES ${feeKes} prompt`
+                    )}
+                  </Button>
+                  {stkPhase === "failed" && stkReference && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={checkPaymentAgain}
+                      className="rounded-xl px-4"
+                    >
+                      Check again
+                    </Button>
+                  )}
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-text-3">
-                    Phone Number Paid From
-                  </label>
-                  <Input
-                    value={formData.mpesaPhoneNumber ?? ""}
-                    onChange={(e) => setFormData({ ...formData, mpesaPhoneNumber: e.target.value })}
-                    placeholder="07XX XXX XXX"
-                    className="rounded-xl"
-                  />
-                </div>
+                {stkMessage && (
+                  <p
+                    className={`mt-3 flex items-start gap-2 text-sm ${
+                      stkPhase === "success" ? "text-green" : stkPhase === "failed" ? "text-red-600" : "text-ink-2"
+                    }`}
+                  >
+                    {stkPhase === "success" ? (
+                      <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+                    ) : stkPhase === "waiting" || stkPhase === "sending" ? (
+                      <Loader2 size={16} className="mt-0.5 shrink-0 animate-spin" />
+                    ) : (
+                      <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                    )}
+                    <span>{stkMessage}</span>
+                  </p>
+                )}
+
+                {formData.mpesaReference ? (
+                  <div className="mt-4 rounded-xl border border-green/40 bg-green/10 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-green">M-Pesa code</p>
+                    <p className="mt-1 font-mono text-2xl font-extrabold tracking-wide text-ink">
+                      {formData.mpesaReference}
+                    </p>
+                  </div>
+                ) : null}
+                {fieldErrors.mpesaReference && (
+                  <p className="mt-2 text-xs text-red-500">{fieldErrors.mpesaReference}</p>
+                )}
+
+                {/*<p className="mt-4 text-xs text-muted">
+                  Or pay the same amount on{" "}
+                  <a
+                    href={SITE_CONFIG.payment.lipwaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-sky underline-offset-2 hover:underline"
+                  >
+                    Lipwa
+                  </a>
+                  . Registration continues once this prompt is confirmed.
+                </p>*/}
               </div>
             </div>
           </div>
@@ -1111,10 +1267,7 @@ export function RegistrationWizard({
                 </div>
                 <div>
                   <span className="text-xs text-muted">Paid via</span>
-                  <p className="text-sm font-bold text-ink">
-                    {SITE_CONFIG.payment.method} ·{" "}
-                    <span className="font-mono">{SITE_CONFIG.payment.tillOrPhone}</span>
-                  </p>
+                  <p className="text-sm font-bold text-ink">{SITE_CONFIG.payment.method}</p>
                 </div>
                 {formData.mpesaReference && (
                   <div>

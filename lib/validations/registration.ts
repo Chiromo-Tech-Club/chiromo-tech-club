@@ -55,7 +55,7 @@ export const registrationStep4Schema = z.object({
   mpesaReference: z
     .string()
     .trim()
-    .min(4, "Please provide the M-Pesa transaction code.")
+    .min(4, "Wait for the M-Pesa code after you confirm the prompt on your phone.")
     .max(20, "M-Pesa code should be under 20 characters."),
   mpesaPhoneNumber: z
     .string()
