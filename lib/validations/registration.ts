@@ -55,14 +55,19 @@ export const registrationStep4Schema = z.object({
   mpesaReference: z
     .string()
     .trim()
-    .min(4, "Wait for the M-Pesa code after you confirm the prompt on your phone.")
-    .max(20, "M-Pesa code should be under 20 characters."),
+    .max(20, "M-Pesa code should be under 20 characters.")
+    .optional()
+    .or(z.literal("")),
   mpesaPhoneNumber: z
     .string()
     .trim()
     .max(18)
     .optional()
     .or(z.literal("")),
+  /** PayHero reference from the STK request. Used to confirm the code before approval. */
+  payheroReference: z.string().trim().max(80).optional().or(z.literal("")),
+  /** One-time pass that skips a new M-Pesa prompt. Issued by the server, not typed as the secret. */
+  promoToken: z.string().trim().max(80).optional().or(z.literal("")),
 });
 
 function refineOtherInstitution(
@@ -104,7 +109,18 @@ export const fullRegistrationSchema = z
       message: "You must agree to the Chiromo Tech Club constitution and code of conduct.",
     }),
   })
-  .superRefine(refineOtherInstitution);
+  .superRefine(refineOtherInstitution)
+  .superRefine((data, ctx) => {
+    const hasReceipt = (data.mpesaReference?.trim().length ?? 0) >= 4;
+    const hasPass = (data.promoToken?.trim().length ?? 0) >= 32;
+    if (!hasReceipt && !hasPass) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["mpesaReference"],
+        message: "Send the M-Pesa prompt and wait for the code, or use a valid pass.",
+      });
+    }
+  });
 
 export type RegistrationStep1Input = z.infer<typeof registrationStep1Schema>;
 export type RegistrationStep2Input = z.infer<typeof registrationStep2Schema>;

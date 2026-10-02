@@ -61,5 +61,14 @@ export async function ensureMembersColumns(): Promise<void> {
     CREATE UNIQUE INDEX IF NOT EXISTS "member_emails_email_idx" ON "member_emails" ("email")
   `);
 
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "registration_passes" (
+      "code_hash" text PRIMARY KEY,
+      "token" text UNIQUE,
+      "redeemed_at" timestamp with time zone,
+      "member_id" uuid
+    )
+  `);
+
   ensured = true;
 }

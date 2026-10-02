@@ -23,7 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { COMMUNITIES } from "@/data/communities";
-import { submitClubRegistration } from "@/actions/registration";
+import { applyRegistrationPass, submitClubRegistration } from "@/actions/registration";
 import { findSimilarNamedMembers } from "@/actions/account-linking";
 import { checkEmailAvailability } from "@/actions/check-email-availability";
 import { NameMatchModal } from "@/features/membership/NameMatchModal";
@@ -85,6 +85,8 @@ export function RegistrationWizard({
     paymentOption: "full_500",
     mpesaReference: "",
     mpesaPhoneNumber: "",
+    payheroReference: "",
+    promoToken: "",
     agreedToCodeOfConduct: true,
   });
 
@@ -104,6 +106,9 @@ export function RegistrationWizard({
   const [stkPhase, setStkPhase] = useState<"idle" | "sending" | "waiting" | "success" | "failed">("idle");
   const [stkMessage, setStkMessage] = useState<string | null>(null);
   const [stkReference, setStkReference] = useState<string | null>(null);
+  const [passInput, setPassInput] = useState("");
+  const [passError, setPassError] = useState<string | null>(null);
+  const [passBusy, setPassBusy] = useState(false);
   const stkPoll = useRef(0);
 
   const totalSteps = 5;
@@ -121,6 +126,12 @@ export function RegistrationWizard({
     if (currentStep !== 4) return;
     setPayPhone((current) => current || formData.phoneNumber);
   }, [currentStep, formData.phoneNumber]);
+
+  useEffect(() => {
+    const saved = window.sessionStorage.getItem("ctc-registration-pass");
+    if (!saved) return;
+    setFormData((prev) => (prev.promoToken ? prev : { ...prev, promoToken: saved }));
+  }, []);
 
   // Debounced live email check — any domain OK; must not already exist
   useEffect(() => {
@@ -217,7 +228,7 @@ export function RegistrationWizard({
         errors.communitySlugs = "Please select at least one community or technical track.";
       }
     } else if (step === 4) {
-      if (!formData.mpesaReference || formData.mpesaReference.trim().length < 4) {
+      if (!formData.promoToken && (!formData.mpesaReference || formData.mpesaReference.trim().length < 4)) {
         errors.mpesaReference = "Send the M-Pesa prompt and wait for the code to appear.";
       }
     }
@@ -388,7 +399,7 @@ export function RegistrationWizard({
           <span className="font-semibold text-ink">
             {isOtherCampus ? formData.institutionName || formData.campus : formData.campus}
           </span>{" "}
-          has been received and queued for leadership approval. Your CTC account is ready — no separate sign-up needed.
+          is confirmed. Your M-Pesa code is saved and your membership is approved. Nobody has to approve it by hand. Your CTC account is ready — no separate sign-up needed.
         </p>
 
         <div className="mt-6 rounded-2xl border border-sky/30 bg-sky/5 p-5 text-left">
@@ -496,7 +507,7 @@ export function RegistrationWizard({
     setStkReference(null);
     setStkPhase("idle");
     setStkMessage(null);
-    setFormData((prev) => ({ ...prev, mpesaReference: "" }));
+    setFormData((prev) => ({ ...prev, mpesaReference: "", payheroReference: "" }));
   };
 
   const watchPayment = async (reference: string, phone: string, generation: number) => {
@@ -519,9 +530,10 @@ export function RegistrationWizard({
             ...prev,
             mpesaReference: status.receipt!.toUpperCase(),
             mpesaPhoneNumber: phone,
+            payheroReference: reference,
           }));
           setStkPhase("success");
-          setStkMessage("Payment received. Continue to the next step.");
+          setStkMessage("Payment received. Finish registration and this code approves the membership automatically.");
           return;
         }
         if (status.status === "FAILED") {
@@ -585,6 +597,21 @@ export function RegistrationWizard({
     setStkPhase("waiting");
     setStkMessage("Checking M-Pesa again…");
     void watchPayment(stkReference, payPhone, generation);
+  };
+
+  const applyPass = async () => {
+    setPassBusy(true);
+    setPassError(null);
+    const res = await applyRegistrationPass(passInput);
+    setPassBusy(false);
+    if (!res.success || !res.data?.token) {
+      setPassError(res.error || "That code is not valid.");
+      return;
+    }
+    window.sessionStorage.setItem("ctc-registration-pass", res.data.token);
+    setFormData((prev) => ({ ...prev, promoToken: res.data!.token }));
+    setPassInput("");
+    setFieldErrors((prev) => ({ ...prev, mpesaReference: "" }));
   };
 
   return (
@@ -1104,6 +1131,39 @@ export function RegistrationWizard({
               })}
             </div>
 
+            <div className="rounded-2xl border border-line bg-surface p-5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-ink-2">Already paid the previous way?</h4>
+              <p className="mt-1 text-sm text-ink-2">
+                Enter the one-time pass. It skips a new M-Pesa prompt, then closes so nobody else can use it.
+              </p>
+              {formData.promoToken ? (
+                <p className="mt-3 flex items-start gap-2 text-sm text-green">
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
+                  Pass accepted. Continue without sending a new prompt.
+                </p>
+              ) : (
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    value={passInput}
+                    onChange={(e) => setPassInput(e.target.value.toUpperCase())}
+                    placeholder="Pass code"
+                    autoComplete="off"
+                    className="rounded-xl font-mono uppercase"
+                  />
+                  <Button
+                    type="button"
+                    variant="primary"
+                    disabled={passBusy || passInput.trim().length < 8}
+                    onClick={() => void applyPass()}
+                    className="rounded-xl bg-navy px-5 text-white"
+                  >
+                    {passBusy ? "Checking…" : "Apply pass"}
+                  </Button>
+                </div>
+              )}
+              {passError && <p className="mt-2 text-xs text-red-500">{passError}</p>}
+            </div>
+
             <div className="rounded-2xl border border-green/30 bg-gradient-to-br from-green/5 via-surface to-surface p-5">
               <div className="flex flex-wrap items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green/10 text-green">
@@ -1116,6 +1176,8 @@ export function RegistrationWizard({
                   <p className="mt-1 text-sm text-ink">
                     Enter the Safaricom number that should receive the M-Pesa prompt. After you enter your PIN, the confirmation code appears here.
                   </p>
+                  <p className="mt-2 font-mono text-sm font-bold text-ink">Paybill {SITE_CONFIG.payment.paybill}</p>
+                  <p className="font-mono text-sm font-bold text-ink">Account {SITE_CONFIG.payment.accountNumber}</p>
                 </div>
               </div>
 
@@ -1196,18 +1258,6 @@ export function RegistrationWizard({
                   <p className="mt-2 text-xs text-red-500">{fieldErrors.mpesaReference}</p>
                 )}
 
-                {/*<p className="mt-4 text-xs text-muted">
-                  Or pay the same amount on{" "}
-                  <a
-                    href={SITE_CONFIG.payment.lipwaUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-semibold text-sky underline-offset-2 hover:underline"
-                  >
-                    Lipwa
-                  </a>
-                  . Registration continues once this prompt is confirmed.
-                </p>*/}
               </div>
             </div>
           </div>
@@ -1267,7 +1317,11 @@ export function RegistrationWizard({
                 </div>
                 <div>
                   <span className="text-xs text-muted">Paid via</span>
-                  <p className="text-sm font-bold text-ink">{SITE_CONFIG.payment.method}</p>
+                  <p className="text-sm font-bold text-ink">
+                    {formData.promoToken
+                      ? "Earlier payment, confirmed with a one-time pass"
+                      : `${SITE_CONFIG.payment.method} ${SITE_CONFIG.payment.paybill} · Account ${SITE_CONFIG.payment.accountNumber}`}
+                  </p>
                 </div>
                 {formData.mpesaReference && (
                   <div>

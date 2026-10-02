@@ -16,6 +16,8 @@ export const SITE_CONFIG = {
   /** Membership fee — M-Pesa Paybill via PayHero STK (channel 13425). */
   payment: {
     method: "M-Pesa Paybill",
+    paybill: "522533",
+    accountNumber: "8148458",
     channelId: 13425,
     lipwaUrl: "https://lipwa.link/7133",
     fullFeeKes: 500,
