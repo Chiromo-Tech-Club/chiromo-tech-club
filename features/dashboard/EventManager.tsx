@@ -28,7 +28,6 @@ import {
   CATEGORY_ORDER,
   type EventCategory,
 } from "@/features/events/categorize";
-import { UserX } from "lucide-react";
 
 export interface EventManagerItem {
   id: string;
