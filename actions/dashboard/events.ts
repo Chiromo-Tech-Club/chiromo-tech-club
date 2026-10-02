@@ -11,6 +11,7 @@ import { slugify } from "@/lib/utils/slugify";
 import { uploadEventCover } from "@/services/upload";
 import { ensureEventsColumns } from "@/lib/drizzle/ensure-events-columns";
 import { CATEGORY_ORDER, type EventCategory } from "@/features/events/categorize";
+import { defaultRegistrationDeadline } from "@/lib/events/registration-deadline";
 import { ROUTES } from "@/constants/routes";
 import type { ActionResult } from "@/actions/membership";
 
@@ -25,6 +26,7 @@ const fieldsSchema = z.object({
   organizerName: z.string().max(120).optional().nullable(),
   guestSpeakerName: z.string().max(120).optional().nullable(),
   category: categoryEnum.default("meetup"),
+  registrationDeadline: z.string().datetime(),
 });
 
 function revalidateEventPaths(slug?: string) {
@@ -40,16 +42,35 @@ function parseEventFields(formData: FormData) {
   const organizerName = String(formData.get("organizerName") ?? "").trim();
   const guestSpeakerName = String(formData.get("guestSpeakerName") ?? "").trim();
   const categoryRaw = String(formData.get("category") ?? "meetup").trim();
-  return fieldsSchema.safeParse({
+  const startsAt = String(formData.get("startsAt") ?? "");
+  let registrationDeadline = String(formData.get("registrationDeadline") ?? "").trim();
+  if (!registrationDeadline && startsAt) {
+    const start = new Date(startsAt);
+    if (!Number.isNaN(start.getTime())) {
+      registrationDeadline = defaultRegistrationDeadline(start).toISOString();
+    }
+  }
+  const parsed = fieldsSchema.safeParse({
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
-    startsAt: String(formData.get("startsAt") ?? ""),
+    startsAt,
     location: String(formData.get("location") ?? ""),
     capacity: capacityRaw ? Number(capacityRaw) : null,
     organizerName: organizerName || null,
     guestSpeakerName: guestSpeakerName || null,
     category: categoryRaw || "meetup",
+    registrationDeadline,
   });
+  if (!parsed.success) return parsed;
+  const start = new Date(parsed.data.startsAt);
+  const deadline = new Date(parsed.data.registrationDeadline);
+  if (deadline.getTime() >= start.getTime()) {
+    return {
+      success: false as const,
+      error: { issues: [{ message: "The RSVP deadline has to be before the event starts." }] },
+    };
+  }
+  return parsed;
 }
 
 async function maybeUploadPoster(slug: string, formData: FormData): Promise<string | null | undefined> {
@@ -94,6 +115,7 @@ export async function createEvent(formData: FormData): Promise<ActionResult> {
         organizerName: parsed.data.organizerName ?? null,
         guestSpeakerName: parsed.data.guestSpeakerName ?? null,
         category: parsed.data.category,
+        registrationDeadline: new Date(parsed.data.registrationDeadline),
         coverImageUrl,
       });
     revalidateEventPaths(slug);
@@ -151,6 +173,7 @@ export async function updateEvent(formData: FormData): Promise<ActionResult> {
         organizerName: parsed.data.organizerName ?? null,
         guestSpeakerName: parsed.data.guestSpeakerName ?? null,
         category: parsed.data.category,
+        registrationDeadline: new Date(parsed.data.registrationDeadline),
         coverImageUrl,
         updatedAt: new Date(),
       })

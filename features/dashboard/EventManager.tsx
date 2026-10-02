@@ -28,6 +28,7 @@ import {
   CATEGORY_ORDER,
   type EventCategory,
 } from "@/features/events/categorize";
+import { defaultRegistrationDeadline, effectiveRegistrationDeadline } from "@/lib/events/registration-deadline";
 
 export interface EventManagerItem {
   id: string;
@@ -35,6 +36,7 @@ export interface EventManagerItem {
   title: string;
   description: string;
   startsAt: string;
+  registrationDeadline?: string | null;
   location: string;
   capacity: number | null;
   coverImageUrl?: string | null;
@@ -52,6 +54,20 @@ function toLocalInputValue(iso: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function deadlineInputFromStart(localStart: string) {
+  const start = new Date(localStart);
+  if (Number.isNaN(start.getTime())) return "";
+  return toLocalInputValue(defaultRegistrationDeadline(start).toISOString());
+}
+
+function initialDeadlineInput(initial?: EventManagerItem) {
+  if (!initial) return "";
+  const stored = initial.registrationDeadline
+    ? initial.registrationDeadline
+    : effectiveRegistrationDeadline(new Date(initial.startsAt), null).toISOString();
+  return toLocalInputValue(stored);
+}
+
 function EventForm({
   initial,
   onDone,
@@ -63,6 +79,8 @@ function EventForm({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [startsAt, setStartsAt] = useState(initial ? toLocalInputValue(initial.startsAt) : "");
+  const [registrationDeadline, setRegistrationDeadline] = useState(initialDeadlineInput(initial));
+  const [deadlineTouched, setDeadlineTouched] = useState(Boolean(initial?.registrationDeadline));
   const [location, setLocation] = useState(initial?.location ?? "");
   const [capacity, setCapacity] = useState(initial?.capacity ? String(initial.capacity) : "");
   const [organizerName, setOrganizerName] = useState(initial?.organizerName ?? "Chiromo Tech Club");
@@ -106,6 +124,10 @@ function EventForm({
         "startsAt",
         startsAt ? new Date(startsAt).toISOString() : new Date().toISOString(),
       );
+      formData.set(
+        "registrationDeadline",
+        registrationDeadline ? new Date(registrationDeadline).toISOString() : "",
+      );
       formData.set("location", location);
       if (capacity) formData.set("capacity", capacity);
       formData.set("organizerName", organizerName);
@@ -120,6 +142,8 @@ function EventForm({
           setTitle("");
           setDescription("");
           setStartsAt("");
+          setRegistrationDeadline("");
+          setDeadlineTouched(false);
           setLocation("");
           setCapacity("");
           setOrganizerName("Chiromo Tech Club");
@@ -159,7 +183,34 @@ function EventForm({
         </h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Input placeholder="Event title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-          <Input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} required />
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-muted">Event starts</span>
+            <Input
+              type="datetime-local"
+              value={startsAt}
+              onChange={(e) => {
+                const value = e.target.value;
+                setStartsAt(value);
+                if (!deadlineTouched) setRegistrationDeadline(deadlineInputFromStart(value));
+              }}
+              required
+            />
+          </label>
+          <label className="flex flex-col gap-1 sm:col-span-2">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-muted">RSVP deadline</span>
+            <Input
+              type="datetime-local"
+              value={registrationDeadline}
+              onChange={(e) => {
+                setDeadlineTouched(true);
+                setRegistrationDeadline(e.target.value);
+              }}
+              required
+            />
+            <span className="text-[11px] text-muted">
+              Fills in as 24 hours before the start. Change it if registration should close at a different time.
+            </span>
+          </label>
           <Input placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} required />
           <Input
             placeholder="Capacity (optional)"
@@ -404,6 +455,13 @@ export function EventManager({ events }: { events: EventManagerItem[] }) {
                         <p className="mt-1 text-xs text-ink-2 line-clamp-2">{e.description}</p>
                         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-muted">
                           <span className="font-mono text-green">{new Date(e.startsAt).toLocaleString()}</span>
+                          <span>
+                            RSVP closes{" "}
+                            {effectiveRegistrationDeadline(
+                              new Date(e.startsAt),
+                              e.registrationDeadline,
+                            ).toLocaleString()}
+                          </span>
                           <span className="inline-flex items-center gap-1">
                             <MapPin size={11} /> {e.location}
                           </span>

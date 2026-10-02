@@ -16,7 +16,8 @@ export async function ensureEventsColumns(): Promise<void> {
       ADD COLUMN IF NOT EXISTS "ends_at" timestamp with time zone,
       ADD COLUMN IF NOT EXISTS "capacity" integer,
       ADD COLUMN IF NOT EXISTS "deleted_at" timestamp with time zone,
-      ADD COLUMN IF NOT EXISTS "category" text DEFAULT 'meetup'
+      ADD COLUMN IF NOT EXISTS "category" text DEFAULT 'meetup',
+      ADD COLUMN IF NOT EXISTS "registration_deadline" timestamp with time zone
   `);
 
   ensured = true;

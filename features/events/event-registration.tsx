@@ -12,6 +12,7 @@ export function EventRegistrationForm({
   spotsLeft,
   canRsvp = false,
   eligibilityMessage,
+  registrationClosedMessage,
 }: {
   eventSlug: string;
   isSignedIn?: boolean;
@@ -20,6 +21,8 @@ export function EventRegistrationForm({
   /** Only approved, fully registered members may RSVP. */
   canRsvp?: boolean;
   eligibilityMessage?: string | null;
+  /** Deadline passed or the event has already started. */
+  registrationClosedMessage?: string | null;
 }) {
   const { status, error, register } = useEventRegistration(eventSlug);
 
@@ -28,6 +31,15 @@ export function EventRegistrationForm({
       <div className="rounded-2xl border border-green/30 bg-green/5 p-5">
         <p className="text-sm font-semibold text-green">You&apos;re registered</p>
         <p className="mt-1 text-xs text-ink-2">We&apos;ll see you there — check your email for a reminder.</p>
+      </div>
+    );
+  }
+
+  if (registrationClosedMessage) {
+    return (
+      <div className="rounded-2xl border border-line bg-cream/50 p-5">
+        <p className="text-sm font-semibold text-ink">RSVP closed</p>
+        <p className="mt-1 text-xs leading-relaxed text-ink-2">{registrationClosedMessage}</p>
       </div>
     );
   }

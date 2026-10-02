@@ -166,6 +166,8 @@ export const events = pgTable("events", {
   description: text("description").notNull(),
   startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
   endsAt: timestamp("ends_at", { withTimezone: true }),
+  /** When RSVP closes. Defaults to 24 hours before startsAt when unset. */
+  registrationDeadline: timestamp("registration_deadline", { withTimezone: true }),
   location: text("location").notNull(),
   capacity: integer("capacity"),
   coverImageUrl: text("cover_image_url"),

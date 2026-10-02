@@ -15,6 +15,7 @@ export type ClubEventRow = {
   organizerName: string | null;
   guestSpeakerName: string | null;
   category: string | null;
+  registrationDeadline: Date | null;
   deletedAt: Date | null;
 };
 
@@ -44,6 +45,7 @@ function mapCoreRow(row: {
     organizerName: null,
     guestSpeakerName: null,
     category: null,
+    registrationDeadline: null,
   };
 }
 
@@ -85,6 +87,7 @@ export async function listClubEvents(opts?: {
         organizerName: events.organizerName,
         guestSpeakerName: events.guestSpeakerName,
         category: events.category,
+        registrationDeadline: events.registrationDeadline,
         deletedAt: events.deletedAt,
       })
       .from(events)
@@ -139,6 +142,7 @@ export async function getClubEventBySlug(slug: string): Promise<ClubEventRow | n
         organizerName: events.organizerName,
         guestSpeakerName: events.guestSpeakerName,
         category: events.category,
+        registrationDeadline: events.registrationDeadline,
         deletedAt: events.deletedAt,
       })
       .from(events)
@@ -182,5 +186,6 @@ export function toUpcomingWidgetItem(row: ClubEventRow) {
     coverImageUrl: row.coverImageUrl,
     organizerName: row.organizerName,
     guestSpeakerName: row.guestSpeakerName,
+    registrationDeadline: row.registrationDeadline ? row.registrationDeadline.toISOString() : null,
   };
 }

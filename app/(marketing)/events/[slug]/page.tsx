@@ -6,6 +6,10 @@ import { getDb } from "@/lib/drizzle/client";
 import { eventRegistrations } from "@/lib/drizzle/schema";
 import { getClubEventBySlug } from "@/lib/events/queries";
 import { formatEventDate, formatEventTime } from "@/lib/utils/format-date";
+import {
+  effectiveRegistrationDeadline,
+  rsvpClosureMessage,
+} from "@/lib/events/registration-deadline";
 import { CATEGORY_META, resolveEventCategory } from "@/features/events/categorize";
 import { EventRegistrationForm } from "@/features/events/event-registration";
 import { EventPageNav } from "@/features/events/EventPageNav";
@@ -23,6 +27,7 @@ type EventDetail = Pick<ClubEvent, "slug" | "title" | "description" | "startsAt"
   hostInstitution: string;
   guestSpeakerName: string | null;
   category: string | null;
+  registrationDeadline: string | null;
 };
 
 async function getEvent(slug: string): Promise<EventDetail | null> {
@@ -41,6 +46,7 @@ async function getEvent(slug: string): Promise<EventDetail | null> {
     hostInstitution: row.organizerName || "Chiromo Tech Club",
     guestSpeakerName: row.guestSpeakerName,
     category: row.category,
+    registrationDeadline: row.registrationDeadline ? row.registrationDeadline.toISOString() : null,
   };
 }
 
@@ -56,6 +62,11 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
     ? await getCurrentMember({ createIfMissing: false }).catch(() => null)
     : null;
 
+  const registrationDeadline = effectiveRegistrationDeadline(
+    new Date(event.startsAt),
+    event.registrationDeadline,
+  ).toISOString();
+  const registrationClosedMessage = rsvpClosureMessage(event.startsAt, event.registrationDeadline);
   const canRsvp = canAccessMemberEvents(member);
   let eligibilityMessage: string | null = null;
   if (userId && !canRsvp) {
@@ -147,6 +158,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               <div>
                 <p className="text-sm font-semibold text-ink">{formatEventDate(event.startsAt)}</p>
                 <p className="text-xs text-muted">{formatEventTime(event.startsAt)}</p>
+                <p className="mt-1 text-xs text-muted">
+                  RSVP closes {formatEventDate(registrationDeadline)} · {formatEventTime(registrationDeadline)}
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -199,6 +213,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               spotsLeft={spotsLeft}
               canRsvp={canRsvp}
               eligibilityMessage={eligibilityMessage}
+              registrationClosedMessage={registrationClosedMessage}
             />
           </div>
 

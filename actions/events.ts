@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq, and, count, isNull } from "drizzle-orm";
 import { getDb } from "../lib/drizzle/client";
+import { ensureEventsColumns } from "../lib/drizzle/ensure-events-columns";
 import { events, eventRegistrations, members } from "../lib/drizzle/schema";
 import { getAuthUserId } from "../lib/supabase/auth-helpers";
 import {
@@ -10,6 +11,7 @@ import {
   hasCompletedClubRegistration,
 } from "../lib/supabase/get-current-member";
 import { sendEventReminder } from "../services/email";
+import { rsvpClosureMessage } from "../lib/events/registration-deadline";
 import { formatEventDate } from "../lib/utils/format-date";
 import { ROUTES } from "../constants/routes";
 import type { ActionResult } from "../actions/membership";
@@ -21,6 +23,7 @@ export async function registerForEvent(eventSlug: string): Promise<ActionResult>
   }
 
   const db = getDb();
+  await ensureEventsColumns();
 
   const [event] = await db
     .select()
@@ -28,6 +31,9 @@ export async function registerForEvent(eventSlug: string): Promise<ActionResult>
     .where(and(eq(events.slug, eventSlug), isNull(events.deletedAt)))
     .limit(1);
   if (!event) return { success: false, error: "Event not found." };
+
+  const closed = rsvpClosureMessage(event.startsAt, event.registrationDeadline);
+  if (closed) return { success: false, error: closed };
 
   const [member] = await db.select().from(members).where(eq(members.id, userId)).limit(1);
   if (!member) {

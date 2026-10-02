@@ -6,6 +6,7 @@ import { formatEventDate } from "@/lib/utils/format-date";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/alignui/button";
 import { useEventRegistration } from "@/features/events/useEventRegistration";
+import { rsvpClosureMessage } from "@/lib/events/registration-deadline";
 import { ROUTES } from "@/constants/routes";
 
 export interface UpcomingEventItem {
@@ -14,6 +15,7 @@ export interface UpcomingEventItem {
   title: string;
   description: string;
   startsAt: string;
+  registrationDeadline?: string | null;
   location: string;
   coverImageUrl?: string | null;
   organizerName?: string | null;
@@ -31,9 +33,11 @@ interface UpcomingEventsWidgetProps {
 function EventRsvpButton({
   slug,
   alreadyRegistered,
+  closedMessage,
 }: {
   slug: string;
   alreadyRegistered: boolean;
+  closedMessage?: string | null;
 }) {
   const { status, error, register } = useEventRegistration(slug);
   const done = alreadyRegistered || status === "success";
@@ -44,6 +48,10 @@ function EventRsvpButton({
         <CheckCircle2 size={11} /> Going
       </span>
     );
+  }
+
+  if (closedMessage) {
+    return <span className="text-[10px] font-semibold text-muted">RSVP closed</span>;
   }
 
   return (
@@ -117,7 +125,11 @@ export function UpcomingEventsWidget({
                         </p>
                       </div>
                       {canRsvp ? (
-                        <EventRsvpButton slug={e.slug} alreadyRegistered={Boolean(isRegistered)} />
+                        <EventRsvpButton
+                          slug={e.slug}
+                          alreadyRegistered={Boolean(isRegistered)}
+                          closedMessage={rsvpClosureMessage(e.startsAt, e.registrationDeadline)}
+                        />
                       ) : isRegistered ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-green/10 px-2 py-0.5 text-[10px] font-semibold text-green">
                           <CheckCircle2 size={10} /> Registered

@@ -644,6 +644,7 @@ async function CorporateAffairsEventManager() {
       title: r.title,
       description: r.description,
       startsAt: r.startsAt.toISOString(),
+      registrationDeadline: r.registrationDeadline ? r.registrationDeadline.toISOString() : null,
       location: r.location,
       capacity: r.capacity,
       coverImageUrl: r.coverImageUrl,
