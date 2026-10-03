@@ -247,7 +247,7 @@ export function MembershipCard(props: MembershipCardProps) {
 
   useEffect(() => {
     let cancelled = false;
-    generateMembershipQrSvg(membershipId, { dark: theme.accent, light: "#FFFFFF" })
+    generateMembershipQrSvg(membershipId, { dark: theme.accent, light: "#FFFFFF" }, props.memberId)
       .then((svg) => {
         if (!cancelled) setQrSvg(svg);
       })
@@ -258,7 +258,7 @@ export function MembershipCard(props: MembershipCardProps) {
     return () => {
       cancelled = true;
     };
-  }, [membershipId, theme.accent]);
+  }, [membershipId, theme.accent, props.memberId]);
 
   const uni = getUniversityInitials(props.campus, props.isChiromo);
   const { expiresAt, semesterLabel, academicYearLabel } = getMembershipExpiry({
@@ -343,7 +343,7 @@ export function MembershipCard(props: MembershipCardProps) {
       let qr = qrSvg;
       if (!qr) {
         try {
-          qr = await generateMembershipQrSvg(membershipId, { dark: theme.accent, light: "#FFFFFF" });
+          qr = await generateMembershipQrSvg(membershipId, { dark: theme.accent, light: "#FFFFFF" }, props.memberId);
           setQrSvg(qr);
         } catch {
           qr = null;

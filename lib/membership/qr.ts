@@ -3,9 +3,11 @@
  * Uses SVG output so print HTML can embed the code inline (no canvas / broken img).
  */
 
-export function buildMembershipQrPayload(membershipId: string): string {
+export function buildMembershipQrPayload(membershipId: string, memberId?: string): string {
+  const params = new URLSearchParams({ mid: membershipId });
+  if (memberId) params.set("member", memberId);
   if (typeof window !== "undefined" && window.location?.origin) {
-    return `${window.location.origin}/verify?mid=${encodeURIComponent(membershipId)}`;
+    return `${window.location.origin}/verify?${params.toString()}`;
   }
   return membershipId;
 }
@@ -13,9 +15,10 @@ export function buildMembershipQrPayload(membershipId: string): string {
 export async function generateMembershipQrSvg(
   membershipId: string,
   colors?: { dark?: string; light?: string },
+  memberId?: string,
 ): Promise<string> {
   const QRCode = (await import("qrcode")).default;
-  const payload = buildMembershipQrPayload(membershipId);
+  const payload = buildMembershipQrPayload(membershipId, memberId);
   const raw = await QRCode.toString(payload, {
     type: "svg",
     errorCorrectionLevel: "M",

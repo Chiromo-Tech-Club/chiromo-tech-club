@@ -6,7 +6,12 @@ import { Button } from "@/components/alignui/button";
 import type { Project } from "@/types/project";
 
 interface ProjectsTableProps {
-  projects: Array<Pick<Project, "id" | "title" | "communitySlug" | "stars" | "deletedAt">>;
+  projects: Array<
+    Pick<Project, "id" | "title" | "communitySlug" | "stars" | "deletedAt"> & {
+      pitch: string | null;
+      authorName: string | null;
+    }
+  >;
 }
 
 export function ProjectsTable({ projects }: ProjectsTableProps) {
@@ -35,7 +40,11 @@ export function ProjectsTable({ projects }: ProjectsTableProps) {
       <tbody>
         {projects.map((p) => (
           <tr key={p.id} className="border-b border-line text-text-2">
-            <td className="py-3 text-text">{p.title}</td>
+            <td className="py-3 text-text">
+              <div>{p.title}</div>
+              {p.pitch ? <div className="mt-1 text-xs text-text-3">{p.pitch}</div> : null}
+              {p.authorName ? <div className="mt-1 text-xs text-text-3">{p.authorName}</div> : null}
+            </td>
             <td className="py-3">{p.communitySlug}</td>
             <td className="py-3">{p.stars}</td>
             <td className="py-3">{p.deletedAt ? "Archived" : "Live"}</td>

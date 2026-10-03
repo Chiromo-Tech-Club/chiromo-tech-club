@@ -19,6 +19,7 @@ export interface TaskItem {
 export interface MemberOption {
   id: string;
   fullName: string;
+  roleLabel?: string;
 }
 
 const COLUMNS: { status: TaskItem["status"]; label: string }[] = [
@@ -69,7 +70,7 @@ function NewTaskForm({ memberOptions }: { memberOptions: MemberOption[] }) {
           <option value="">Unassigned</option>
           {memberOptions.map((m) => (
             <option key={m.id} value={m.id}>
-              {m.fullName}
+              {m.roleLabel ? `${m.fullName} · ${m.roleLabel}` : m.fullName}
             </option>
           ))}
         </select>

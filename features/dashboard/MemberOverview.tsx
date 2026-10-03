@@ -1,4 +1,5 @@
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { ensureClubTools } from "@/lib/drizzle/ensure-club-tools";
 import Link from "next/link";
 import { 
   Trophy, 
@@ -24,6 +25,7 @@ import { MembershipCard } from "@/features/dashboard/MembershipCard";
 import { ROUTES } from "@/constants/routes";
 
 async function getMemberOverviewData(member: Member) {
+  await ensureClubTools();
   const db = getDb();
 
   // 1. Upcoming events — same DB source as /events + Event Manager
@@ -63,7 +65,7 @@ async function getMemberOverviewData(member: Member) {
     })
     .from(announcements)
     .innerJoin(members, sql`${announcements.authorId} = ${members.id}`)
-    .where(isNull(announcements.deletedAt))
+    .where(and(isNull(announcements.deletedAt), eq(announcements.audience, "members")))
     .orderBy(desc(announcements.createdAt))
     .limit(3);
 

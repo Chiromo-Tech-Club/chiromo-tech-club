@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "@/lib/drizzle/client";
-import { tasks } from "@/lib/drizzle/schema";
+import { members, tasks } from "@/lib/drizzle/schema";
 import { requireRole } from "@/lib/supabase/auth-helpers";
 import { getCurrentMember } from "@/lib/supabase/get-current-member";
 import type { ActionResult } from "@/actions/membership";
@@ -25,6 +25,17 @@ export async function createTask(input: z.infer<typeof createSchema>): Promise<A
 
   const member = await getCurrentMember();
   if (!member) return { success: false, error: "Member profile not found." };
+
+  if (parsed.data.assigneeId) {
+    const [assignee] = await getDb()
+      .select({ role: members.role })
+      .from(members)
+      .where(and(eq(members.id, parsed.data.assigneeId), isNull(members.deletedAt)))
+      .limit(1);
+    if (!assignee || (assignee.role !== "admin" && assignee.role !== "exec")) {
+      return { success: false, error: "Tasks can only be assigned to an executive or an administrator." };
+    }
+  }
 
   try {
     await getDb()

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
-import { desc, eq, isNull, gte, and } from "drizzle-orm";
+import { desc, eq, isNull, gte, and, inArray } from "drizzle-orm";
 import { SHARED_NAV_ITEMS, EXEC_NAV, isSlugForExecTitle } from "@/config/dashboard-nav";
 import { isExecTitle, EXEC_TITLE_LABELS } from "@/types/exec-title";
-import { canAccessExecSection, getCurrentRole } from "@/lib/supabase/auth-helpers";
+import { canAccessExecSection, getCurrentRole, requireRole } from "@/lib/supabase/auth-helpers";
 import { getDb } from "@/lib/drizzle/client";
 import { listClubEvents } from "@/lib/events/queries";
 import {
@@ -44,6 +44,7 @@ import { SponsorDatabase, type SponsorItem } from "@/features/dashboard/SponsorD
 import { MemberDirectory, type DirectoryMember } from "@/features/dashboard/MemberDirectory";
 import { ResourceLibrary, type ResourceItem } from "@/features/dashboard/ResourceLibrary";
 import { AnnouncementsBoard, type AnnouncementFullItem } from "@/features/dashboard/AnnouncementsBoard";
+import { EventCheckInDesk } from "@/features/dashboard/EventCheckInDesk";
 import { TaskBoard, type TaskItem, type MemberOption } from "@/features/dashboard/TaskBoard";
 import { DocumentRepository, type DocumentItem } from "@/features/dashboard/DocumentRepository";
 import { ExecChat } from "@/features/dashboard/ExecChat";
@@ -241,25 +242,43 @@ async function TrainingCoordinatorResources() {
 }
 
 async function SharedAnnouncements() {
+  const { ensureClubTools } = await import("@/lib/drizzle/ensure-club-tools");
+  await ensureClubTools();
+  const role = await getCurrentRole();
+  const canManage = role === "exec" || role === "admin";
   const db = getDb();
   const rows = await db
     .select({
       id: announcements.id,
       title: announcements.title,
       body: announcements.body,
+      audience: announcements.audience,
       createdAt: announcements.createdAt,
       authorName: members.fullName,
     })
     .from(announcements)
     .innerJoin(members, eq(announcements.authorId, members.id))
-    .where(isNull(announcements.deletedAt))
+    .where(
+      canManage
+        ? isNull(announcements.deletedAt)
+        : and(isNull(announcements.deletedAt), eq(announcements.audience, "members")),
+    )
     .orderBy(desc(announcements.createdAt));
 
-  const items: AnnouncementFullItem[] = rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
-  return <AnnouncementsBoard announcements={items} />;
+  const items: AnnouncementFullItem[] = rows.map((r) => ({
+    ...r,
+    audience: r.audience === "executives" ? "executives" : "members",
+    createdAt: r.createdAt.toISOString(),
+  }));
+  return <AnnouncementsBoard announcements={items} canManage={canManage} />;
 }
 
 async function SharedTasks() {
+  const check = await requireRole("exec");
+  if (!check.ok) {
+    return <p className="text-sm text-muted">The task list is for executives and administrators.</p>;
+  }
+
   const db = getDb();
   const rows = await db
     .select({
@@ -275,14 +294,33 @@ async function SharedTasks() {
     .where(isNull(tasks.deletedAt))
     .orderBy(desc(tasks.createdAt));
 
-  const memberRows = await getDb().select({ id: members.id, fullName: members.fullName }).from(members).where(isNull(members.deletedAt)).orderBy(members.fullName);
+  const memberRows = await db
+    .select({
+      id: members.id,
+      fullName: members.fullName,
+      role: members.role,
+      execTitle: members.execTitle,
+    })
+    .from(members)
+    .where(and(isNull(members.deletedAt), inArray(members.role, ["admin", "exec"])))
+    .orderBy(members.fullName);
 
   const items: TaskItem[] = rows.map((r) => ({
     ...r,
     assigneeName: r.assigneeName ?? null,
     dueDate: r.dueDate ? r.dueDate.toISOString() : null,
   }));
-  return <TaskBoard tasks={items} memberOptions={memberRows as MemberOption[]} />;
+  const memberOptions: MemberOption[] = memberRows.map((row) => ({
+    id: row.id,
+    fullName: row.fullName,
+    roleLabel:
+      row.role === "admin"
+        ? "Administrator"
+        : row.execTitle
+          ? EXEC_TITLE_LABELS[row.execTitle]
+          : "Executive",
+  }));
+  return <TaskBoard tasks={items} memberOptions={memberOptions} />;
 }
 
 async function SharedDocuments({
@@ -1111,6 +1149,9 @@ export default async function DashboardCatchAllPage({ params }: DashboardCatchAl
     if (execTitleParam === "corporate_affairs" && (sectionSlug === "event-manager" || sectionSlug === "social-calendar")) {
       return sectionSlug === "event-manager" ? <CorporateAffairsEventManager /> : <SharedCalendar />;
     }
+    if (execTitleParam === "corporate_affairs" && sectionSlug === "event-check-in") {
+      return <EventCheckInDesk />;
+    }
 
     // --- This batch ---
     if (execTitleParam === "chairperson" && sectionSlug === "committee-reports") {
@@ -1173,7 +1214,7 @@ export default async function DashboardCatchAllPage({ params }: DashboardCatchAl
       return <SharedDocuments category="Brand Assets" title="Brand Assets" showForm />;
     }
     if (execTitleParam === "membership_officer" && sectionSlug === "attendance") {
-      return <MembershipOfficerEventsParticipation />;
+      return <EventCheckInDesk />;
     }
     if (execTitleParam === "membership_officer" && sectionSlug === "feedback") {
       return <SharedChat />;

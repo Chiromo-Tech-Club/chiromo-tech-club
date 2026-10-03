@@ -18,6 +18,7 @@ export const ROUTES = {
   register: "/register",
   dashboard: "/dashboard",
   dashboardProfile: "/dashboard/profile",
+  dashboardMyProject: "/dashboard/my-project",
   dashboardSection: (execTitle: string, slug: string) => `/dashboard/${execTitle}/${slug}`,
   admin: "/admin",
   adminProjects: "/admin/projects",

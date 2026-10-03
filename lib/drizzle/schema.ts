@@ -194,9 +194,25 @@ export const eventRegistrations = pgTable(
       .references(() => members.id, { onDelete: "cascade" }),
     registeredAt: timestamp("registered_at", { withTimezone: true }).notNull().defaultNow(),
     attended: boolean("attended").notNull().default(false),
+    attendedAt: timestamp("attended_at", { withTimezone: true }),
   },
   (table) => [uniqueIndex("event_registration_unique_idx").on(table.eventId, table.memberId)],
 );
+
+/** Guests who are not club members, logged at the door by Corporate Affairs or Membership. */
+export const eventWalkIns = pgTable("event_walk_ins", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id")
+    .notNull()
+    .references(() => events.id, { onDelete: "cascade" }),
+  fullName: text("full_name").notNull(),
+  email: text("email").notNull(),
+  arrivedAt: timestamp("arrived_at", { withTimezone: true }).notNull().defaultNow(),
+  recordedById: uuid("recorded_by_id")
+    .notNull()
+    .references(() => members.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -212,16 +228,25 @@ export const projects = pgTable("projects", {
   contributorCount: integer("contributor_count").notNull().default(0),
   coverImageUrl: text("cover_image_url"),
   communitySlug: text("community_slug").notNull(),
+  /** Member who submitted the listing. Null for older rows added by an admin. */
+  authorId: uuid("author_id").references(() => members.id, { onDelete: "set null" }),
+  /** One-line "what it does", shown on the directory card. */
+  pitch: text("pitch"),
+  websiteUrl: text("website_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
-/** Shared-dashboard announcements — visible to every exec, postable by any exec for now. */
+/**
+ * Announcements. `audience` is `members` (visible on member dashboards) or
+ * `executives` (exec and admin only).
+ */
 export const announcements = pgTable("announcements", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
   body: text("body").notNull(),
+  audience: text("audience").notNull().default("members"),
   authorId: uuid("author_id")
     .notNull()
     .references(() => members.id, { onDelete: "cascade" }),

@@ -84,6 +84,7 @@ export const EXEC_NAV: Record<ExecTitle, DashboardNavItem[]> = {
     { slug: "partner-crm", label: "Partner CRM" },
     { slug: "sponsor-database", label: "Sponsor Database" },
     { slug: "event-manager", label: "Event Manager" },
+    { slug: "event-check-in", label: "Event Check-in" },
     { slug: "guest-speakers", label: "Guest Speakers" },
     { slug: "social-calendar", label: "Social Calendar" },
     { slug: "media-library", label: "Media Library" },

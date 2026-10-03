@@ -1,6 +1,7 @@
 import { Users, CalendarCheck, FolderKanban, Megaphone as MegaphoneIcon } from "lucide-react";
-import { desc, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/drizzle/client";
+import { ensureClubTools } from "@/lib/drizzle/ensure-club-tools";
 import { members, events, projects, announcements } from "@/lib/drizzle/schema";
 import { listClubEvents, toUpcomingWidgetItem } from "@/lib/events/queries";
 import { getCurrentMember } from "@/lib/supabase/get-current-member";
@@ -16,6 +17,7 @@ import { MemberQuickActions } from "@/features/dashboard/MemberQuickActions";
 import { ROUTES } from "@/constants/routes";
 
 async function getOverviewData() {
+  await ensureClubTools();
   const db = getDb();
 
   const [memberCountRow] = await db
@@ -46,7 +48,7 @@ async function getOverviewData() {
     })
     .from(announcements)
     .innerJoin(members, sql`${announcements.authorId} = ${members.id}`)
-    .where(isNull(announcements.deletedAt))
+    .where(and(isNull(announcements.deletedAt), eq(announcements.audience, "members")))
     .orderBy(desc(announcements.createdAt))
     .limit(3);
 
