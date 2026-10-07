@@ -140,12 +140,6 @@ export function RegistrationWizard({
   }, [currentStep, formData.phoneNumber]);
 
   useEffect(() => {
-    const saved = window.sessionStorage.getItem("ctc-registration-pass");
-    if (!saved) return;
-    setFormData((prev) => (prev.promoToken ? prev : { ...prev, promoToken: saved }));
-  }, []);
-
-  useEffect(() => {
     const draft = loadRegistrationDraft();
     const draftEmail = draft?.form.email?.trim().toLowerCase();
     const accountEmail = initialUser?.email?.trim().toLowerCase();
@@ -178,6 +172,18 @@ export function RegistrationWizard({
         setStkPhase("success");
         setStkMessage("Your M-Pesa code is still saved on this device.");
       }
+    }
+
+    const savedPass = window.sessionStorage.getItem("ctc-registration-pass");
+    const savedReceipt = window.sessionStorage.getItem("ctc-registration-pass-receipt");
+    if (savedPass) {
+      setFormData((prev) => ({
+        ...prev,
+        promoToken: prev.promoToken || savedPass,
+        ...(savedReceipt
+          ? { mpesaReference: savedReceipt, paymentOption: "full_500" as const }
+          : {}),
+      }));
     }
 
     if (startStep && startStep >= 1 && startStep <= 5) {
@@ -671,7 +677,18 @@ export function RegistrationWizard({
       return;
     }
     window.sessionStorage.setItem("ctc-registration-pass", res.data.token);
-    setFormData((prev) => ({ ...prev, promoToken: res.data!.token }));
+    if (res.data.receipt) {
+      window.sessionStorage.setItem("ctc-registration-pass-receipt", res.data.receipt);
+    } else {
+      window.sessionStorage.removeItem("ctc-registration-pass-receipt");
+    }
+    setFormData((prev) => ({
+      ...prev,
+      promoToken: res.data!.token,
+      ...(res.data!.receipt
+        ? { mpesaReference: res.data!.receipt, paymentOption: "full_500" as const }
+        : {}),
+    }));
     setPassInput("");
     setFieldErrors((prev) => ({ ...prev, mpesaReference: "" }));
   };
@@ -1198,9 +1215,9 @@ export function RegistrationWizard({
             </div>
 
             <div className="rounded-2xl border border-line bg-surface p-5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-ink-2">Already paid the previous way?</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-ink-2">Already paid?</h4>
               <p className="mt-1 text-sm text-ink-2">
-                Enter the one-time pass. It skips a new M-Pesa prompt, then closes so nobody else can use it.
+                Enter the pass you were given. It can be used once. If that payment covered you, the M-Pesa code appears here.
               </p>
               {formData.promoToken ? (
                 <p className="mt-3 flex items-start gap-2 text-sm text-green">

@@ -67,8 +67,14 @@ export async function ensureMembersColumns(): Promise<void> {
       "code_hash" text PRIMARY KEY,
       "token" text UNIQUE,
       "redeemed_at" timestamp with time zone,
-      "member_id" uuid
+      "member_id" uuid,
+      "receipt_base" text
     )
+  `);
+
+  await db.execute(sql`
+    ALTER TABLE "registration_passes"
+      ADD COLUMN IF NOT EXISTS "receipt_base" text
   `);
 
   ensured = true;

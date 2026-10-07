@@ -17,7 +17,12 @@ import { ROUTES } from "@/constants/routes";
 import type { ActionResult } from "@/actions/membership";
 import { friendlyAuthError } from "@/lib/utils/friendly-error";
 import { pollStkStatus } from "@/lib/payments/payhero";
-import { claimOneTimePass, redeemOneTimePass, releaseOneTimePass } from "@/lib/payments/one-time-pass";
+import {
+  claimOneTimePass,
+  receiptStoredForPass,
+  redeemOneTimePass,
+  releaseOneTimePass,
+} from "@/lib/payments/one-time-pass";
 
 async function confirmPaidReceipt(
   code: string,
@@ -189,10 +194,10 @@ async function ensureAuthUserForRegistration(
 
 export async function applyRegistrationPass(
   code: string,
-): Promise<ActionResult<{ token: string }>> {
+): Promise<ActionResult<{ token: string; receipt: string | null }>> {
   const result = await redeemOneTimePass(code);
   if (!result.ok) return { success: false, error: result.error };
-  return { success: true, data: { token: result.token } };
+  return { success: true, data: { token: result.token, receipt: result.receipt } };
 }
 
 export async function submitClubRegistration(
@@ -266,12 +271,14 @@ export async function submitClubRegistration(
       needsClientSignIn = true;
     }
 
+    let groupReceipt: string | null = null;
     if (passToken) {
       passClaimed = await claimOneTimePass(passToken, userId);
       claimedUserId = userId;
       if (!passClaimed) {
         return { success: false, error: "That pass has already been used." };
       }
+      groupReceipt = await receiptStoredForPass(passToken);
     }
 
     const profile: MemberProfileValues = {
@@ -290,9 +297,9 @@ export async function submitClubRegistration(
       experienceLevel: data.experienceLevel || null,
       learningGoals: data.learningGoals?.trim() || null,
       authProvider,
-      membershipFeeStatus: feeStatus,
-      feeAmountPaid,
-      mpesaReference: confirmation?.receipt ?? null,
+      membershipFeeStatus: groupReceipt ? "fully_paid" : feeStatus,
+      feeAmountPaid: groupReceipt ? 500 : feeAmountPaid,
+      mpesaReference: groupReceipt ?? confirmation?.receipt ?? null,
       mpesaPhoneNumber: data.mpesaPhoneNumber?.trim() || null,
     };
 

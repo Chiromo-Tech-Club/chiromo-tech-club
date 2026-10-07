@@ -55,7 +55,7 @@ export const registrationStep4Schema = z.object({
   mpesaReference: z
     .string()
     .trim()
-    .max(20, "M-Pesa code should be under 20 characters.")
+    .max(32, "M-Pesa code should be under 32 characters.")
     .optional()
     .or(z.literal("")),
   mpesaPhoneNumber: z
