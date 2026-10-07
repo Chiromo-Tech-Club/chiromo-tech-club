@@ -43,15 +43,22 @@ function matchPass(digest: Buffer): PassMatch {
   return { kind: "group", receipt };
 }
 
+function asRows(result: unknown): Record<string, unknown>[] {
+  if (Array.isArray(result)) return result as Record<string, unknown>[];
+  if (result && typeof result === "object" && Array.isArray((result as { rows?: unknown }).rows)) {
+    return (result as { rows: Record<string, unknown>[] }).rows;
+  }
+  return [];
+}
+
 function firstToken(rows: unknown): string | null {
-  if (!Array.isArray(rows) || rows.length === 0) return null;
-  const row = rows[0] as { token?: unknown };
-  return typeof row.token === "string" ? row.token : null;
+  const row = asRows(rows)[0];
+  return row && typeof row.token === "string" ? row.token : null;
 }
 
 function firstText(rows: unknown, field: string): string | null {
-  if (!Array.isArray(rows) || rows.length === 0) return null;
-  const value = (rows[0] as Record<string, unknown>)[field];
+  const row = asRows(rows)[0];
+  const value = row?.[field];
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
@@ -73,13 +80,16 @@ export async function redeemOneTimePass(
   await db.execute(sql`
     INSERT INTO registration_passes (code_hash, receipt_base)
     VALUES (${hashHex}, ${receiptBase})
-    ON CONFLICT (code_hash) DO NOTHING
+    ON CONFLICT (code_hash) DO UPDATE
+    SET receipt_base = COALESCE(registration_passes.receipt_base, EXCLUDED.receipt_base)
   `);
 
+  // Keep the pass open until registration is submitted. A second look at an
+  // unused pass still returns the receipt. A finished registration does not.
   const rows = await db.execute(sql`
     UPDATE registration_passes
-    SET redeemed_at = now(), token = ${token}
-    WHERE code_hash = ${hashHex} AND redeemed_at IS NULL
+    SET redeemed_at = NULL, token = ${token}
+    WHERE code_hash = ${hashHex} AND member_id IS NULL
     RETURNING token
   `);
 
@@ -95,8 +105,8 @@ export async function claimOneTimePass(token: string, memberId: string): Promise
   const db = getDb();
   const rows = await db.execute(sql`
     UPDATE registration_passes
-    SET member_id = ${memberId}::uuid
-    WHERE token = ${token} AND redeemed_at IS NOT NULL AND member_id IS NULL
+    SET member_id = ${memberId}::uuid, redeemed_at = now()
+    WHERE token = ${token} AND member_id IS NULL
     RETURNING token
   `);
   return firstToken(rows) !== null;
@@ -111,11 +121,15 @@ export async function receiptStoredForPass(token: string): Promise<string | null
   await ensureMembersColumns();
   const db = getDb();
   const rows = await db.execute(sql`
-    SELECT receipt_base
+    SELECT receipt_base, code_hash
     FROM registration_passes
     WHERE token = ${token} AND member_id IS NOT NULL
   `);
-  const base = firstText(rows, "receipt_base");
+  const hashHex = firstText(rows, "code_hash");
+  const fromGroup = hashHex
+    ? GROUP_PASS_HASHES.some((hash) => hashesMatch(Buffer.from(hashHex, "hex"), hash))
+    : false;
+  const base = firstText(rows, "receipt_base") ?? (fromGroup ? GROUP_SHARED_RECEIPT : null);
   if (!base) return null;
   const suffix = randomBytes(3).toString("hex").toUpperCase();
   return `${base}-${suffix}`;
